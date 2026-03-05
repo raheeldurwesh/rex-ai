@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Rex AI</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link
@@ -841,6 +841,7 @@
             border-top: 1px solid var(--bdr);
             flex-shrink: 0;
             background: var(--sur);
+            padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
         }
 
         .inp-inner {
