@@ -520,7 +520,8 @@
         .mw.asst {
             align-self: flex-start;
             align-items: flex-start;
-            max-width: 88%;
+            max-width: 92%;
+            width: 92%;
         }
 
         .mrow {
@@ -564,6 +565,7 @@
             line-height: 1.75;
             font-size: .9rem;
             word-break: break-word;
+            overflow: hidden;
         }
 
         .mw.user .bbl {
@@ -579,6 +581,8 @@
             color: var(--txt);
             border: 1px solid var(--bdr);
             border-bottom-left-radius: 3px;
+            overflow: hidden;
+            max-width: 100%;
         }
 
         /* code block with copy button */
@@ -587,6 +591,8 @@
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid var(--bdr);
+            max-width: 100%;
+            width: 100%;
         }
 
         .code-hdr {
@@ -594,35 +600,36 @@
             align-items: center;
             justify-content: space-between;
             background: #111;
-            padding: 7px 14px;
+            padding: 8px 12px;
             border-bottom: 1px solid var(--bdr);
         }
 
         .code-lang {
-            font-size: .72rem;
-            color: var(--mut);
+            font-size: .7rem;
+            color: #888;
             font-family: monospace;
             text-transform: uppercase;
             letter-spacing: .08em;
         }
 
         .code-copy {
-            background: none;
+            background: var(--sur2);
             border: 1px solid var(--bdr);
-            color: var(--mut);
-            font-size: .72rem;
-            padding: 3px 10px;
-            border-radius: 5px;
+            color: var(--txt);
+            font-size: .75rem;
+            padding: 5px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
             transition: all .2s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            white-space: nowrap;
         }
 
-        .code-copy:hover {
-            color: var(--acc);
-            border-color: var(--acc);
+        .code-copy:active {
+            background: var(--acc);
+            color: #1a1a1a;
         }
 
         .code-copy.copied {
@@ -634,6 +641,16 @@
             margin: 0 !important;
             border: none !important;
             border-radius: 0 !important;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .code-wrap pre code {
+            white-space: pre;
+            word-break: normal;
+            overflow-wrap: normal;
+            display: block;
+            min-width: 0;
         }
 
         /* markdown inside assistant */
