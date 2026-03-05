@@ -581,6 +581,61 @@
             border-bottom-left-radius: 3px;
         }
 
+        /* code block with copy button */
+        .code-wrap {
+            margin: 10px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--bdr);
+        }
+
+        .code-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111;
+            padding: 7px 14px;
+            border-bottom: 1px solid var(--bdr);
+        }
+
+        .code-lang {
+            font-size: .72rem;
+            color: var(--mut);
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .code-copy {
+            background: none;
+            border: 1px solid var(--bdr);
+            color: var(--mut);
+            font-size: .72rem;
+            padding: 3px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all .2s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .code-copy:hover {
+            color: var(--acc);
+            border-color: var(--acc);
+        }
+
+        .code-copy.copied {
+            color: var(--grn);
+            border-color: var(--grn);
+        }
+
+        .code-wrap pre {
+            margin: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+
         /* markdown inside assistant */
         .mw.asst .bbl p {
             margin: 0 0 9px;
@@ -1300,6 +1355,24 @@
             { id: 'meta-llama/llama-guard-4-12b', name: 'Llama Guard 4', short: 'Guard 4', desc: 'Content moderation' },
         ];
 
+        // Global copy handler for code blocks
+        window.copyCode = function (btn) {
+            const code = btn.getAttribute('data-code')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '✓ Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        };
+
         // Auto-routing: pick the best model based on question content
         function autoSelectModel(text) {
             const t = text.toLowerCase();
@@ -1329,7 +1402,13 @@
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
-            t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => '<pre><code>' + code.trim() + '</code></pre>');
+            let codeIdx = 0;
+            t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+                const id = 'cb-' + (codeIdx++);
+                const escaped = code.trim();
+                const langLabel = lang ? '<span class="code-lang">' + lang + '</span>' : '';
+                return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)" data-code="' + escaped.replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '">📋 Copy</button></div><pre><code>' + escaped + '</code></pre></div>';
+            });
             t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
             t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
             t = t.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
