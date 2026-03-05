@@ -2,3 +2,7 @@ fastapi
 uvicorn[standard]
 groq
 python-dotenv
+pymongo[srv]
+PyJWT
+bcrypt
+dnspython

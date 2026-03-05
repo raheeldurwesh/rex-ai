@@ -36,11 +36,6 @@
         }
 
         body {
-            overflow-x: hidden;
-            max-width: 100vw;
-        }
-
-        body {
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--txt);
@@ -48,6 +43,152 @@
             height: 100dvh;
             overflow: hidden;
             display: flex;
+        }
+
+        /* ── AUTH SCREEN ── */
+        .auth-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: var(--sur);
+            border: 1px solid var(--bdr);
+            border-radius: 16px;
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: var(--acc);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .auth-sub {
+            text-align: center;
+            color: var(--mut);
+            font-size: .85rem;
+            margin-bottom: 28px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            background: var(--sur2);
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: .85rem;
+            font-weight: 500;
+            color: var(--mut);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all .2s;
+            border: none;
+            background: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .auth-tab.active {
+            background: var(--acc);
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .auth-field {
+            margin-bottom: 14px;
+        }
+
+        .auth-field label {
+            display: block;
+            font-size: .78rem;
+            color: var(--mut);
+            margin-bottom: 6px;
+            font-weight: 500;
+            letter-spacing: .03em;
+        }
+
+        .auth-field input {
+            width: 100%;
+            background: var(--sur2);
+            border: 1px solid var(--bdr);
+            border-radius: 8px;
+            color: var(--txt);
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            padding: 11px 14px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .auth-field input:focus {
+            border-color: var(--acc);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--acc);
+            border: none;
+            border-radius: 8px;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background .2s;
+            letter-spacing: .02em;
+            touch-action: manipulation;
+        }
+
+        .auth-btn:hover {
+            background: var(--acc2);
+        }
+
+        .auth-btn:disabled {
+            background: var(--sur2);
+            color: var(--mut);
+            cursor: not-allowed;
+        }
+
+        .auth-err {
+            background: rgba(192, 57, 43, .12);
+            border: 1px solid rgba(192, 57, 43, .3);
+            color: #e74c3c;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: .82rem;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .auth-ok {
+            background: rgba(39, 174, 96, .12);
+            border: 1px solid rgba(39, 174, 96, .3);
+            color: var(--grn);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: .82rem;
+            margin-bottom: 14px;
+            text-align: center;
         }
 
         /* ── SIDEBAR ── */
@@ -67,20 +208,52 @@
         .sb.hide {
             transform: translateX(-260px);
             position: absolute;
-            height: 100vh;
         }
 
         .sb-top {
-            padding: 18px 16px 14px;
+            padding: 16px;
             border-bottom: 1px solid var(--bdr);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .logo {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--acc);
-            letter-spacing: .02em;
+        }
+
+        .user-info {
+            font-size: .72rem;
+            color: var(--mut);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-name {
+            color: var(--acc);
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--bdr);
+            color: var(--mut);
+            font-size: .68rem;
+            padding: 3px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all .2s;
+            touch-action: manipulation;
+        }
+
+        .logout-btn:hover {
+            color: var(--red);
+            border-color: var(--red);
         }
 
         .new-btn {
@@ -89,7 +262,7 @@
             justify-content: center;
             gap: 7px;
             margin: 12px;
-            padding: 14px;
+            padding: 13px;
             background: var(--acc);
             border: none;
             border-radius: 8px;
@@ -100,18 +273,12 @@
             cursor: pointer;
             width: calc(100% - 24px);
             transition: background .2s;
-            letter-spacing: .02em;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
 
         .new-btn:hover {
             background: var(--acc2);
-            transform: translateY(-1px);
-        }
-
-        .new-btn:active {
-            transform: translateY(0);
         }
 
         .sec-label {
@@ -142,7 +309,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 13px 10px;
+            padding: 12px 10px;
             border-radius: 7px;
             cursor: pointer;
             transition: background .15s;
@@ -162,7 +329,7 @@
         .ci-title {
             flex: 1;
             font-size: .82rem;
-            color: #9a8e7a;
+            color: #b8aa94;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -179,24 +346,16 @@
             color: var(--mut);
             cursor: pointer;
             font-size: .85rem;
-            padding: 8px 10px;
+            padding: 6px 10px;
             border-radius: 4px;
             transition: color .15s;
             flex-shrink: 0;
-            opacity: 1;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .ci:hover .ci-del,
-        .ci.active .ci-del {
-            opacity: 1;
-            color: var(--mut);
-        }
-
         .ci-del:hover {
-            color: var(--red) !important;
-            opacity: 1;
+            color: var(--red);
         }
 
         .sb-empty {
@@ -232,7 +391,7 @@
             background: none;
             border: none;
             cursor: pointer;
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
@@ -273,7 +432,6 @@
             flex-shrink: 0;
         }
 
-        /* model selector */
         .msel {
             position: relative;
         }
@@ -292,6 +450,7 @@
             gap: 5px;
             transition: border-color .2s, color .2s;
             white-space: nowrap;
+            touch-action: manipulation;
         }
 
         .mbtn:hover,
@@ -327,6 +486,7 @@
             cursor: pointer;
             transition: background .15s;
             border-bottom: 1px solid var(--bdr);
+            touch-action: manipulation;
         }
 
         .mopt:last-child {
@@ -367,10 +527,8 @@
             padding: 1px 6px;
             border-radius: 10px;
             font-weight: 700;
-            letter-spacing: .03em;
         }
 
-        /* memory button */
         .mem-btn {
             font-size: .72rem;
             background: none;
@@ -385,6 +543,7 @@
             gap: 5px;
             transition: all .2s;
             white-space: nowrap;
+            touch-action: manipulation;
         }
 
         .mem-btn:hover,
@@ -441,7 +600,6 @@
             border-radius: 4px;
         }
 
-        /* inner messages container with max-width + horizontal margin */
         .msgs-inner {
             max-width: 780px;
             width: 100%;
@@ -454,7 +612,6 @@
             box-sizing: border-box;
         }
 
-        /* empty state */
         .empty {
             display: flex;
             flex-direction: column;
@@ -511,15 +668,14 @@
             cursor: pointer;
             transition: all .2s;
             font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
         }
 
         .chip:hover {
             border-color: var(--acc);
             color: var(--acc);
-            background: rgba(201, 168, 76, .06);
         }
 
-        /* message wrappers */
         .mw {
             display: flex;
             flex-direction: column;
@@ -563,7 +719,6 @@
             font-size: .62rem;
             font-weight: 600;
             flex-shrink: 0;
-            letter-spacing: .02em;
         }
 
         .mw.user .av {
@@ -577,7 +732,6 @@
             border: 1px solid var(--bdr);
         }
 
-        /* bubbles */
         .bbl {
             padding: 12px 16px;
             border-radius: 12px;
@@ -610,7 +764,15 @@
             box-sizing: border-box;
         }
 
-        /* code block with copy button */
+        .model-tag {
+            font-size: .65rem;
+            color: var(--mut);
+            margin-bottom: 4px;
+            padding-left: 2px;
+            font-style: italic;
+        }
+
+        /* code blocks */
         .code-wrap {
             margin: 10px 0;
             border-radius: 10px;
@@ -693,7 +855,7 @@
             line-height: 1.6;
         }
 
-        /* markdown inside assistant */
+        /* markdown */
         .mw.asst .bbl p {
             margin: 0 0 9px;
         }
@@ -731,14 +893,6 @@
             margin: 10px 0;
             max-width: 100%;
             -webkit-overflow-scrolling: touch;
-        }
-
-        .mw.asst .bbl pre code {
-            background: none;
-            padding: 0;
-            font-size: .82rem;
-            color: #d4c5a0;
-            border: none;
         }
 
         .mw.asst .bbl ul,
@@ -826,15 +980,6 @@
             background: rgba(255, 255, 255, .02);
         }
 
-        /* model indicator on assistant bubble */
-        .model-tag {
-            font-size: .65rem;
-            color: var(--mut);
-            margin-bottom: 4px;
-            padding-left: 2px;
-            font-style: italic;
-        }
-
         /* edit */
         .edit-ta {
             width: 100%;
@@ -867,7 +1012,7 @@
             cursor: pointer;
             background: var(--acc);
             color: #1a1a1a;
-            letter-spacing: .02em;
+            touch-action: manipulation;
         }
 
         .btn-save:hover {
@@ -884,13 +1029,13 @@
             cursor: pointer;
             background: var(--sur2);
             color: var(--mut);
+            touch-action: manipulation;
         }
 
         .btn-cancel:hover {
             color: var(--txt);
         }
 
-        /* action buttons */
         .macts {
             display: flex;
             gap: 5px;
@@ -920,12 +1065,12 @@
             border-radius: 5px;
             cursor: pointer;
             transition: all .15s;
+            touch-action: manipulation;
         }
 
         .abt:hover {
             color: var(--acc);
             border-color: var(--acc);
-            background: rgba(201, 168, 76, .07);
         }
 
         .abt.done {
@@ -933,7 +1078,6 @@
             border-color: var(--grn);
         }
 
-        /* typing dots */
         .typing {
             display: flex;
             gap: 5px;
@@ -971,7 +1115,7 @@
             }
         }
 
-        /* ── INPUT ── */
+        /* input */
         .inp-wrap {
             padding: 10px 12px 12px;
             border-top: 1px solid var(--bdr);
@@ -1019,8 +1163,8 @@
         }
 
         .snd {
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             background: var(--acc);
             border: none;
             border-radius: 50%;
@@ -1032,10 +1176,10 @@
             flex-shrink: 0;
             font-size: 1rem;
             font-weight: 800;
-            transition: background .2s, transform .1s;
+            transition: background .2s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            min-width: 38px;
+            min-width: 40px;
         }
 
         .snd:hover:not(:disabled) {
@@ -1060,15 +1204,13 @@
             margin-bottom: 4px;
         }
 
-        /* ── MEMORY PANEL ── */
+        /* memory panel */
         .ov {
             display: none;
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, .6);
             z-index: 399;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
         }
 
         .ov.show {
@@ -1116,6 +1258,7 @@
             font-size: 1rem;
             padding: 2px 7px;
             border-radius: 4px;
+            touch-action: manipulation;
         }
 
         .mem-x:hover {
@@ -1129,15 +1272,6 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-        }
-
-        .mem-list::-webkit-scrollbar {
-            width: 3px;
-        }
-
-        .mem-list::-webkit-scrollbar-thumb {
-            background: var(--bdr);
-            border-radius: 4px;
         }
 
         .mem-item {
@@ -1164,9 +1298,10 @@
             color: var(--mut);
             cursor: pointer;
             font-size: .75rem;
-            padding: 1px 5px;
+            padding: 2px 6px;
             flex-shrink: 0;
             border-radius: 4px;
+            touch-action: manipulation;
         }
 
         .mem-del:hover {
@@ -1197,16 +1332,35 @@
             font-size: .8rem;
             cursor: pointer;
             transition: background .2s;
+            touch-action: manipulation;
         }
 
         .mem-clr:hover {
             background: rgba(192, 57, 43, .2);
         }
 
+        /* loading spinner */
+        .spin {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(201, 168, 76, .3);
+            border-top-color: var(--acc);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         @media(max-width:640px) {
             .sb {
                 position: absolute;
-                height: 100vh;
             }
 
             .msgs-inner {
@@ -1217,16 +1371,16 @@
                 opacity: 1 !important;
             }
 
-            .hbg {
-                padding: 10px 12px;
-            }
-
             .mw.user {
                 max-width: 82%;
             }
 
             .mw.asst {
                 max-width: 95%;
+            }
+
+            .auth-box {
+                padding: 28px 20px;
             }
         }
     </style>
@@ -1235,11 +1389,48 @@
 <body>
     <div id="app" style="display:flex;width:100%;max-width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
+        <!-- ── AUTH SCREEN ── -->
+        <div class="auth-screen" v-if="!token">
+            <div class="auth-box">
+                <div class="auth-logo">Rex AI</div>
+                <div class="auth-sub">Your intelligent assistant</div>
+                <div class="auth-tabs">
+                    <button class="auth-tab" :class="{active:authTab==='login'}"
+                        @click="authTab='login';authErr='';authOk=''">Login</button>
+                    <button class="auth-tab" :class="{active:authTab==='signup'}"
+                        @click="authTab='signup';authErr='';authOk=''">Sign Up</button>
+                </div>
+                <div class="auth-err" v-if="authErr">{{ authErr }}</div>
+                <div class="auth-ok" v-if="authOk">{{ authOk }}</div>
+                <div class="auth-field">
+                    <label>USERNAME</label>
+                    <input v-model="authUser" type="text" placeholder="Enter username" @keydown.enter="doAuth"
+                        autocomplete="username" autocapitalize="none" />
+                </div>
+                <div class="auth-field">
+                    <label>PASSWORD</label>
+                    <input v-model="authPass" type="password" placeholder="Enter password" @keydown.enter="doAuth"
+                        autocomplete="current-password" />
+                </div>
+                <button class="auth-btn" @click="doAuth" :disabled="authLoading">
+                    <span v-if="authLoading"><span class="spin"></span>Please wait...</span>
+                    <span v-else>{{ authTab === 'login' ? 'Login' : 'Create Account' }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- sidebar overlay -->
         <div class="ov" :class="{show: sbOpen && isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
 
         <!-- SIDEBAR -->
         <div class="sb" :class="{hide:!sbOpen}" @click.stop>
-            <div class="sb-top"><span class="logo">Rex AI</span></div>
+            <div class="sb-top">
+                <span class="logo">Rex AI</span>
+                <div class="user-info">
+                    <span class="user-name">{{ username }}</span>
+                    <button class="logout-btn" @click="logout">Logout</button>
+                </div>
+            </div>
             <button class="new-btn" @click="newChat">+ New Chat</button>
             <div class="sec-label">History</div>
             <div class="chat-list">
@@ -1252,7 +1443,7 @@
         </div>
 
         <!-- MAIN -->
-        <div class="main">
+        <div class="main" v-if="token">
             <header>
                 <button class="hbg" @click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
                 <span class="h-title">{{ title }}</span>
@@ -1269,10 +1460,8 @@
                         <div class="mdrop" v-if="mdOpen">
                             <div v-for="m in MODELS" :key="m.id" class="mopt" :class="{sel:selModelId===m.id}"
                                 @click="pickModel(m.id)">
-                                <div class="mopt-name">
-                                    {{ m.name }}
-                                    <span v-if="m.id==='auto'" class="auto-badge">AUTO</span>
-                                </div>
+                                <div class="mopt-name">{{ m.name }}<span v-if="m.id==='auto'"
+                                        class="auto-badge">AUTO</span></div>
                                 <div class="mopt-desc">{{ m.desc }}</div>
                             </div>
                         </div>
@@ -1280,14 +1469,12 @@
                 </div>
             </header>
 
-            <!-- MESSAGES — no scroll-behavior:smooth so user can scroll freely -->
             <div class="msgs" ref="msgsEl">
                 <div class="msgs-inner">
-
                     <div v-if="msgs.length===0" class="empty">
                         <div class="empty-icon">✦</div>
                         <h2>How can I help you today?</h2>
-                        <p>Your conversations are saved automatically across sessions.</p>
+                        <p>Welcome back, <strong>{{ username }}</strong>! Your chats sync across all devices.</p>
                         <div class="chips">
                             <span class="chip" @click="qs('Explain quantum computing simply')">Explain quantum
                                 computing</span>
@@ -1298,7 +1485,6 @@
                     </div>
 
                     <template v-for="(msg, i) in msgs" :key="i">
-                        <!-- USER -->
                         <div v-if="msg.role==='user'" class="mw user">
                             <div class="mrow">
                                 <div class="av">You</div>
@@ -1317,13 +1503,10 @@
                             </div>
                             <div class="macts" v-if="editIdx!==i">
                                 <button class="abt" @click="startEdit(i,msg.content)">✏️ Edit</button>
-                                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">
-                                    {{ cpIdx===i ? '✓ Copied' : '📋 Copy' }}
-                                </button>
+                                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{
+                                    cpIdx===i?'✓ Copied':'📋 Copy' }}</button>
                             </div>
                         </div>
-
-                        <!-- ASSISTANT -->
                         <div v-else class="mw asst">
                             <div v-if="msg.usedModel" class="model-tag">via {{ msg.usedModel }}</div>
                             <div class="mrow">
@@ -1331,14 +1514,12 @@
                                 <div class="bbl" v-html="md(msg.content)"></div>
                             </div>
                             <div class="macts">
-                                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">
-                                    {{ cpIdx===i ? '✓ Copied' : '📋 Copy' }}
-                                </button>
+                                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{
+                                    cpIdx===i?'✓ Copied':'📋 Copy' }}</button>
                             </div>
                         </div>
                     </template>
 
-                    <!-- STREAMING -->
                     <div v-if="streaming" class="mw asst">
                         <div v-if="activeModel" class="model-tag">via {{ activeModel }}</div>
                         <div class="mrow">
@@ -1353,7 +1534,6 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -1376,10 +1556,8 @@
                 <button class="mem-x" @click="memOpen=false">✕</button>
             </div>
             <div class="mem-list">
-                <div v-if="mems.length===0" class="mem-empty">
-                    No memories yet.<br><br>Tell me about yourself — your name, job, what you're building — and I'll
-                    remember it across conversations.
-                </div>
+                <div v-if="mems.length===0" class="mem-empty">No memories yet.<br><br>Tell me about yourself and I'll
+                    remember it across all your devices.</div>
                 <div v-for="(m,i) in mems" :key="i" class="mem-item">
                     <span class="mem-txt">{{ m }}</span>
                     <button class="mem-del" @click="delMem(i)">✕</button>
@@ -1395,8 +1573,9 @@
     <script>
         const { createApp, ref, computed, nextTick, onMounted } = Vue;
 
-        const CHAT_KEY = 'rex-chats-v5';
-        const MEM_KEY = 'rex-mems-v1';
+        const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : 'https://rex-ai-production.up.railway.app';
 
         const MODELS = [
             { id: 'auto', name: 'Auto', short: 'Auto ✦', desc: 'Picks the best model for each question' },
@@ -1408,74 +1587,44 @@
             { id: 'meta-llama/llama-guard-4-12b', name: 'Llama Guard 4', short: 'Guard 4', desc: 'Content moderation' },
         ];
 
-        // Global copy handler for code blocks — copies clean runnable code
-        window.copyCode = function (btn) {
-            // Get raw code directly from the <code> element inside the same .code-wrap
-            const wrap = btn.closest('.code-wrap');
-            const codeEl = wrap ? wrap.querySelector('pre code') : null;
-            const code = codeEl ? codeEl.innerText || codeEl.textContent : '';
-            navigator.clipboard.writeText(code).then(() => {
-                btn.textContent = '✓ Copied';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = '📋 Copy';
-                    btn.classList.remove('copied');
-                }, 2000);
-            }).catch(() => {
-                // Fallback for older mobile browsers
-                const ta = document.createElement('textarea');
-                ta.value = code;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                btn.textContent = '✓ Copied';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = '📋 Copy';
-                    btn.classList.remove('copied');
-                }, 2000);
-            });
-        };
-
-        // Auto-routing: pick the best model based on question content
         function autoSelectModel(text) {
             const t = text.toLowerCase();
-            // Code / logic / debug
-            if (/\b(code|debug|error|function|class|bug|fix|script|program|algorithm|syntax|python|javascript|html|css|sql|bash|compile|stack trace|exception|loop|array|object|api|json|git|docker|linux|terminal|command)\b/.test(t))
+            if (/\b(code|debug|error|function|class|bug|fix|script|program|algorithm|syntax|python|javascript|html|css|sql|bash|compile|loop|array|api|json|git|docker)\b/.test(t))
                 return { id: 'moonshotai/kimi-k2-instruct-0905', label: 'Kimi K2 (coding)' };
-            // Reasoning / math / analysis
-            if (/\b(math|calculate|equation|proof|logic|reason|analyze|compare|explain why|how does|difference between|pros and cons|evaluate|assess|strategy|decision|should i)\b/.test(t))
+            if (/\b(math|calculate|equation|proof|logic|reason|analyze|compare|explain why|difference between|pros and cons|evaluate|strategy)\b/.test(t))
                 return { id: 'openai/gpt-oss-120b', label: 'GPT-OSS (reasoning)' };
-            // Long / document / vision
-            if (/\b(summarize|document|article|essay|long|translate|read|paragraph|chapter|book|report|pdf)\b/.test(t))
+            if (/\b(summarize|document|article|essay|long|translate|read|paragraph|chapter|book|report)\b/.test(t))
                 return { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 (long context)' };
-            // Quick / simple / factual
-            if (text.length < 60 && /\b(what is|who is|when|where|define|meaning|quick|simple|yes or no)\b/.test(t))
+            if (text.length < 60 && /\b(what is|who is|when|where|define|meaning|quick|simple)\b/.test(t))
                 return { id: 'llama-3.1-8b-instant', label: 'Llama 8B (quick)' };
-            // Default: general
             return { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 (general)' };
         }
 
-        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-        function lsGet(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
-        function lsSet(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+        window.copyCode = function (btn) {
+            const wrap = btn.closest('.code-wrap');
+            const codeEl = wrap ? wrap.querySelector('pre code') : null;
+            const code = codeEl ? (codeEl.innerText || codeEl.textContent) : '';
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '✓ Copied'; btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.focus(); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                btn.textContent = '✓ Copied'; btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+            });
+        };
 
         function md(text) {
             if (!text) return '';
-            let t = text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            let t = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             let codeIdx = 0;
             t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-                const id = 'cb-' + (codeIdx++);
                 const escaped = code.trim();
                 const langLabel = lang ? '<span class="code-lang">' + lang + '</span>' : '';
-                return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)" data-code="' + escaped.replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '">📋 Copy</button></div><pre><code>' + escaped + '</code></pre></div>';
+                return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>' + escaped + '</code></pre></div>';
             });
             t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
             t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -1486,39 +1635,30 @@
             t = t.replace(/^# (.+)$/gm, '<h1>$1</h1>');
             t = t.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
             t = t.replace(/^---+$/gm, '<hr>');
-            t = t.replace(/^\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/gm, (_, hdr, rows) => {
-                const th = hdr.split('|').filter(s => s.trim()).map(s => '<th>' + s.trim() + '</th>').join('');
-                const tr = rows.trim().split('\n').map(row => {
-                    const td = row.split('|').filter(s => s.trim()).map(s => '<td>' + s.trim() + '</td>').join('');
-                    return '<tr>' + td + '</tr>';
-                }).join('');
-                return '<table><thead><tr>' + th + '</tr></thead><tbody>' + tr + '</tbody></table>';
-            });
-            t = t.replace(/((?:^\d+\. .+\n?)+)/gm, match => {
-                const items = match.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /, '') + '</li>').join('');
-                return '<ol>' + items + '</ol>';
-            });
-            t = t.replace(/((?:^[*\-] .+\n?)+)/gm, match => {
-                const items = match.trim().split('\n').map(l => '<li>' + l.replace(/^[*\-] /, '') + '</li>').join('');
-                return '<ul>' + items + '</ul>';
-            });
+            t = t.replace(/((?:^\d+\. .+\n?)+)/gm, match => '<ol>' + match.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /, '') + '</li>').join('') + '</ol>');
+            t = t.replace(/((?:^[*\-] .+\n?)+)/gm, match => '<ul>' + match.trim().split('\n').map(l => '<li>' + l.replace(/^[*\-] /, '') + '</li>').join('') + '</ul>');
             t = t.split(/\n\n+/).map(para => {
-                para = para.trim();
-                if (!para) return '';
-                if (/^<(h[123]|ul|ol|pre|blockquote|hr|table)/.test(para)) return para;
+                para = para.trim(); if (!para) return '';
+                if (/^<(h[123]|ul|ol|pre|blockquote|hr|table|div)/.test(para)) return para;
                 return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
             }).join('');
             return t;
         }
 
-        // Backend URL — replace with your Render URL after deploying
-        const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:8000'
-            : 'https://rex-ai-production.up.railway.app';
-
         createApp({
             setup() {
-                const chats = ref(lsGet(CHAT_KEY, []));
+                // Auth
+                const token = ref(localStorage.getItem('rex-token') || '');
+                const username = ref(localStorage.getItem('rex-username') || '');
+                const authTab = ref('login');
+                const authUser = ref('');
+                const authPass = ref('');
+                const authErr = ref('');
+                const authOk = ref('');
+                const authLoading = ref(false);
+
+                // Chat
+                const chats = ref([]);
                 const cid = ref(null);
                 const msgs = ref([]);
                 const inp = ref('');
@@ -1535,88 +1675,144 @@
                 const selModelId = ref('auto');
                 const mdOpen = ref(false);
                 const memOpen = ref(false);
-                const mems = ref(lsGet(MEM_KEY, []));
-                const activeModel = ref('');   // shown during streaming
-
-                // Track if user has scrolled up — if so, don't auto-scroll
+                const mems = ref([]);
+                const activeModel = ref('');
                 let userScrolled = false;
 
                 const title = computed(() => { const c = chats.value.find(c => c.id === cid.value); return c ? c.title : 'Rex AI'; });
                 const selModel = computed(() => MODELS.find(m => m.id === selModelId.value) || MODELS[0]);
 
-                onMounted(() => {
+                function authHeaders() {
+                    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.value };
+                }
+
+                async function doAuth() {
+                    authErr.value = ''; authOk.value = '';
+                    const u = authUser.value.trim(); const p = authPass.value;
+                    if (!u || !p) { authErr.value = 'Please enter username and password'; return; }
+                    authLoading.value = true;
+                    try {
+                        const endpoint = authTab.value === 'login' ? '/auth/login' : '/auth/signup';
+                        const res = await fetch(BACKEND + endpoint, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: u, password: p })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) { authErr.value = data.detail || 'Something went wrong'; return; }
+                        token.value = data.token; username.value = data.username;
+                        localStorage.setItem('rex-token', data.token);
+                        localStorage.setItem('rex-username', data.username);
+                        authPass.value = '';
+                        await loadChats();
+                        await loadMems();
+                    } catch (e) {
+                        authErr.value = 'Cannot connect to server. Is the backend running?';
+                    } finally {
+                        authLoading.value = false;
+                    }
+                }
+
+                function logout() {
+                    token.value = ''; username.value = '';
+                    localStorage.removeItem('rex-token'); localStorage.removeItem('rex-username');
+                    chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
+                }
+
+                async function api(path, method = 'GET', body = null) {
+                    const opts = { method, headers: authHeaders() };
+                    if (body) opts.body = JSON.stringify(body);
+                    const res = await fetch(BACKEND + path, opts);
+                    if (res.status === 401) { logout(); return null; }
+                    return res.json();
+                }
+
+                async function loadChats() {
+                    const data = await api('/chats');
+                    if (data) { chats.value = data; if (data.length > 0) loadChat(data[0].id, false); }
+                }
+                async function loadMems() {
+                    const data = await api('/memories');
+                    if (data) mems.value = data;
+                }
+
+                onMounted(async () => {
                     window.addEventListener('resize', () => { isMobile.value = window.innerWidth <= 640; });
                     document.addEventListener('click', e => { if (!e.target.closest('.msel')) mdOpen.value = false; });
-
-                    // Detect user scrolling up
                     nextTick(() => {
                         if (msgsEl.value) {
                             msgsEl.value.addEventListener('scroll', () => {
                                 const el = msgsEl.value;
-                                const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-                                userScrolled = !atBottom;
+                                userScrolled = (el.scrollHeight - el.scrollTop - el.clientHeight) > 60;
                             });
                         }
                     });
-
-                    if (chats.value.length > 0) loadChat(chats.value[0].id);
+                    if (token.value) { await loadChats(); await loadMems(); }
                 });
 
                 function scrollBottom(force = false) {
                     if (!force && userScrolled) return;
-                    nextTick(() => {
-                        if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
-                    });
+                    nextTick(() => { if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight; });
                 }
                 function resize() {
                     const el = taEl.value;
-                    if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 130) + 'px'; }
+                    if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
                 }
-                function onKey(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-                }
-                function saveChats() { lsSet(CHAT_KEY, chats.value); }
-                function saveMems() { lsSet(MEM_KEY, mems.value); }
+                function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
 
-                function saveCurrent() {
-                    if (!cid.value) return;
-                    const i = chats.value.findIndex(c => c.id === cid.value);
-                    if (i !== -1) { chats.value[i].messages = [...msgs.value]; chats.value[i].updatedAt = Date.now(); saveChats(); }
-                }
-                function ensureChat() {
-                    if (cid.value) return;
-                    const id = uid();
-                    chats.value.unshift({ id, title: 'New Chat', messages: [], createdAt: Date.now(), updatedAt: Date.now() });
-                    saveChats(); cid.value = id;
-                }
-                function newChat() {
-                    saveCurrent(); cid.value = null; msgs.value = []; editIdx.value = null; activeModel.value = '';
-                    if (isMobile.value) sbOpen.value = false;
-                    nextTick(() => taEl.value && taEl.value.focus());
-                }
-                function loadChat(id) {
-                    saveCurrent();
+                function loadChat(id, closeSb = true) {
                     const chat = chats.value.find(c => c.id === id);
                     if (!chat) return;
                     cid.value = id; msgs.value = [...(chat.messages || [])]; editIdx.value = null;
+                    if (closeSb && isMobile.value) sbOpen.value = false;
+                    userScrolled = false; scrollBottom(true);
+                }
+
+                function newChat() {
+                    cid.value = null; msgs.value = []; editIdx.value = null;
                     if (isMobile.value) sbOpen.value = false;
-                    userScrolled = false;
-                    scrollBottom(true);
+                    nextTick(() => taEl.value && taEl.value.focus());
                 }
-                function delChat(id) {
-                    chats.value = chats.value.filter(c => c.id !== id); saveChats();
-                    if (cid.value === id) { msgs.value = []; cid.value = null; if (chats.value.length > 0) loadChat(chats.value[0].id); }
-                }
-                function setTitle(text) {
-                    if (!cid.value) return;
-                    const i = chats.value.findIndex(c => c.id === cid.value);
-                    if (i !== -1 && chats.value[i].title === 'New Chat') {
-                        chats.value[i].title = text.slice(0, 36) + (text.length > 36 ? '…' : ''); saveChats();
+
+                async function saveCurrentChat(finalMsgs) {
+                    if (!cid.value) {
+                        // Create new chat
+                        const title = finalMsgs[0]?.content?.slice(0, 36) || (finalMsgs[0]?.content?.length > 36 ? '…' : '') || 'New Chat';
+                        const data = await api('/chats', 'POST', { title, messages: finalMsgs });
+                        if (data) {
+                            cid.value = data.id;
+                            chats.value.unshift({ id: data.id, title, messages: finalMsgs });
+                        }
+                    } else {
+                        const idx = chats.value.findIndex(c => c.id === cid.value);
+                        if (idx !== -1) {
+                            chats.value[idx].messages = finalMsgs;
+                            const t = chats.value[idx].title;
+                            await api('/chats/' + cid.value, 'PUT', { title: t, messages: finalMsgs });
+                        }
                     }
                 }
+
+                async function delChat(id) {
+                    await api('/chats/' + id, 'DELETE');
+                    chats.value = chats.value.filter(c => c.id !== id);
+                    if (cid.value === id) { msgs.value = []; cid.value = null; if (chats.value.length > 0) loadChat(chats.value[0].id); }
+                }
+
                 function pickModel(id) { selModelId.value = id; mdOpen.value = false; }
-                function delMem(i) { mems.value.splice(i, 1); saveMems(); }
-                function clearMems() { mems.value = []; saveMems(); }
+
+                async function addMem(memory) {
+                    await api('/memories', 'POST', { memory });
+                    if (!mems.value.includes(memory)) mems.value.push(memory);
+                }
+                async function delMem(i) {
+                    const m = mems.value[i];
+                    await api('/memories/' + encodeURIComponent(m), 'DELETE');
+                    mems.value.splice(i, 1);
+                }
+                async function clearMems() {
+                    await api('/memories', 'DELETE');
+                    mems.value = [];
+                }
 
                 function extractMems(text) {
                     const rules = [
@@ -1628,140 +1824,97 @@
                         { re: /i(?:'m| am) (?:building|making|creating|working on)\s+([^.,\n]{5,50})/i, fn: m => 'Building: ' + m },
                         { re: /i (?:love|really like|enjoy|prefer)\s+([^.,\n]{3,35})/i, fn: m => 'Likes: ' + m },
                         { re: /i(?:'m| am) learning\s+([^.,\n]{3,35})/i, fn: m => 'Learning: ' + m },
-                        { re: /my (?:favorite|favourite) (?:language|framework|tool) is\s+([^.,\n]{2,20})/i, fn: m => 'Fav tool: ' + m },
                     ];
                     for (const { re, fn } of rules) {
                         const match = text.match(re);
-                        if (match && match[1]) {
-                            const mem = fn(match[1].trim());
-                            if (!mems.value.includes(mem)) { mems.value.push(mem); saveMems(); }
-                        }
+                        if (match && match[1]) { const mem = fn(match[1].trim()); if (!mems.value.includes(mem)) addMem(mem); }
                     }
                 }
 
                 async function send() {
-                    const text = inp.value.trim();
-                    if (!text || streaming.value) return;
-                    ensureChat();
+                    const text = inp.value.trim(); if (!text || streaming.value) return;
                     msgs.value.push({ role: 'user', content: text });
-                    if (msgs.value.filter(m => m.role === 'user').length === 1) setTitle(text);
                     inp.value = '';
                     nextTick(() => { if (taEl.value) taEl.value.style.height = 'auto'; });
-                    userScrolled = false;
-                    scrollBottom(true);
+                    userScrolled = false; scrollBottom(true);
                     extractMems(text);
                     await callAPI(msgs.value, text);
                 }
-
                 function qs(text) { inp.value = text; send(); }
 
                 async function callAPI(msgList, userText) {
                     streaming.value = true; stxt.value = '';
-
-                    // Resolve which model to actually use
                     let resolvedId, resolvedLabel;
                     if (selModelId.value === 'auto') {
                         const picked = autoSelectModel(userText || msgList[msgList.length - 1]?.content || '');
-                        resolvedId = picked.id;
-                        resolvedLabel = picked.label;
+                        resolvedId = picked.id; resolvedLabel = picked.label;
                     } else {
                         resolvedId = selModelId.value;
                         resolvedLabel = MODELS.find(m => m.id === resolvedId)?.name || resolvedId;
                     }
                     activeModel.value = resolvedLabel;
-
                     const trimmedMsgs = msgList.slice(-10);
                     const trimmedMems = mems.value.slice(-5);
-                    const systemMsg = [{
-                        role: 'system',
-                        content: 'You are Rex AI, a helpful assistant.' +
-                            (trimmedMems.length > 0 ? '\nUser facts:\n' + trimmedMems.map(m => '- ' + m).join('\n') : '')
-                    }];
-
+                    const systemMsg = [{ role: 'system', content: 'You are Rex AI, a helpful assistant.' + (trimmedMems.length > 0 ? '\nUser facts:\n' + trimmedMems.map(m => '- ' + m).join('\n') : '') }];
                     try {
                         const res = await fetch(BACKEND + '/chat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: resolvedId,
-                                messages: [...systemMsg, ...trimmedMsgs.map(m => ({ role: m.role, content: m.content }))]
-                            })
+                            method: 'POST', headers: authHeaders(),
+                            body: JSON.stringify({ model: resolvedId, messages: [...systemMsg, ...trimmedMsgs.map(m => ({ role: m.role, content: m.content }))] })
                         });
-                        const reader = res.body.getReader();
-                        const dec = new TextDecoder();
+                        const reader = res.body.getReader(); const dec = new TextDecoder();
                         let charBuffer = '', streamDone = false, hasError = false;
-
                         async function typewriter() {
                             while (!streamDone || charBuffer.length > 0) {
                                 if (charBuffer.length > 0) {
                                     const chunk = Math.floor(Math.random() * 3) + 1;
-                                    stxt.value += charBuffer.slice(0, chunk);
-                                    charBuffer = charBuffer.slice(chunk);
-                                    scrollBottom();
-                                    await new Promise(r => setTimeout(r, Math.random() * 14 + 8));
-                                } else {
-                                    await new Promise(r => setTimeout(r, 10));
-                                }
+                                    stxt.value += charBuffer.slice(0, chunk); charBuffer = charBuffer.slice(chunk);
+                                    scrollBottom(); await new Promise(r => setTimeout(r, Math.random() * 14 + 8));
+                                } else { await new Promise(r => setTimeout(r, 10)); }
                             }
                         }
                         async function readStream() {
                             while (true) {
-                                const { value, done } = await reader.read();
-                                if (done) break;
+                                const { value, done } = await reader.read(); if (done) break;
                                 for (const line of dec.decode(value).split('\n')) {
                                     if (!line.startsWith('data: ')) continue;
-                                    const d = line.slice(6);
-                                    if (d === '[DONE]') break;
-                                    try {
-                                        const p = JSON.parse(d);
-                                        if (p.error) { charBuffer += '\u26a0\ufe0f ' + p.error; hasError = true; break; }
-                                        charBuffer += p.text;
-                                    } catch (e) { }
+                                    const d = line.slice(6); if (d === '[DONE]') break;
+                                    try { const p = JSON.parse(d); if (p.error) { charBuffer += '\u26a0\ufe0f ' + p.error; hasError = true; break; } charBuffer += p.text; } catch (e) { }
                                 }
                                 if (hasError) break;
                             }
                             streamDone = true;
                         }
-
                         await Promise.all([readStream(), typewriter()]);
                         msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: resolvedLabel });
-                        saveCurrent();
+                        await saveCurrentChat(msgs.value);
                     } catch (err) {
-                        msgs.value.push({ role: 'assistant', content: '⚠️ Cannot reach backend.\n\nRun:\nuvicorn backend:app --reload --port 8000', usedModel: '' });
-                        saveCurrent();
+                        msgs.value.push({ role: 'assistant', content: '⚠️ Cannot reach backend.', usedModel: '' });
                     } finally {
                         streaming.value = false; stxt.value = ''; activeModel.value = ''; scrollBottom();
                     }
                 }
 
-                function startEdit(i, content) {
-                    editIdx.value = i; editTxt.value = content;
-                    nextTick(() => { if (editEl.value) editEl.value.focus(); });
-                }
+                function startEdit(i, content) { editIdx.value = i; editTxt.value = content; nextTick(() => { if (editEl.value) editEl.value.focus(); }); }
                 function cancelEdit() { editIdx.value = null; editTxt.value = ''; }
                 async function saveEdit(i) {
                     const text = editTxt.value.trim(); if (!text) return;
                     msgs.value = msgs.value.slice(0, i);
                     msgs.value.push({ role: 'user', content: text });
                     editIdx.value = null; editTxt.value = '';
-                    saveCurrent(); userScrolled = false; scrollBottom(true);
+                    userScrolled = false; scrollBottom(true);
                     await callAPI(msgs.value, text);
                 }
                 function copyMsg(content, i) {
-                    navigator.clipboard.writeText(content).then(() => {
-                        cpIdx.value = i; setTimeout(() => { cpIdx.value = null; }, 2000);
-                    });
+                    navigator.clipboard.writeText(content).then(() => { cpIdx.value = i; setTimeout(() => { cpIdx.value = null; }, 2000); });
                 }
 
                 return {
-                    MODELS, chats, cid, msgs, inp, streaming, stxt, activeModel,
+                    MODELS, token, username, authTab, authUser, authPass, authErr, authOk, authLoading,
+                    chats, cid, msgs, inp, streaming, stxt, activeModel,
                     msgsEl, taEl, editEl, sbOpen, isMobile,
-                    editIdx, editTxt, cpIdx,
-                    selModelId, selModel, mdOpen, memOpen, mems, title,
-                    md,
-                    newChat, loadChat, delChat, send, qs, onKey, resize,
-                    pickModel, delMem, clearMems,
-                    startEdit, cancelEdit, saveEdit, copyMsg,
+                    editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen, memOpen, mems, title, md,
+                    doAuth, logout, newChat, loadChat, delChat, send, qs, onKey, resize,
+                    pickModel, delMem, clearMems, startEdit, cancelEdit, saveEdit, copyMsg,
                 };
             }
         }).mount('#app');
