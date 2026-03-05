@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Rex AI</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap"
         rel="stylesheet">
@@ -1011,6 +1012,32 @@
             margin-bottom: 4px;
         }
 
+        .abt-pdf {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: 1px solid var(--bdr);
+            color: var(--mut);
+            font-family: 'Inter', sans-serif;
+            font-size: .7rem;
+            padding: 3px 9px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all .15s;
+            touch-action: manipulation;
+        }
+
+        .abt-pdf:hover {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .abt-pdf.done {
+            color: var(--grn);
+            border-color: var(--grn);
+        }
+
         /* memory panel */
         .ov {
             display: none;
@@ -1146,6 +1173,74 @@
             background: rgba(192, 57, 43, .2);
         }
 
+        /* scroll to bottom btn */
+        .go-bottom {
+            position: fixed;
+            bottom: 110px;
+            right: 18px;
+            width: 38px;
+            height: 38px;
+            background: var(--sur);
+            border: 1px solid var(--bdr);
+            border-radius: 50%;
+            color: var(--mut);
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .4);
+            transition: all .2s;
+            z-index: 100;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .go-bottom:hover {
+            background: var(--acc);
+            color: #1a1a1a;
+            border-color: var(--acc);
+        }
+
+        .go-bottom.hide {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+        }
+
+        .go-bottom {
+            position: fixed;
+            bottom: 110px;
+            right: 18px;
+            width: 40px;
+            height: 40px;
+            background: var(--acc);
+            border: none;
+            border-radius: 50%;
+            color: #1a1a1a;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .5);
+            transition: all .25s;
+            z-index: 300;
+            touch-action: manipulation;
+        }
+
+        .go-bottom:hover {
+            background: var(--acc2);
+            transform: translateY(-2px);
+        }
+
+        .go-bottom.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+        }
+
         @media(max-width:640px) {
             .sb {
                 position: absolute;
@@ -1261,6 +1356,8 @@
                             <div class="macts">
                                 <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{
                                     cpIdx===i?'✓ Copied':'📋 Copy' }}</button>
+                                <button class="abt-pdf" :class="{done:pdfIdx===i}" @click="exportPDF(msg.content,i)">{{
+                                    pdfIdx===i?'✓ Saved':'📄 PDF' }}</button>
                             </div>
                         </div>
                     </template>
@@ -1293,6 +1390,11 @@
                 </div>
             </div>
         </div>
+
+        <button class="go-bottom" :class="{hide:!showScrollBtn}" @click="forceScrollBottom"
+            title="Go to bottom">↓</button>
+
+        <button class="go-bottom" :class="{hidden:!showBottom}" @click="goBottom" title="Scroll to bottom">↓</button>
 
         <div class="ov" :class="{show:memOpen}" @click="memOpen=false"></div>
         <div class="mem-panel" :class="{hide:!memOpen}">
@@ -1403,6 +1505,9 @@
                 const selModelId = ref('auto'), mdOpen = ref(false);
                 const memOpen = ref(false), mems = ref(loadMems());
                 const activeModel = ref('');
+                const pdfIdx = ref(null);
+                const showBottom = ref(false);
+                const showScrollBtn = ref(false);
                 let userScrolled = false;
 
                 const title = computed(() => { const c = chats.value.find(c => c.id === cid.value); return c ? c.title : 'Rex AI'; });
@@ -1415,7 +1520,9 @@
                         if (msgsEl.value) {
                             msgsEl.value.addEventListener('scroll', () => {
                                 const el = msgsEl.value;
-                                userScrolled = (el.scrollHeight - el.scrollTop - el.clientHeight) > 60;
+                                const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+                                userScrolled = dist > 60;
+                                showScrollBtn.value = dist > 200;
                             });
                         }
                     });
@@ -1538,6 +1645,77 @@
                     }
                 }
 
+                function forceScrollBottom() {
+                    userScrolled = false;
+                    showScrollBtn.value = false;
+                    scrollBottom(true);
+                }
+
+                function goBottom() {
+                    userScrolled = false;
+                    showBottom.value = false;
+                    scrollBottom(true);
+                }
+
+                function exportPDF(content, i) {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    const pageW = doc.internal.pageSize.getWidth();
+                    const pageH = doc.internal.pageSize.getHeight();
+                    const margin = 20;
+                    const maxW = pageW - margin * 2;
+
+                    // Header
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(18);
+                    doc.setTextColor(201, 168, 76);
+                    doc.text('Rex AI', margin, 20);
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(120, 112, 96);
+                    doc.text(new Date().toLocaleString(), margin, 28);
+                    doc.setDrawColor(58, 58, 58);
+                    doc.line(margin, 32, pageW - margin, 32);
+
+                    // Strip markdown to plain text
+                    const plain = content
+                        .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, '').trim())
+                        .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
+                        .replace(/\*\*([^*]+)\*\*/g, '$1')
+                        .replace(/\*([^*]+)\*/g, '$1')
+                        .replace(/#{1,3} /g, '')
+                        .replace(/^[*\-] /gm, '• ')
+                        .trim();
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(11);
+                    doc.setTextColor(40, 40, 40);
+
+                    const lines = doc.splitTextToSize(plain, maxW);
+                    let y = 42;
+                    const lineH = 6;
+
+                    for (const line of lines) {
+                        if (y + lineH > pageH - margin) {
+                            doc.addPage();
+                            y = margin;
+                        }
+                        doc.text(line, margin, y);
+                        y += lineH;
+                    }
+
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 140, 120);
+                    doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh', margin, pageH - 14);
+                    doc.setTextColor(201, 168, 76);
+                    doc.textWithLink('instagram.com/raheeldurwesh', margin, pageH - 8, { url: 'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==' });
+                    doc.save('rex-ai-response.pdf');
+
+                    pdfIdx.value = i;
+                    setTimeout(() => { pdfIdx.value = null; }, 2000);
+                }
+
                 function startEdit(i, content) { editIdx.value = i; editTxt.value = content; nextTick(() => { if (editEl.value) editEl.value.focus(); }); }
                 function cancelEdit() { editIdx.value = null; editTxt.value = ''; }
                 async function saveEdit(i) {
@@ -1556,7 +1734,7 @@
                     MODELS, chats, cid, msgs, inp, streaming, stxt, activeModel,
                     msgsEl, taEl, editEl, sbOpen, isMobile,
                     editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen, memOpen, mems, title, md,
-                    newChat, loadChat, delChat, send, qs, onKey, resize,
+                    newChat, loadChat, delChat, send, qs, onKey, resize, exportPDF, pdfIdx, showBottom, goBottom, showScrollBtn, forceScrollBottom,
                     pickModel, delMem, clearMems, startEdit, cancelEdit, saveEdit, copyMsg,
                 };
             }
