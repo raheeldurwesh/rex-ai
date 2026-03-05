@@ -1,8 +1,7 @@
-fastapi
-uvicorn[standard]
-groq
-python-dotenv
-pymongo[srv]
-PyJWT
-bcrypt
-dnspython
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+groq==0.5.0
+python-dotenv==1.0.1
+pymongo[srv]==4.6.1
+PyJWT==2.8.0
+dnspython==2.6.1
