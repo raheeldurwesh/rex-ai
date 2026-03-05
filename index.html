@@ -45,153 +45,7 @@
             display: flex;
         }
 
-        /* ── AUTH SCREEN ── */
-        .auth-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .auth-box {
-            background: var(--sur);
-            border: 1px solid var(--bdr);
-            border-radius: 16px;
-            padding: 36px 32px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .auth-logo {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: var(--acc);
-            text-align: center;
-            margin-bottom: 6px;
-        }
-
-        .auth-sub {
-            text-align: center;
-            color: var(--mut);
-            font-size: .85rem;
-            margin-bottom: 28px;
-        }
-
-        .auth-tabs {
-            display: flex;
-            gap: 0;
-            margin-bottom: 24px;
-            background: var(--sur2);
-            border-radius: 8px;
-            padding: 3px;
-        }
-
-        .auth-tab {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            font-size: .85rem;
-            font-weight: 500;
-            color: var(--mut);
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all .2s;
-            border: none;
-            background: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .auth-tab.active {
-            background: var(--acc);
-            color: #1a1a1a;
-            font-weight: 600;
-        }
-
-        .auth-field {
-            margin-bottom: 14px;
-        }
-
-        .auth-field label {
-            display: block;
-            font-size: .78rem;
-            color: var(--mut);
-            margin-bottom: 6px;
-            font-weight: 500;
-            letter-spacing: .03em;
-        }
-
-        .auth-field input {
-            width: 100%;
-            background: var(--sur2);
-            border: 1px solid var(--bdr);
-            border-radius: 8px;
-            color: var(--txt);
-            font-family: 'Inter', sans-serif;
-            font-size: .95rem;
-            padding: 11px 14px;
-            outline: none;
-            transition: border-color .2s;
-        }
-
-        .auth-field input:focus {
-            border-color: var(--acc);
-        }
-
-        .auth-btn {
-            width: 100%;
-            padding: 13px;
-            background: var(--acc);
-            border: none;
-            border-radius: 8px;
-            color: #1a1a1a;
-            font-family: 'Inter', sans-serif;
-            font-size: .95rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 6px;
-            transition: background .2s;
-            letter-spacing: .02em;
-            touch-action: manipulation;
-        }
-
-        .auth-btn:hover {
-            background: var(--acc2);
-        }
-
-        .auth-btn:disabled {
-            background: var(--sur2);
-            color: var(--mut);
-            cursor: not-allowed;
-        }
-
-        .auth-err {
-            background: rgba(192, 57, 43, .12);
-            border: 1px solid rgba(192, 57, 43, .3);
-            color: #e74c3c;
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: .82rem;
-            margin-bottom: 14px;
-            text-align: center;
-        }
-
-        .auth-ok {
-            background: rgba(39, 174, 96, .12);
-            border: 1px solid rgba(39, 174, 96, .3);
-            color: var(--grn);
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: .82rem;
-            margin-bottom: 14px;
-            text-align: center;
-        }
-
-        /* ── SIDEBAR ── */
+        /* SIDEBAR */
         .sb {
             width: 260px;
             background: var(--sur);
@@ -211,49 +65,16 @@
         }
 
         .sb-top {
-            padding: 16px;
+            padding: 18px 16px 14px;
             border-bottom: 1px solid var(--bdr);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
 
         .logo {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--acc);
-        }
-
-        .user-info {
-            font-size: .72rem;
-            color: var(--mut);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .user-name {
-            color: var(--acc);
-            font-weight: 600;
-        }
-
-        .logout-btn {
-            background: none;
-            border: 1px solid var(--bdr);
-            color: var(--mut);
-            font-size: .68rem;
-            padding: 3px 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: all .2s;
-            touch-action: manipulation;
-        }
-
-        .logout-btn:hover {
-            color: var(--red);
-            border-color: var(--red);
+            letter-spacing: .02em;
         }
 
         .new-btn {
@@ -309,7 +130,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 12px 10px;
+            padding: 13px 10px;
             border-radius: 7px;
             cursor: pointer;
             transition: background .15s;
@@ -346,7 +167,7 @@
             color: var(--mut);
             cursor: pointer;
             font-size: .85rem;
-            padding: 6px 10px;
+            padding: 8px 10px;
             border-radius: 4px;
             transition: color .15s;
             flex-shrink: 0;
@@ -366,7 +187,7 @@
             line-height: 1.8;
         }
 
-        /* ── MAIN ── */
+        /* MAIN */
         .main {
             flex: 1;
             display: flex;
@@ -582,7 +403,7 @@
             }
         }
 
-        /* ── MESSAGES ── */
+        /* MESSAGES */
         .msgs {
             flex: 1;
             overflow-y: auto;
@@ -920,7 +741,6 @@
             font-family: 'Playfair Display', serif;
             font-weight: 700;
             margin: 12px 0 5px;
-            line-height: 1.3;
             color: var(--acc2);
         }
 
@@ -983,7 +803,6 @@
         /* edit */
         .edit-ta {
             width: 100%;
-            min-width: 260px;
             background: var(--sur2);
             border: 1.5px solid var(--acc);
             border-radius: 10px;
@@ -1015,25 +834,16 @@
             touch-action: manipulation;
         }
 
-        .btn-save:hover {
-            background: var(--acc2);
-        }
-
         .btn-cancel {
             padding: 6px 16px;
             border-radius: 7px;
             border: 1px solid var(--bdr);
             font-family: 'Inter', sans-serif;
             font-size: .8rem;
-            font-weight: 500;
             cursor: pointer;
             background: var(--sur2);
             color: var(--mut);
             touch-action: manipulation;
-        }
-
-        .btn-cancel:hover {
-            color: var(--txt);
         }
 
         .macts {
@@ -1044,10 +854,7 @@
             transition: opacity .18s;
         }
 
-        .mw:hover .macts {
-            opacity: 1;
-        }
-
+        .mw:hover .macts,
         .mw:focus-within .macts {
             opacity: 1;
         }
@@ -1339,25 +1146,6 @@
             background: rgba(192, 57, 43, .2);
         }
 
-        /* loading spinner */
-        .spin {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(201, 168, 76, .3);
-            border-top-color: var(--acc);
-            border-radius: 50%;
-            animation: spin .7s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
         @media(max-width:640px) {
             .sb {
                 position: absolute;
@@ -1378,10 +1166,6 @@
             .mw.asst {
                 max-width: 95%;
             }
-
-            .auth-box {
-                padding: 28px 20px;
-            }
         }
     </style>
 </head>
@@ -1389,48 +1173,10 @@
 <body>
     <div id="app" style="display:flex;width:100%;max-width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
-        <!-- ── AUTH SCREEN ── -->
-        <div class="auth-screen" v-if="!token">
-            <div class="auth-box">
-                <div class="auth-logo">Rex AI</div>
-                <div class="auth-sub">Your intelligent assistant</div>
-                <div class="auth-tabs">
-                    <button class="auth-tab" :class="{active:authTab==='login'}"
-                        @click="authTab='login';authErr='';authOk=''">Login</button>
-                    <button class="auth-tab" :class="{active:authTab==='signup'}"
-                        @click="authTab='signup';authErr='';authOk=''">Sign Up</button>
-                </div>
-                <div class="auth-err" v-if="authErr">{{ authErr }}</div>
-                <div class="auth-ok" v-if="authOk">{{ authOk }}</div>
-                <div class="auth-field">
-                    <label>USERNAME</label>
-                    <input v-model="authUser" type="text" placeholder="Enter username" @keydown.enter="doAuth"
-                        autocomplete="username" autocapitalize="none" />
-                </div>
-                <div class="auth-field">
-                    <label>PASSWORD</label>
-                    <input v-model="authPass" type="password" placeholder="Enter password" @keydown.enter="doAuth"
-                        autocomplete="current-password" />
-                </div>
-                <button class="auth-btn" @click="doAuth" :disabled="authLoading">
-                    <span v-if="authLoading"><span class="spin"></span>Please wait...</span>
-                    <span v-else>{{ authTab === 'login' ? 'Login' : 'Create Account' }}</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- sidebar overlay -->
         <div class="ov" :class="{show: sbOpen && isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
 
-        <!-- SIDEBAR -->
         <div class="sb" :class="{hide:!sbOpen}" @click.stop>
-            <div class="sb-top">
-                <span class="logo">Rex AI</span>
-                <div class="user-info">
-                    <span class="user-name">{{ username }}</span>
-                    <button class="logout-btn" @click="logout">Logout</button>
-                </div>
-            </div>
+            <div class="sb-top"><span class="logo">Rex AI</span></div>
             <button class="new-btn" @click="newChat">+ New Chat</button>
             <div class="sec-label">History</div>
             <div class="chat-list">
@@ -1442,8 +1188,7 @@
             </div>
         </div>
 
-        <!-- MAIN -->
-        <div class="main" v-if="token">
+        <div class="main">
             <header>
                 <button class="hbg" @click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
                 <span class="h-title">{{ title }}</span>
@@ -1474,7 +1219,7 @@
                     <div v-if="msgs.length===0" class="empty">
                         <div class="empty-icon">✦</div>
                         <h2>How can I help you today?</h2>
-                        <p>Welcome back, <strong>{{ username }}</strong>! Your chats sync across all devices.</p>
+                        <p>Your conversations are saved automatically across sessions.</p>
                         <div class="chips">
                             <span class="chip" @click="qs('Explain quantum computing simply')">Explain quantum
                                 computing</span>
@@ -1484,7 +1229,7 @@
                         </div>
                     </div>
 
-                    <template v-for="(msg, i) in msgs" :key="i">
+                    <template v-for="(msg,i) in msgs" :key="i">
                         <div v-if="msg.role==='user'" class="mw user">
                             <div class="mrow">
                                 <div class="av">You</div>
@@ -1557,7 +1302,7 @@
             </div>
             <div class="mem-list">
                 <div v-if="mems.length===0" class="mem-empty">No memories yet.<br><br>Tell me about yourself and I'll
-                    remember it across all your devices.</div>
+                    remember it.</div>
                 <div v-for="(m,i) in mems" :key="i" class="mem-item">
                     <span class="mem-txt">{{ m }}</span>
                     <button class="mem-del" @click="delMem(i)">✕</button>
@@ -1569,7 +1314,6 @@
         </div>
 
     </div>
-
     <script>
         const { createApp, ref, computed, nextTick, onMounted } = Vue;
 
@@ -1608,8 +1352,8 @@
                 btn.textContent = '✓ Copied'; btn.classList.add('copied');
                 setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
             }).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                const ta = document.createElement('textarea'); ta.value = code;
+                ta.style.position = 'fixed'; ta.style.opacity = '0';
                 document.body.appendChild(ta); ta.focus(); ta.select();
                 document.execCommand('copy'); document.body.removeChild(ta);
                 btn.textContent = '✓ Copied'; btn.classList.add('copied');
@@ -1620,11 +1364,9 @@
         function md(text) {
             if (!text) return '';
             let t = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            let codeIdx = 0;
             t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-                const escaped = code.trim();
                 const langLabel = lang ? '<span class="code-lang">' + lang + '</span>' : '';
-                return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>' + escaped + '</code></pre></div>';
+                return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>';
             });
             t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
             t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -1635,8 +1377,8 @@
             t = t.replace(/^# (.+)$/gm, '<h1>$1</h1>');
             t = t.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
             t = t.replace(/^---+$/gm, '<hr>');
-            t = t.replace(/((?:^\d+\. .+\n?)+)/gm, match => '<ol>' + match.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /, '') + '</li>').join('') + '</ol>');
-            t = t.replace(/((?:^[*\-] .+\n?)+)/gm, match => '<ul>' + match.trim().split('\n').map(l => '<li>' + l.replace(/^[*\-] /, '') + '</li>').join('') + '</ul>');
+            t = t.replace(/((?:^\d+\. .+\n?)+)/gm, m => '<ol>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /, '') + '</li>').join('') + '</ol>');
+            t = t.replace(/((?:^[*\-] .+\n?)+)/gm, m => '<ul>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^[*\-] /, '') + '</li>').join('') + '</ul>');
             t = t.split(/\n\n+/).map(para => {
                 para = para.trim(); if (!para) return '';
                 if (/^<(h[123]|ul|ol|pre|blockquote|hr|table|div)/.test(para)) return para;
@@ -1645,100 +1387,28 @@
             return t;
         }
 
+        const CHAT_KEY = 'rex-chats-v5', MEM_KEY = 'rex-mems-v1';
+        function loadChats() { try { return JSON.parse(localStorage.getItem(CHAT_KEY) || '[]'); } catch { return []; } }
+        function saveChats(c) { localStorage.setItem(CHAT_KEY, JSON.stringify(c)); }
+        function loadMems() { try { return JSON.parse(localStorage.getItem(MEM_KEY) || '[]'); } catch { return []; } }
+        function saveMems(m) { localStorage.setItem(MEM_KEY, JSON.stringify(m)); }
+
         createApp({
             setup() {
-                // Auth
-                const token = ref(localStorage.getItem('rex-token') || '');
-                const username = ref(localStorage.getItem('rex-username') || '');
-                const authTab = ref('login');
-                const authUser = ref('');
-                const authPass = ref('');
-                const authErr = ref('');
-                const authOk = ref('');
-                const authLoading = ref(false);
-
-                // Chat
-                const chats = ref([]);
-                const cid = ref(null);
-                const msgs = ref([]);
-                const inp = ref('');
-                const streaming = ref(false);
-                const stxt = ref('');
-                const msgsEl = ref(null);
-                const taEl = ref(null);
-                const editEl = ref(null);
-                const sbOpen = ref(window.innerWidth > 640);
-                const isMobile = ref(window.innerWidth <= 640);
-                const editIdx = ref(null);
-                const editTxt = ref('');
-                const cpIdx = ref(null);
-                const selModelId = ref('auto');
-                const mdOpen = ref(false);
-                const memOpen = ref(false);
-                const mems = ref([]);
+                const chats = ref(loadChats()), cid = ref(null), msgs = ref([]);
+                const inp = ref(''), streaming = ref(false), stxt = ref('');
+                const msgsEl = ref(null), taEl = ref(null), editEl = ref(null);
+                const sbOpen = ref(window.innerWidth > 640), isMobile = ref(window.innerWidth <= 640);
+                const editIdx = ref(null), editTxt = ref(''), cpIdx = ref(null);
+                const selModelId = ref('auto'), mdOpen = ref(false);
+                const memOpen = ref(false), mems = ref(loadMems());
                 const activeModel = ref('');
                 let userScrolled = false;
 
                 const title = computed(() => { const c = chats.value.find(c => c.id === cid.value); return c ? c.title : 'Rex AI'; });
                 const selModel = computed(() => MODELS.find(m => m.id === selModelId.value) || MODELS[0]);
 
-                function authHeaders() {
-                    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.value };
-                }
-
-                async function doAuth() {
-                    authErr.value = ''; authOk.value = '';
-                    const u = authUser.value.trim(); const p = authPass.value;
-                    if (!u || !p) { authErr.value = 'Please enter username and password'; return; }
-                    authLoading.value = true;
-                    try {
-                        const endpoint = authTab.value === 'login' ? '/auth/login' : '/auth/signup';
-                        const res = await fetch(BACKEND + endpoint, {
-                            method: 'POST',
-                            mode: 'cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username: u, password: p })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) { authErr.value = data.detail || 'Something went wrong'; return; }
-                        token.value = data.token; username.value = data.username;
-                        localStorage.setItem('rex-token', data.token);
-                        localStorage.setItem('rex-username', data.username);
-                        authPass.value = '';
-                        await loadChats();
-                        await loadMems();
-                    } catch (e) {
-                        authErr.value = 'Error: ' + e.message;
-                        console.error('Auth error:', e);
-                    } finally {
-                        authLoading.value = false;
-                    }
-                }
-
-                function logout() {
-                    token.value = ''; username.value = '';
-                    localStorage.removeItem('rex-token'); localStorage.removeItem('rex-username');
-                    chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
-                }
-
-                async function api(path, method = 'GET', body = null) {
-                    const opts = { method, headers: authHeaders() };
-                    if (body) opts.body = JSON.stringify(body);
-                    const res = await fetch(BACKEND + path, opts);
-                    if (res.status === 401) { logout(); return null; }
-                    return res.json();
-                }
-
-                async function loadChats() {
-                    const data = await api('/chats');
-                    if (data) { chats.value = data; if (data.length > 0) loadChat(data[0].id, false); }
-                }
-                async function loadMems() {
-                    const data = await api('/memories');
-                    if (data) mems.value = data;
-                }
-
-                onMounted(async () => {
+                onMounted(() => {
                     window.addEventListener('resize', () => { isMobile.value = window.innerWidth <= 640; });
                     document.addEventListener('click', e => { if (!e.target.closest('.msel')) mdOpen.value = false; });
                     nextTick(() => {
@@ -1749,73 +1419,43 @@
                             });
                         }
                     });
-                    if (token.value) { await loadChats(); await loadMems(); }
+                    if (chats.value.length > 0) loadChat(chats.value[0].id, false);
                 });
 
                 function scrollBottom(force = false) {
                     if (!force && userScrolled) return;
                     nextTick(() => { if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight; });
                 }
-                function resize() {
-                    const el = taEl.value;
-                    if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
-                }
+                function resize() { const el = taEl.value; if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; } }
                 function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
 
                 function loadChat(id, closeSb = true) {
-                    const chat = chats.value.find(c => c.id === id);
-                    if (!chat) return;
+                    const chat = chats.value.find(c => c.id === id); if (!chat) return;
                     cid.value = id; msgs.value = [...(chat.messages || [])]; editIdx.value = null;
                     if (closeSb && isMobile.value) sbOpen.value = false;
                     userScrolled = false; scrollBottom(true);
                 }
-
                 function newChat() {
                     cid.value = null; msgs.value = []; editIdx.value = null;
                     if (isMobile.value) sbOpen.value = false;
                     nextTick(() => taEl.value && taEl.value.focus());
                 }
-
-                async function saveCurrentChat(finalMsgs) {
+                function saveChat(finalMsgs) {
                     if (!cid.value) {
-                        // Create new chat
+                        const id = Date.now().toString();
                         const title = finalMsgs[0]?.content?.slice(0, 36) || (finalMsgs[0]?.content?.length > 36 ? '…' : '') || 'New Chat';
-                        const data = await api('/chats', 'POST', { title, messages: finalMsgs });
-                        if (data) {
-                            cid.value = data.id;
-                            chats.value.unshift({ id: data.id, title, messages: finalMsgs });
-                        }
+                        cid.value = id; chats.value.unshift({ id, title, messages: finalMsgs });
                     } else {
                         const idx = chats.value.findIndex(c => c.id === cid.value);
-                        if (idx !== -1) {
-                            chats.value[idx].messages = finalMsgs;
-                            const t = chats.value[idx].title;
-                            await api('/chats/' + cid.value, 'PUT', { title: t, messages: finalMsgs });
-                        }
+                        if (idx !== -1) chats.value[idx].messages = finalMsgs;
                     }
+                    saveChats(chats.value);
                 }
-
-                async function delChat(id) {
-                    await api('/chats/' + id, 'DELETE');
-                    chats.value = chats.value.filter(c => c.id !== id);
+                function delChat(id) {
+                    chats.value = chats.value.filter(c => c.id !== id); saveChats(chats.value);
                     if (cid.value === id) { msgs.value = []; cid.value = null; if (chats.value.length > 0) loadChat(chats.value[0].id); }
                 }
-
                 function pickModel(id) { selModelId.value = id; mdOpen.value = false; }
-
-                async function addMem(memory) {
-                    await api('/memories', 'POST', { memory });
-                    if (!mems.value.includes(memory)) mems.value.push(memory);
-                }
-                async function delMem(i) {
-                    const m = mems.value[i];
-                    await api('/memories/' + encodeURIComponent(m), 'DELETE');
-                    mems.value.splice(i, 1);
-                }
-                async function clearMems() {
-                    await api('/memories', 'DELETE');
-                    mems.value = [];
-                }
 
                 function extractMems(text) {
                     const rules = [
@@ -1830,14 +1470,15 @@
                     ];
                     for (const { re, fn } of rules) {
                         const match = text.match(re);
-                        if (match && match[1]) { const mem = fn(match[1].trim()); if (!mems.value.includes(mem)) addMem(mem); }
+                        if (match && match[1]) { const mem = fn(match[1].trim()); if (!mems.value.includes(mem)) { mems.value.push(mem); saveMems(mems.value); } }
                     }
                 }
+                function delMem(i) { mems.value.splice(i, 1); saveMems(mems.value); }
+                function clearMems() { mems.value = []; saveMems(mems.value); }
 
                 async function send() {
                     const text = inp.value.trim(); if (!text || streaming.value) return;
-                    msgs.value.push({ role: 'user', content: text });
-                    inp.value = '';
+                    msgs.value.push({ role: 'user', content: text }); inp.value = '';
                     nextTick(() => { if (taEl.value) taEl.value.style.height = 'auto'; });
                     userScrolled = false; scrollBottom(true);
                     extractMems(text);
@@ -1861,11 +1502,12 @@
                     const systemMsg = [{ role: 'system', content: 'You are Rex AI, a helpful assistant.' + (trimmedMems.length > 0 ? '\nUser facts:\n' + trimmedMems.map(m => '- ' + m).join('\n') : '') }];
                     try {
                         const res = await fetch(BACKEND + '/chat', {
-                            method: 'POST', headers: authHeaders(),
+                            method: 'POST', mode: 'cors',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ model: resolvedId, messages: [...systemMsg, ...trimmedMsgs.map(m => ({ role: m.role, content: m.content }))] })
                         });
                         const reader = res.body.getReader(); const dec = new TextDecoder();
-                        let charBuffer = '', streamDone = false, hasError = false;
+                        let charBuffer = '', streamDone = false;
                         async function typewriter() {
                             while (!streamDone || charBuffer.length > 0) {
                                 if (charBuffer.length > 0) {
@@ -1881,15 +1523,14 @@
                                 for (const line of dec.decode(value).split('\n')) {
                                     if (!line.startsWith('data: ')) continue;
                                     const d = line.slice(6); if (d === '[DONE]') break;
-                                    try { const p = JSON.parse(d); if (p.error) { charBuffer += '\u26a0\ufe0f ' + p.error; hasError = true; break; } charBuffer += p.text; } catch (e) { }
+                                    try { const p = JSON.parse(d); if (p.error) { charBuffer += '\u26a0\ufe0f ' + p.error; break; } charBuffer += p.text; } catch (e) { }
                                 }
-                                if (hasError) break;
                             }
                             streamDone = true;
                         }
                         await Promise.all([readStream(), typewriter()]);
                         msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: resolvedLabel });
-                        await saveCurrentChat(msgs.value);
+                        saveChat(msgs.value);
                     } catch (err) {
                         msgs.value.push({ role: 'assistant', content: '⚠️ Cannot reach backend.', usedModel: '' });
                     } finally {
@@ -1912,11 +1553,10 @@
                 }
 
                 return {
-                    MODELS, token, username, authTab, authUser, authPass, authErr, authOk, authLoading,
-                    chats, cid, msgs, inp, streaming, stxt, activeModel,
+                    MODELS, chats, cid, msgs, inp, streaming, stxt, activeModel,
                     msgsEl, taEl, editEl, sbOpen, isMobile,
                     editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen, memOpen, mems, title, md,
-                    doAuth, logout, newChat, loadChat, delChat, send, qs, onKey, resize,
+                    newChat, loadChat, delChat, send, qs, onKey, resize,
                     pickModel, delMem, clearMems, startEdit, cancelEdit, saveEdit, copyMsg,
                 };
             }
