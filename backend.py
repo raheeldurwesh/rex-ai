@@ -34,7 +34,15 @@ def get_db():
     global _db
     if _db is None:
         from pymongo import MongoClient
-        client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=5000, tls=True, tlsAllowInvalidCertificates=True)
+        import ssl
+        client = MongoClient(
+            MONGODB_URL,
+            serverSelectionTimeoutMS=5000,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            tlsAllowInvalidHostnames=True,
+            ssl_cert_reqs=ssl.CERT_NONE
+        )
         _db = client["rexai"]
     return _db
 
