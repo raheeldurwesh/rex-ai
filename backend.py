@@ -1,11 +1,11 @@
+import os
+import random
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from groq import Groq
 from dotenv import load_dotenv
 import json
-import os
 
 load_dotenv()
 
@@ -18,40 +18,54 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# ── Add all your Groq API keys here ──
+API_KEYS = [
+    os.getenv("GROQ_API_KEY_1"),
+    os.getenv("GROQ_API_KEY_2"),
+    os.getenv("GROQ_API_KEY_3"),
+]
+# Remove any None values (keys not set)
+API_KEYS = [k for k in API_KEYS if k]
 
-
-class Message(BaseModel):
-    role: str
-    content: str
-
-
-class ChatRequest(BaseModel):
-    messages: list[Message]
-    model: str = "llama-3.3-70b-versatile"
-
+def get_client():
+    """Pick a random available API key"""
+    if not API_KEYS:
+        raise Exception("No API keys configured")
+    return Groq(api_key=random.choice(API_KEYS))
 
 @app.get("/")
-async def root():
-    return {"status": "Rex AI backend running ✅"}
-
+def root():
+    return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
-    def generate():
-        try:
-            stream = client.chat.completions.create(
-                model=req.model,
-                messages=[m.dict() for m in req.messages],
-                stream=True,
-            )
-            for chunk in stream:
-                delta = chunk.choices[0].delta.content
-                if delta:
-                    yield f"data: {json.dumps({'text': delta})}\n\n"
-            yield "data: [DONE]\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            yield "data: [DONE]\n\n"
+async def chat(request: dict):
+    async def generate():
+        # Try each key until one works
+        last_error = None
+        keys_to_try = API_KEYS.copy()
+        random.shuffle(keys_to_try)
+
+        for key in keys_to_try:
+            try:
+                client = Groq(api_key=key)
+                stream = client.chat.completions.create(
+                    model=request.get("model", "llama-3.3-70b-versatile"),
+                    messages=request.get("messages", []),
+                    stream=True,
+                    max_tokens=4096,
+                )
+                for chunk in stream:
+                    text = chunk.choices[0].delta.content or ""
+                    if text:
+                        yield f"data: {json.dumps({'text': text})}\n\n"
+                yield "data: [DONE]\n\n"
+                return  # success — stop trying keys
+            except Exception as e:
+                last_error = str(e)
+                continue  # try next key
+
+        # All keys failed
+        yield f"data: {json.dumps({'error': last_error})}\n\n"
+        yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
