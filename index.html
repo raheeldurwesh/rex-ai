@@ -35,6 +35,7 @@
             background: var(--bg);
             color: var(--txt);
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             display: flex;
         }
@@ -49,6 +50,8 @@
             flex-shrink: 0;
             transition: transform .28s ease;
             z-index: 200;
+            height: 100vh;
+            height: 100dvh;
         }
 
         .sb.hide {
@@ -200,6 +203,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             min-width: 0;
         }
@@ -855,8 +859,7 @@
 
         /* ── INPUT ── */
         .inp-wrap {
-            padding: 10px 12px;
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+            padding: 10px 12px 12px;
             border-top: 1px solid var(--bdr);
             flex-shrink: 0;
             background: var(--bg);
@@ -902,8 +905,8 @@
         }
 
         .snd {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             background: var(--acc);
             border: none;
             border-radius: 50%;
@@ -913,11 +916,12 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 800;
             transition: background .2s, transform .1s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            min-width: 38px;
         }
 
         .snd:hover:not(:disabled) {
@@ -1121,7 +1125,7 @@
 </head>
 
 <body>
-    <div id="app" style="display:flex;width:100%;height:100vh;overflow:hidden;">
+    <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
         <div class="ov" :class="{show: sbOpen && isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
 
