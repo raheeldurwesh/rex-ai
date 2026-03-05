@@ -30,10 +30,14 @@
             padding: 0;
         }
 
-        html,
+        html {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
         body {
             overflow-x: hidden;
-            max-width: 100%;
+            max-width: 100vw;
         }
 
         body {
@@ -423,7 +427,9 @@
         .msgs {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 28px 0 16px;
+            width: 100%;
         }
 
         .msgs::-webkit-scrollbar {
@@ -444,7 +450,8 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            overflow: hidden;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
 
         /* empty state */
@@ -531,9 +538,10 @@
         .mw.asst {
             align-self: flex-start;
             align-items: flex-start;
-            max-width: calc(100% - 40px);
-            width: calc(100% - 40px);
+            max-width: calc(100vw - 56px);
+            width: calc(100vw - 56px);
             min-width: 0;
+            overflow: hidden;
         }
 
         .mrow {
@@ -580,6 +588,7 @@
             overflow: hidden;
             max-width: 100%;
             min-width: 0;
+            box-sizing: border-box;
         }
 
         .mw.user .bbl {
@@ -596,8 +605,10 @@
             border: 1px solid var(--bdr);
             border-bottom-left-radius: 3px;
             overflow: hidden;
+            width: 100%;
             max-width: 100%;
             min-width: 0;
+            box-sizing: border-box;
         }
 
         /* code block with copy button */
@@ -605,10 +616,11 @@
             margin: 10px 0;
             border-radius: 10px;
             border: 1px solid var(--bdr);
-            max-width: 100%;
             width: 100%;
+            max-width: 100%;
             overflow: hidden;
             display: block;
+            box-sizing: border-box;
         }
 
         .code-hdr {
@@ -619,6 +631,8 @@
             padding: 8px 12px;
             border-bottom: 1px solid var(--bdr);
             gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .code-lang {
@@ -628,6 +642,9 @@
             text-transform: uppercase;
             letter-spacing: .08em;
             flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .code-copy {
@@ -660,20 +677,22 @@
             margin: 0 !important;
             border: none !important;
             border-radius: 0 !important;
-            overflow-x: auto;
+            overflow-x: scroll;
+            overflow-y: visible;
             width: 100%;
+            box-sizing: border-box;
             -webkit-overflow-scrolling: touch;
         }
 
         .code-wrap pre code {
             white-space: pre;
-            word-break: normal;
+            word-break: keep-all;
             overflow-wrap: normal;
-            display: block;
-            width: max-content;
+            display: inline-block;
             min-width: 100%;
             font-size: .82rem;
             padding: 14px 16px;
+            box-sizing: border-box;
         }
 
         /* markdown inside assistant */
