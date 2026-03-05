@@ -1694,7 +1694,9 @@
                     try {
                         const endpoint = authTab.value === 'login' ? '/auth/login' : '/auth/signup';
                         const res = await fetch(BACKEND + endpoint, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            method: 'POST',
+                            mode: 'cors',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ username: u, password: p })
                         });
                         const data = await res.json();
