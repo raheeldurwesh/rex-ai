@@ -1409,15 +1409,30 @@
             { id: 'meta-llama/llama-guard-4-12b', name: 'Llama Guard 4', short: 'Guard 4', desc: 'Content moderation' },
         ];
 
-        // Global copy handler for code blocks
+        // Global copy handler for code blocks — copies clean runnable code
         window.copyCode = function (btn) {
-            const code = btn.getAttribute('data-code')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>');
+            // Get raw code directly from the <code> element inside the same .code-wrap
+            const wrap = btn.closest('.code-wrap');
+            const codeEl = wrap ? wrap.querySelector('pre code') : null;
+            const code = codeEl ? codeEl.innerText || codeEl.textContent : '';
             navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '✓ Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older mobile browsers
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
                 btn.textContent = '✓ Copied';
                 btn.classList.add('copied');
                 setTimeout(() => {
