@@ -1706,7 +1706,8 @@
                         await loadChats();
                         await loadMems();
                     } catch (e) {
-                        authErr.value = 'Cannot connect to server. Is the backend running?';
+                        authErr.value = 'Error: ' + e.message;
+                        console.error('Auth error:', e);
                     } finally {
                         authLoading.value = false;
                     }
