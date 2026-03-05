@@ -78,6 +78,15 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 def root():
     return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
 
+@app.get("/test-db")
+def test_db():
+    try:
+        db = get_db()
+        db.list_collection_names()
+        return {"db": "connected ✅"}
+    except Exception as e:
+        return {"db": "failed ❌", "error": str(e)}
+
 # ── AUTH ──
 @app.post("/auth/signup")
 async def signup(data: dict):
