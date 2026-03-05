@@ -1,11 +1,11 @@
 import os
 import random
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from groq import Groq
 from dotenv import load_dotenv
-import json
 
 load_dotenv()
 
@@ -18,20 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Add all your Groq API keys here ──
+# Load all API keys
 API_KEYS = [
+    os.getenv("GROQ_API_KEY"),
     os.getenv("GROQ_API_KEY_1"),
     os.getenv("GROQ_API_KEY_2"),
     os.getenv("GROQ_API_KEY_3"),
 ]
-# Remove any None values (keys not set)
 API_KEYS = [k for k in API_KEYS if k]
-
-def get_client():
-    """Pick a random available API key"""
-    if not API_KEYS:
-        raise Exception("No API keys configured")
-    return Groq(api_key=random.choice(API_KEYS))
 
 @app.get("/")
 def root():
@@ -40,10 +34,14 @@ def root():
 @app.post("/chat")
 async def chat(request: dict):
     async def generate():
-        # Try each key until one works
-        last_error = None
+        if not API_KEYS:
+            yield f"data: {json.dumps({'error': 'No API keys configured'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
         keys_to_try = API_KEYS.copy()
         random.shuffle(keys_to_try)
+        last_error = None
 
         for key in keys_to_try:
             try:
@@ -59,12 +57,11 @@ async def chat(request: dict):
                     if text:
                         yield f"data: {json.dumps({'text': text})}\n\n"
                 yield "data: [DONE]\n\n"
-                return  # success — stop trying keys
+                return
             except Exception as e:
                 last_error = str(e)
-                continue  # try next key
+                continue
 
-        # All keys failed
         yield f"data: {json.dumps({'error': last_error})}\n\n"
         yield "data: [DONE]\n\n"
 
