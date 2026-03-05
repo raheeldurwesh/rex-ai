@@ -677,22 +677,21 @@
             margin: 0 !important;
             border: none !important;
             border-radius: 0 !important;
-            overflow-x: scroll;
-            overflow-y: visible;
+            overflow-x: hidden;
             width: 100%;
             box-sizing: border-box;
-            -webkit-overflow-scrolling: touch;
         }
 
         .code-wrap pre code {
-            white-space: pre;
-            word-break: keep-all;
-            overflow-wrap: normal;
-            display: inline-block;
-            min-width: 100%;
-            font-size: .82rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            display: block;
+            width: 100%;
+            font-size: .85rem;
             padding: 14px 16px;
             box-sizing: border-box;
+            line-height: 1.6;
         }
 
         /* markdown inside assistant */
