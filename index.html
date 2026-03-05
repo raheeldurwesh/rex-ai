@@ -12,8 +12,8 @@
     <style>
         :root {
             --bg: #1a1a1a;
-            --sur: #242424;
-            --sur2: #2e2e2e;
+            --sur: #2a2a2a;
+            --sur2: #363636;
             --bdr: #3a3a3a;
             --acc: #c9a84c;
             --acc2: #e8c97a;
@@ -21,7 +21,7 @@
             --mut: #7a7060;
             --red: #c0392b;
             --grn: #27ae60;
-            --user-bg: #2e2a22;
+            --user-bg: #332e24;
         }
 
         * {
@@ -159,21 +159,25 @@
         .ci-del {
             background: none;
             border: none;
-            color: transparent;
+            color: var(--mut);
             cursor: pointer;
             font-size: .75rem;
             padding: 2px 6px;
             border-radius: 4px;
             transition: color .15s;
             flex-shrink: 0;
+            opacity: .5;
         }
 
-        .ci:hover .ci-del {
+        .ci:hover .ci-del,
+        .ci.active .ci-del {
+            opacity: 1;
             color: var(--mut);
         }
 
         .ci-del:hover {
             color: var(--red) !important;
+            opacity: 1;
         }
 
         .sb-empty {
@@ -837,11 +841,11 @@
 
         /* ── INPUT ── */
         .inp-wrap {
-            padding: 12px 24px 20px;
+            padding: 12px 24px 0;
             border-top: 1px solid var(--bdr);
             flex-shrink: 0;
             background: var(--sur);
-            padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
         }
 
         .inp-inner {
