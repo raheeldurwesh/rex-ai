@@ -27,9 +27,6 @@ API_KEYS = [
 ]
 API_KEYS = [k for k in API_KEYS if k]
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDzhB6OKJPcPAiEJY9iMrpbiWOWyV54qjA")
-GOOGLE_CSE_ID  = os.getenv("GOOGLE_CSE_ID", "3757dc5f465e6427e")
-
 @app.get("/")
 def root():
     return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
@@ -39,19 +36,57 @@ async def search(q: str):
     try:
         async with httpx.AsyncClient() as client:
             r = await client.get(
-                "https://www.googleapis.com/customsearch/v1",
-                params={"key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID, "q": q, "num": 5},
+                "https://api.duckduckgo.com/",
+                params={
+                    "q": q,
+                    "format": "json",
+                    "no_html": "1",
+                    "skip_disambig": "1",
+                    "no_redirect": "1"
+                },
+                headers={"User-Agent": "RexAI/1.0"},
                 timeout=8
             )
             data = r.json()
             results = []
-            for item in data.get("items", [])[:5]:
+
+            # Abstract (main answer)
+            if data.get("AbstractText"):
                 results.append({
-                    "title": item.get("title", ""),
-                    "url": item.get("link", ""),
-                    "snippet": item.get("snippet", "")
+                    "title": data.get("Heading", "Summary"),
+                    "url": data.get("AbstractURL", "https://duckduckgo.com/?q=" + q),
+                    "snippet": data["AbstractText"][:300]
                 })
-            return {"results": results}
+
+            # Related topics
+            for topic in data.get("RelatedTopics", [])[:5]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    results.append({
+                        "title": topic.get("Text", "")[:60],
+                        "url": topic.get("FirstURL", "https://duckduckgo.com/?q=" + q),
+                        "snippet": topic.get("Text", "")[:200]
+                    })
+
+            # If no results, do HTML scrape fallback via DuckDuckGo lite
+            if not results:
+                r2 = await client.get(
+                    "https://lite.duckduckgo.com/lite/",
+                    params={"q": q},
+                    headers={"User-Agent": "Mozilla/5.0"},
+                    timeout=8
+                )
+                import re
+                links = re.findall(r'<a[^>]+href="(https?://[^"]+)"[^>]*>([^<]+)</a>', r2.text)
+                snippets = re.findall(r'<td[^>]*class="result-snippet"[^>]*>([^<]+)</td>', r2.text)
+                for i, (url, title) in enumerate(links[:5]):
+                    if 'duckduckgo' not in url:
+                        results.append({
+                            "title": title.strip(),
+                            "url": url,
+                            "snippet": snippets[i].strip() if i < len(snippets) else ""
+                        })
+
+            return {"results": results[:5]}
     except Exception as e:
         return {"results": [], "error": str(e)}
 
