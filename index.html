@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rex AI</title>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap"
@@ -60,161 +60,6 @@
       display: flex;
     }
 
-    /* THEME TOGGLE */
-    .theme-btn {
-      background: none;
-      border: 1px solid var(--bdr);
-      color: var(--mut);
-      font-size: .8rem;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all .2s;
-      touch-action: manipulation;
-      flex-shrink: 0;
-    }
-
-    .theme-btn:hover {
-      border-color: var(--acc);
-      color: var(--acc);
-    }
-
-    /* SEARCH RESULTS */
-    .search-box {
-      background: var(--sur2);
-      border: 1px solid var(--acc);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      font-size: .82rem;
-    }
-
-    .search-box-title {
-      color: var(--acc);
-      font-weight: 600;
-      font-size: .78rem;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .search-result {
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--bdr);
-    }
-
-    .search-result:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .search-result a {
-      color: var(--acc);
-      font-size: .78rem;
-      font-weight: 500;
-      text-decoration: none;
-    }
-
-    .search-result a:hover {
-      text-decoration: underline;
-    }
-
-    .search-result p {
-      color: var(--mut);
-      font-size: .74rem;
-      margin-top: 2px;
-      line-height: 1.4;
-    }
-
-    /* SHARE MODAL */
-    .modal-ov {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .7);
-      z-index: 600;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-ov.show {
-      display: flex;
-    }
-
-    .modal {
-      background: var(--sur);
-      border: 1px solid var(--bdr);
-      border-radius: 14px;
-      padding: 28px;
-      width: 90%;
-      max-width: 420px;
-    }
-
-    .modal-title {
-      font-family: 'Playfair Display', serif;
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--acc);
-      margin-bottom: 16px;
-    }
-
-    .modal-url {
-      background: var(--sur2);
-      border: 1px solid var(--bdr);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: .78rem;
-      color: var(--txt);
-      word-break: break-all;
-      margin-bottom: 14px;
-      font-family: monospace;
-    }
-
-    .modal-btns {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .modal-btn {
-      padding: 9px 18px;
-      border-radius: 8px;
-      border: none;
-      font-family: 'Inter', sans-serif;
-      font-size: .82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .2s;
-      touch-action: manipulation;
-    }
-
-    .modal-btn.primary {
-      background: var(--acc);
-      color: #1a1a1a;
-    }
-
-    .modal-btn.primary:hover {
-      background: var(--acc2);
-    }
-
-    .modal-btn.sec {
-      background: var(--sur2);
-      color: var(--txt);
-      border: 1px solid var(--bdr);
-    }
-
-    .modal-btn.sec:hover {
-      border-color: var(--acc);
-    }
-
-    /* SIDEBAR */
     .sb {
       width: 260px;
       background: var(--sur);
@@ -243,7 +88,6 @@
       font-weight: 700;
       font-size: 1.2rem;
       color: var(--acc);
-      letter-spacing: .02em;
     }
 
     .new-btn {
@@ -264,7 +108,6 @@
       width: calc(100% - 24px);
       transition: background .2s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .new-btn:hover {
@@ -304,7 +147,6 @@
       cursor: pointer;
       transition: background .15s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .ci:hover {
@@ -338,10 +180,7 @@
       font-size: .85rem;
       padding: 8px 10px;
       border-radius: 4px;
-      transition: color .15s;
-      flex-shrink: 0;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .ci-del:hover {
@@ -356,7 +195,6 @@
       line-height: 1.8;
     }
 
-    /* MAIN */
     .main {
       flex: 1;
       display: flex;
@@ -370,8 +208,8 @@
     header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 13px 20px;
+      gap: 8px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--bdr);
       flex-shrink: 0;
       background: var(--sur);
@@ -386,10 +224,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      transition: background .2s;
-      flex-shrink: 0;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .hbg:hover {
@@ -407,19 +242,82 @@
     .h-title {
       font-family: 'Playfair Display', serif;
       font-weight: 600;
-      font-size: .92rem;
+      font-size: .9rem;
       color: #9a8e7a;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1;
+      min-width: 0;
     }
 
     .h-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
+      flex-wrap: nowrap;
+    }
+
+    .hbtn {
+      font-size: .7rem;
+      color: var(--mut);
+      background: var(--sur2);
+      border: 1px solid var(--bdr);
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all .2s;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    .hbtn:hover,
+    .hbtn.on {
+      border-color: var(--acc);
+      color: var(--acc);
+      background: rgba(201, 168, 76, .07);
+    }
+
+    .hbtn.round {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .mem-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--acc);
+      animation: pulse 2s infinite;
+    }
+
+    .mem-badge {
+      background: var(--acc);
+      color: #1a1a1a;
+      font-size: .6rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .3;
+      }
     }
 
     .msel {
@@ -427,18 +325,18 @@
     }
 
     .mbtn {
-      font-size: .72rem;
+      font-size: .7rem;
       color: var(--mut);
       background: var(--sur2);
       border: 1px solid var(--bdr);
-      padding: 5px 11px;
+      padding: 5px 10px;
       border-radius: 6px;
       cursor: pointer;
       font-family: 'Inter', sans-serif;
       display: flex;
       align-items: center;
-      gap: 5px;
-      transition: border-color .2s, color .2s;
+      gap: 4px;
+      transition: all .2s;
       white-space: nowrap;
       touch-action: manipulation;
     }
@@ -465,7 +363,7 @@
       background: var(--sur);
       border: 1px solid var(--bdr);
       border-radius: 10px;
-      min-width: 260px;
+      min-width: 240px;
       z-index: 500;
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(0, 0, 0, .6);
@@ -519,60 +417,6 @@
       font-weight: 700;
     }
 
-    .mem-btn {
-      font-size: .72rem;
-      background: none;
-      border: 1px solid var(--bdr);
-      color: var(--mut);
-      padding: 5px 11px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all .2s;
-      white-space: nowrap;
-      touch-action: manipulation;
-    }
-
-    .mem-btn:hover,
-    .mem-btn.on {
-      border-color: var(--acc);
-      color: var(--acc);
-      background: rgba(201, 168, 76, .07);
-    }
-
-    .mem-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--acc);
-      animation: pulse 2s infinite;
-    }
-
-    .mem-badge {
-      background: var(--acc);
-      color: #1a1a1a;
-      font-size: .6rem;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 10px;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: .3;
-      }
-    }
-
-    /* SEARCHING INDICATOR */
     .searching {
       display: flex;
       align-items: center;
@@ -587,7 +431,7 @@
       align-self: flex-start;
     }
 
-    .search-spin {
+    .sspin {
       width: 14px;
       height: 14px;
       border: 2px solid rgba(201, 168, 76, .3);
@@ -603,13 +447,11 @@
       }
     }
 
-    /* MESSAGES */
     .msgs {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 28px 0 16px;
-      width: 100%;
+      padding: 24px 0 12px;
     }
 
     .msgs::-webkit-scrollbar {
@@ -629,7 +471,6 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      overflow-x: hidden;
       box-sizing: border-box;
     }
 
@@ -638,9 +479,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 14px;
       padding: 60px 24px;
-      min-height: 60vh;
+      min-height: 55vh;
     }
 
     .empty-icon {
@@ -659,7 +500,6 @@
       font-family: 'Playfair Display', serif;
       font-weight: 700;
       font-size: 1.4rem;
-      color: var(--txt);
       text-align: center;
     }
 
@@ -700,7 +540,6 @@
     .mw {
       display: flex;
       flex-direction: column;
-      max-width: 82%;
       min-width: 0;
     }
 
@@ -708,16 +547,12 @@
       align-self: flex-end;
       align-items: flex-end;
       max-width: 80%;
-      min-width: 0;
-      overflow: hidden;
     }
 
     .mw.asst {
       align-self: flex-start;
       align-items: flex-start;
-      max-width: 88%;
-      min-width: 0;
-      overflow: hidden;
+      max-width: 90%;
     }
 
     .mrow {
@@ -761,13 +596,11 @@
       word-break: break-word;
       overflow: hidden;
       max-width: 100%;
-      min-width: 0;
       box-sizing: border-box;
     }
 
     .mw.user .bbl {
       background: var(--user-bg);
-      color: var(--txt);
       border: 1px solid var(--bdr);
       border-bottom-right-radius: 3px;
       white-space: pre-wrap;
@@ -775,14 +608,9 @@
 
     .mw.asst .bbl {
       background: var(--sur);
-      color: var(--txt);
       border: 1px solid var(--bdr);
       border-bottom-left-radius: 3px;
-      overflow: hidden;
       width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
     }
 
     .model-tag {
@@ -793,15 +621,57 @@
       font-style: italic;
     }
 
-    /* code blocks */
+    .search-box {
+      background: var(--sur2);
+      border: 1px solid var(--acc);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 6px;
+    }
+
+    .search-box-title {
+      color: var(--acc);
+      font-weight: 600;
+      font-size: .78rem;
+      margin-bottom: 8px;
+    }
+
+    .search-result {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--bdr);
+    }
+
+    .search-result:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .search-result a {
+      color: var(--acc);
+      font-size: .78rem;
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .search-result a:hover {
+      text-decoration: underline;
+    }
+
+    .search-result p {
+      color: var(--mut);
+      font-size: .74rem;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
     .code-wrap {
       margin: 10px 0;
       border-radius: 10px;
       border: 1px solid var(--bdr);
       width: 100%;
-      max-width: 100%;
       overflow: hidden;
-      display: block;
       box-sizing: border-box;
     }
 
@@ -813,8 +683,6 @@
       padding: 8px 12px;
       border-bottom: 1px solid var(--bdr);
       gap: 8px;
-      width: 100%;
-      box-sizing: border-box;
     }
 
     .code-lang {
@@ -824,9 +692,6 @@
       text-transform: uppercase;
       letter-spacing: .08em;
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     .code-copy {
@@ -838,28 +703,19 @@
       border-radius: 6px;
       cursor: pointer;
       font-family: 'Inter', sans-serif;
-      transition: all .2s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
       white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .code-copy:active {
-      background: var(--acc);
-      color: #1a1a1a;
     }
 
     .code-copy.copied {
-      color: var(--grn) !important;
-      border-color: var(--grn) !important;
+      color: var(--grn);
+      border-color: var(--grn);
     }
 
     .code-wrap pre {
-      margin: 0 !important;
-      border: none !important;
-      border-radius: 0 !important;
-      overflow-x: hidden;
+      margin: 0;
+      border: none;
+      border-radius: 0;
       width: 100%;
       box-sizing: border-box;
     }
@@ -867,7 +723,6 @@
     .code-wrap pre code {
       white-space: pre-wrap;
       word-break: break-all;
-      overflow-wrap: anywhere;
       display: block;
       width: 100%;
       font-size: .85rem;
@@ -876,7 +731,6 @@
       line-height: 1.6;
     }
 
-    /* markdown */
     .mw.asst .bbl p {
       margin: 0 0 9px;
     }
@@ -903,17 +757,6 @@
       font-family: 'Courier New', monospace;
       font-size: .84em;
       border: 1px solid rgba(201, 168, 76, .2);
-    }
-
-    .mw.asst .bbl pre {
-      background: #111;
-      border: 1px solid var(--bdr);
-      border-radius: 8px;
-      padding: 14px 16px;
-      overflow-x: auto;
-      margin: 10px 0;
-      max-width: 100%;
-      -webkit-overflow-scrolling: touch;
     }
 
     .mw.asst .bbl ul,
@@ -996,11 +839,6 @@
       border: 1px solid var(--bdr);
     }
 
-    .mw.asst .bbl tr:nth-child(even) {
-      background: rgba(255, 255, 255, .02);
-    }
-
-    /* edit */
     .edit-ta {
       width: 100%;
       background: var(--sur2);
@@ -1031,7 +869,6 @@
       cursor: pointer;
       background: var(--acc);
       color: #1a1a1a;
-      touch-action: manipulation;
     }
 
     .btn-cancel {
@@ -1043,7 +880,6 @@
       cursor: pointer;
       background: var(--sur2);
       color: var(--mut);
-      touch-action: manipulation;
     }
 
     .macts {
@@ -1085,6 +921,11 @@
       border-color: var(--grn);
     }
 
+    .abt-pdf:hover {
+      color: #e74c3c;
+      border-color: #e74c3c;
+    }
+
     .typing {
       display: flex;
       gap: 5px;
@@ -1122,7 +963,6 @@
       }
     }
 
-    /* input */
     .inp-wrap {
       padding: 10px 12px 12px;
       border-top: 1px solid var(--bdr);
@@ -1185,16 +1025,11 @@
       font-weight: 800;
       transition: background .2s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
       min-width: 40px;
     }
 
     .snd:hover:not(:disabled) {
       background: var(--acc2);
-    }
-
-    .snd:active:not(:disabled) {
-      transform: scale(.92);
     }
 
     .snd:disabled {
@@ -1222,41 +1057,44 @@
       color: var(--acc);
       text-decoration: none;
       font-weight: 500;
-      transition: color .2s;
     }
 
     .brand-link:hover {
-      color: var(--acc2);
       text-decoration: underline;
     }
 
-    .abt-pdf {
+    .go-bottom {
+      position: fixed;
+      bottom: 110px;
+      right: 18px;
+      width: 40px;
+      height: 40px;
+      background: var(--acc);
+      border: none;
+      border-radius: 50%;
+      color: #1a1a1a;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
-      background: none;
-      border: 1px solid var(--bdr);
-      color: var(--mut);
-      font-family: 'Inter', sans-serif;
-      font-size: .7rem;
-      padding: 3px 9px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all .15s;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .5);
+      transition: all .25s;
+      z-index: 300;
       touch-action: manipulation;
     }
 
-    .abt-pdf:hover {
-      color: #e74c3c;
-      border-color: #e74c3c;
+    .go-bottom:hover {
+      background: var(--acc2);
     }
 
-    .abt-pdf.done {
-      color: var(--grn);
-      border-color: var(--grn);
+    .go-bottom.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
     }
 
-    /* memory panel */
     .ov {
       display: none;
       position: fixed;
@@ -1310,7 +1148,6 @@
       font-size: 1rem;
       padding: 2px 7px;
       border-radius: 4px;
-      touch-action: manipulation;
     }
 
     .mem-x:hover {
@@ -1339,7 +1176,6 @@
 
     .mem-txt {
       font-size: .82rem;
-      color: var(--txt);
       line-height: 1.5;
       flex: 1;
     }
@@ -1353,7 +1189,6 @@
       padding: 2px 6px;
       flex-shrink: 0;
       border-radius: 4px;
-      touch-action: manipulation;
     }
 
     .mem-del:hover {
@@ -1383,80 +1218,77 @@
       font-family: 'Inter', sans-serif;
       font-size: .8rem;
       cursor: pointer;
-      transition: background .2s;
-      touch-action: manipulation;
     }
 
-    .mem-clr:hover {
-      background: rgba(192, 57, 43, .2);
-    }
-
-    /* scroll to bottom btn */
-    .go-bottom {
+    .modal-ov {
+      display: none;
       position: fixed;
-      bottom: 110px;
-      right: 18px;
-      width: 38px;
-      height: 38px;
+      inset: 0;
+      background: rgba(0, 0, 0, .7);
+      z-index: 600;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-ov.show {
+      display: flex;
+    }
+
+    .modal {
       background: var(--sur);
       border: 1px solid var(--bdr);
-      border-radius: 50%;
-      color: var(--mut);
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, .4);
-      transition: all .2s;
-      z-index: 100;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      border-radius: 14px;
+      padding: 28px;
+      width: 90%;
+      max-width: 420px;
     }
 
-    .go-bottom:hover {
-      background: var(--acc);
-      color: #1a1a1a;
-      border-color: var(--acc);
-    }
-
-    .go-bottom.hide {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(8px);
-    }
-
-    .go-bottom {
-      position: fixed;
-      bottom: 110px;
-      right: 18px;
-      width: 40px;
-      height: 40px;
-      background: var(--acc);
-      border: none;
-      border-radius: 50%;
-      color: #1a1a1a;
-      font-size: 1.2rem;
+    .modal-title {
+      font-family: 'Playfair Display', serif;
       font-weight: 700;
-      cursor: pointer;
+      font-size: 1.1rem;
+      color: var(--acc);
+      margin-bottom: 16px;
+    }
+
+    .modal-url {
+      background: var(--sur2);
+      border: 1px solid var(--bdr);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: .75rem;
+      color: var(--txt);
+      word-break: break-all;
+      margin-bottom: 14px;
+      font-family: monospace;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .modal-btns {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, .5);
-      transition: all .25s;
-      z-index: 300;
-      touch-action: manipulation;
+      gap: 8px;
     }
 
-    .go-bottom:hover {
-      background: var(--acc2);
-      transform: translateY(-2px);
+    .modal-btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
     }
 
-    .go-bottom.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(10px);
+    .modal-btn.primary {
+      background: var(--acc);
+      color: #1a1a1a;
+    }
+
+    .modal-btn.sec {
+      background: var(--sur2);
+      color: var(--txt);
+      border: 1px solid var(--bdr);
     }
 
     @media(max-width:640px) {
@@ -1479,14 +1311,22 @@
       .mw.asst {
         max-width: 95%;
       }
+
+      .h-right {
+        gap: 4px;
+      }
+
+      .hbtn span:not(.mem-dot):not(.mem-badge) {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div id="app" style="display:flex;width:100%;max-width:100%;height:100vh;height:100dvh;overflow:hidden;">
+  <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
-    <div class="ov" :class="{show: sbOpen && isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
+    <div class="ov" :class="{show:sbOpen&&isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
 
     <div class="sb" :class="{hide:!sbOpen}" @click.stop>
       <div class="sb-top"><span class="logo">Rex AI</span></div>
@@ -1506,15 +1346,15 @@
         <button class="hbg" @click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
         <span class="h-title">{{ title }}</span>
         <div class="h-right">
-          <button class="mem-btn" :class="{on:webSearch}" @click="webSearch=!webSearch"
-            :title="webSearch?'Web search ON':'Web search OFF'">
-            🌐 Search <span v-if="webSearch" class="mem-dot"></span>
+          <button class="hbtn round" @click="toggleTheme" :title="isDark?'Light mode':'Dark mode'">{{ isDark?'☀️':'🌙'
+            }}</button>
+          <button class="hbtn" :class="{on:webSearch}" @click="webSearch=!webSearch">
+            🌐 <span>Search</span><span v-if="webSearch" class="mem-dot" style="margin-left:2px;"></span>
           </button>
-          <button class="mem-btn" @click="shareChat" title="Share chat">🔗 Share</button>
-          <button class="mem-btn" @click="exportAllPDF" title="Export full chat as PDF">🖨️ Export</button>
-          <button class="mem-btn" :class="{on:memOpen}" @click="memOpen=!memOpen">
-            <span v-if="mems.length>0" class="mem-dot"></span>
-            🧠 Memory
+          <button class="hbtn" @click="shareChat">🔗 <span>Share</span></button>
+          <button class="hbtn" @click="exportAllPDF">🖨️ <span>Export</span></button>
+          <button class="hbtn" :class="{on:memOpen}" @click="memOpen=!memOpen">
+            🧠 <span>Memory</span>
             <span v-if="mems.length>0" class="mem-badge">{{ mems.length }}</span>
           </button>
           <div class="msel">
@@ -1537,7 +1377,7 @@
           <div v-if="msgs.length===0" class="empty">
             <div class="empty-icon">✦</div>
             <h2>How can I help you today?</h2>
-            <p>Your conversations are saved automatically across sessions.</p>
+            <p>Your conversations are saved automatically.</p>
             <div class="chips">
               <span class="chip" @click="qs('Explain quantum computing simply')">Explain quantum computing</span>
               <span class="chip" @click="qs('Write a Python web scraper')">Write a Python scraper</span>
@@ -1572,7 +1412,7 @@
               <div v-if="msg.isSearch">
                 <div class="search-box">
                   <div class="search-box-title">🌐 Web Search Results</div>
-                  <div v-for="r in JSON.parse(msg.content.replace('__SEARCH__',''))" :key="r.url" class="search-result">
+                  <div v-for="r in parseSearch(msg.content)" :key="r.url" class="search-result">
                     <a :href="r.url" target="_blank">{{ r.title }}</a>
                     <p>{{ r.snippet }}</p>
                   </div>
@@ -1582,21 +1422,21 @@
                 <div v-if="msg.usedModel" class="model-tag">via {{ msg.usedModel }}</div>
                 <div class="mrow">
                   <div class="av">AI</div>
-                  <div class="bbl" v-html="md(msg.content)"></div>
+                  <div class="bbl" v-html="renderMd(msg.content)"></div>
                 </div>
                 <div class="macts">
-                  <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓
-                    Copied':'📋 Copy' }}</button>
-                  <button class="abt-pdf" :class="{done:pdfIdx===i}" @click="exportPDF(msg.content,i)">{{ pdfIdx===i?'✓
-                    Saved':'📄 PDF' }}</button>
+                  <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓':'📋' }}
+                    Copy</button>
+                  <button class="abt abt-pdf" :class="{done:pdfIdx===i}" @click="exportPDF(msg.content,i)">{{
+                    pdfIdx===i?'✓':'📄' }} PDF</button>
                 </div>
               </div>
             </div>
           </template>
 
           <div v-if="searching" class="searching">
-            <div class="search-spin"></div>
-            Searching the web for: <em>{{ searchQuery }}</em>
+            <div class="sspin"></div>
+            Searching: <em>{{ searchQuery }}</em>
           </div>
 
           <div v-if="streaming" class="mw asst">
@@ -1604,7 +1444,7 @@
             <div class="mrow">
               <div class="av">AI</div>
               <div class="bbl">
-                <span v-if="stxt" v-html="md(stxt)"></span>
+                <span v-if="stxt" v-html="renderMd(stxt)"></span>
                 <div v-else class="typing">
                   <div class="dot"></div>
                   <div class="dot"></div>
@@ -1631,11 +1471,8 @@
       </div>
     </div>
 
-    <button class="go-bottom" :class="{hide:!showScrollBtn}" @click="forceScrollBottom" title="Go to bottom">↓</button>
+    <button class="go-bottom" :class="{hidden:!showBottom}" @click="goBottom">↓</button>
 
-    <button class="go-bottom" :class="{hidden:!showBottom}" @click="goBottom" title="Scroll to bottom">↓</button>
-
-    <!-- SHARE MODAL -->
     <div class="modal-ov" :class="{show:shareOpen}" @click.self="shareOpen=false">
       <div class="modal">
         <div class="modal-title">🔗 Share Chat</div>
@@ -1669,58 +1506,32 @@
   </div>
   <script>
     const { createApp, ref, computed, nextTick, onMounted } = Vue;
-
-    const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:8000'
-      : 'https://rex-ai-luc5.onrender.com';
-
+    const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : 'https://rex-ai-luc5.onrender.com';
     const MODELS = [
-      { id: 'auto', name: 'Auto', short: 'Auto ✦', desc: 'Picks the best model for each question' },
-      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', short: 'Llama 3.3', desc: 'Best general model — fast & smart' },
-      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', short: 'Llama 8B', desc: 'Fastest & lightest model' },
-      { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', short: 'GPT-OSS', desc: 'Strong reasoning & analysis' },
-      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B', short: 'Llama 4', desc: 'Multimodal, long context' },
-      { id: 'moonshotai/kimi-k2-instruct-0905', name: 'Kimi K2', short: 'Kimi K2', desc: 'Agentic coding & tools' },
-      { id: 'meta-llama/llama-guard-4-12b', name: 'Llama Guard 4', short: 'Guard 4', desc: 'Content moderation' },
+      { id: 'auto', name: 'Auto', short: 'Auto ✦', desc: 'Picks best model automatically' },
+      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', short: 'Llama 3.3', desc: 'Best general model' },
+      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', short: 'Llama 8B', desc: 'Fastest model' },
+      { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', short: 'GPT-OSS', desc: 'Strong reasoning' },
+      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout', short: 'Llama 4', desc: 'Long context' },
+      { id: 'moonshotai/kimi-k2-instruct-0905', name: 'Kimi K2', short: 'Kimi K2', desc: 'Coding & tools' },
     ];
-
-    function autoSelectModel(text) {
-      const t = text.toLowerCase();
-      if (/\b(code|debug|error|function|class|bug|fix|script|program|algorithm|syntax|python|javascript|html|css|sql|bash|compile|loop|array|api|json|git|docker)\b/.test(t))
-        return { id: 'moonshotai/kimi-k2-instruct-0905', label: 'Kimi K2 (coding)' };
-      if (/\b(math|calculate|equation|proof|logic|reason|analyze|compare|explain why|difference between|pros and cons|evaluate|strategy)\b/.test(t))
-        return { id: 'openai/gpt-oss-120b', label: 'GPT-OSS (reasoning)' };
-      if (/\b(summarize|document|article|essay|long|translate|read|paragraph|chapter|book|report)\b/.test(t))
-        return { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 (long context)' };
-      if (text.length < 60 && /\b(what is|who is|when|where|define|meaning|quick|simple)\b/.test(t))
-        return { id: 'llama-3.1-8b-instant', label: 'Llama 8B (quick)' };
+    function autoModel(t) {
+      const tl = t.toLowerCase();
+      if (/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json|git)\b/.test(tl)) return { id: 'moonshotai/kimi-k2-instruct-0905', label: 'Kimi K2 (coding)' };
+      if (/\b(math|reason|analyze|compare|explain why|evaluate|strategy|proof)\b/.test(tl)) return { id: 'openai/gpt-oss-120b', label: 'GPT-OSS (reasoning)' };
+      if (/\b(summarize|document|long|translate|essay|report)\b/.test(tl)) return { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 (long)' };
+      if (t.length < 60 && /\b(what is|who is|when|where|define|quick)\b/.test(tl)) return { id: 'llama-3.1-8b-instant', label: 'Llama 8B (quick)' };
       return { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 (general)' };
     }
-
     window.copyCode = function (btn) {
-      const wrap = btn.closest('.code-wrap');
-      const codeEl = wrap ? wrap.querySelector('pre code') : null;
-      const code = codeEl ? (codeEl.innerText || codeEl.textContent) : '';
-      navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = '✓ Copied'; btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
-      }).catch(() => {
-        const ta = document.createElement('textarea'); ta.value = code;
-        ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.focus(); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-        btn.textContent = '✓ Copied'; btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
-      });
+      const code = btn.closest('.code-wrap')?.querySelector('pre code');
+      const txt = code ? (code.innerText || code.textContent) : '';
+      navigator.clipboard.writeText(txt).then(() => { btn.textContent = '✓ Copied'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000); });
     };
-
-    function md(text) {
+    function renderMd(text) {
       if (!text) return '';
       let t = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-        const langLabel = lang ? '<span class="code-lang">' + lang + '</span>' : '';
-        return '<div class="code-wrap"><div class="code-hdr">' + langLabel + '<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>';
-      });
+      t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => '<div class="code-wrap"><div class="code-hdr">' + (lang ? '<span class="code-lang">' + lang + '</span>' : '') + '<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>');
       t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
       t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
       t = t.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
@@ -1732,19 +1543,28 @@
       t = t.replace(/^---+$/gm, '<hr>');
       t = t.replace(/((?:^\d+\. .+\n?)+)/gm, m => '<ol>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /, '') + '</li>').join('') + '</ol>');
       t = t.replace(/((?:^[*\-] .+\n?)+)/gm, m => '<ul>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^[*\-] /, '') + '</li>').join('') + '</ul>');
-      t = t.split(/\n\n+/).map(para => {
-        para = para.trim(); if (!para) return '';
-        if (/^<(h[123]|ul|ol|pre|blockquote|hr|table|div)/.test(para)) return para;
-        return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
-      }).join('');
+      t = t.split(/\n\n+/).map(p => { p = p.trim(); if (!p) return ''; if (/^<(h[123]|ul|ol|pre|blockquote|hr|div)/.test(p)) return p; return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
       return t;
     }
-
     const CHAT_KEY = 'rex-chats-v5', MEM_KEY = 'rex-mems-v1';
     function loadChats() { try { return JSON.parse(localStorage.getItem(CHAT_KEY) || '[]'); } catch { return []; } }
     function saveChats(c) { localStorage.setItem(CHAT_KEY, JSON.stringify(c)); }
     function loadMems() { try { return JSON.parse(localStorage.getItem(MEM_KEY) || '[]'); } catch { return []; } }
     function saveMems(m) { localStorage.setItem(MEM_KEY, JSON.stringify(m)); }
+
+    function pdfFooter(doc, pageH, margin, gold, muted, total) {
+      for (let p = 1; p <= total; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(...gold); doc.setLineWidth(0.3);
+        doc.line(margin, pageH - 18, doc.internal.pageSize.getWidth() - margin, pageH - 18);
+        doc.setFont('times', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
+        doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh', margin, pageH - 13);
+        doc.setTextColor(...gold);
+        doc.textWithLink('instagram.com/raheeldurwesh', margin, pageH - 7, { url: 'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==' });
+        doc.setTextColor(...muted);
+        doc.text('Page ' + p + ' of ' + total, doc.internal.pageSize.getWidth() - margin, pageH - 7, { align: 'right' });
+      }
+    }
 
     createApp({
       setup() {
@@ -1752,55 +1572,39 @@
         const inp = ref(''), streaming = ref(false), stxt = ref('');
         const msgsEl = ref(null), taEl = ref(null), editEl = ref(null);
         const sbOpen = ref(window.innerWidth > 640), isMobile = ref(window.innerWidth <= 640);
-        const editIdx = ref(null), editTxt = ref(''), cpIdx = ref(null);
+        const editIdx = ref(null), editTxt = ref(''), cpIdx = ref(null), pdfIdx = ref(null);
         const selModelId = ref('auto'), mdOpen = ref(false);
         const memOpen = ref(false), mems = ref(loadMems());
-        const activeModel = ref('');
-        const pdfIdx = ref(null);
-        const showBottom = ref(false);
-        const isDark = ref(true);
-        const webSearch = ref(false);
-        const searching = ref(false);
-        const searchQuery = ref('');
-        const shareOpen = ref(false);
-        const shareUrl = ref('');
-        const shareCopied = ref(false);
-        const showScrollBtn = ref(false);
+        const activeModel = ref(''), showBottom = ref(false);
+        const isDark = ref(true), webSearch = ref(false);
+        const searching = ref(false), searchQuery = ref('');
+        const shareOpen = ref(false), shareUrl = ref(''), shareCopied = ref(false);
         let userScrolled = false;
 
         const title = computed(() => { const c = chats.value.find(c => c.id === cid.value); return c ? c.title : 'Rex AI'; });
         const selModel = computed(() => MODELS.find(m => m.id === selModelId.value) || MODELS[0]);
 
         onMounted(() => {
-          // Theme init
-          const savedTheme = localStorage.getItem('rex-theme');
-          if (savedTheme === 'light') { isDark.value = false; document.body.classList.add('light'); }
-
+          const saved = localStorage.getItem('rex-theme');
+          if (saved === 'light') { isDark.value = false; document.body.classList.add('light'); }
           window.addEventListener('resize', () => { isMobile.value = window.innerWidth <= 640; });
           document.addEventListener('click', e => { if (!e.target.closest('.msel')) mdOpen.value = false; });
           nextTick(() => {
             if (msgsEl.value) {
               msgsEl.value.addEventListener('scroll', () => {
-                const el = msgsEl.value;
-                const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
-                userScrolled = dist > 60;
-                showScrollBtn.value = dist > 200;
+                const el = msgsEl.value, dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+                userScrolled = dist > 60; showBottom.value = dist > 200;
               });
             }
           });
-          // Load shared chat from URL
           const params = new URLSearchParams(window.location.search);
           const shared = params.get('share');
           if (shared) {
             try {
               const data = JSON.parse(decodeURIComponent(escape(atob(shared))));
-              msgs.value = data.messages || [];
-              cid.value = null;
-              nextTick(() => scrollBottom(true));
-            } catch (e) { console.error('Invalid share link'); }
-          } else if (chats.value.length > 0) {
-            loadChat(chats.value[0].id, false);
-          }
+              msgs.value = data.messages || []; nextTick(() => scrollBottom(true));
+            } catch (e) { }
+          } else if (chats.value.length > 0) { loadChat(chats.value[0].id, false); }
         });
 
         function scrollBottom(force = false) {
@@ -1809,6 +1613,9 @@
         }
         function resize() { const el = taEl.value; if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; } }
         function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+        function goBottom() { userScrolled = false; showBottom.value = false; scrollBottom(true); }
+        function toggleTheme() { isDark.value = !isDark.value; document.body.classList.toggle('light', !isDark.value); localStorage.setItem('rex-theme', isDark.value ? 'dark' : 'light'); }
+        function parseSearch(content) { try { return JSON.parse(content.replace('__SEARCH__', '')); } catch { return []; } }
 
         function loadChat(id, closeSb = true) {
           const chat = chats.value.find(c => c.id === id); if (!chat) return;
@@ -1816,19 +1623,14 @@
           if (closeSb && isMobile.value) sbOpen.value = false;
           userScrolled = false; scrollBottom(true);
         }
-        function newChat() {
-          cid.value = null; msgs.value = []; editIdx.value = null;
-          if (isMobile.value) sbOpen.value = false;
-          nextTick(() => taEl.value && taEl.value.focus());
-        }
-        function saveChat(finalMsgs) {
+        function newChat() { cid.value = null; msgs.value = []; editIdx.value = null; if (isMobile.value) sbOpen.value = false; nextTick(() => taEl.value && taEl.value.focus()); }
+        function saveChat(m) {
           if (!cid.value) {
-            const id = Date.now().toString();
-            const title = finalMsgs[0]?.content?.slice(0, 36) || (finalMsgs[0]?.content?.length > 36 ? '…' : '') || 'New Chat';
-            cid.value = id; chats.value.unshift({ id, title, messages: finalMsgs });
+            const id = Date.now().toString(), t = m[0]?.content?.slice(0, 36) || 'New Chat';
+            cid.value = id; chats.value.unshift({ id, title: t, messages: m });
           } else {
             const idx = chats.value.findIndex(c => c.id === cid.value);
-            if (idx !== -1) chats.value[idx].messages = finalMsgs;
+            if (idx !== -1) chats.value[idx].messages = m;
           }
           saveChats(chats.value);
         }
@@ -1837,464 +1639,183 @@
           if (cid.value === id) { msgs.value = []; cid.value = null; if (chats.value.length > 0) loadChat(chats.value[0].id); }
         }
         function pickModel(id) { selModelId.value = id; mdOpen.value = false; }
-
         function extractMems(text) {
           const rules = [
             { re: /(?:my name is|i(?:'m| am) called)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i, fn: m => 'Name: ' + m },
-            { re: /i(?:'m| am)\s+(?:a |an )?([a-z][\w ]{2,25}?)(?:\.|,| and| who| with)/i, fn: m => 'Role: ' + m },
             { re: /i work (?:at|for|in)\s+([^.,\n]{3,35})/i, fn: m => 'Works at: ' + m },
             { re: /i live in\s+([A-Za-z ,]{3,30})/i, fn: m => 'Lives in: ' + m },
             { re: /i(?:'m| am)\s+(\d{1,2}) years old/i, fn: m => 'Age: ' + m },
-            { re: /i(?:'m| am) (?:building|making|creating|working on)\s+([^.,\n]{5,50})/i, fn: m => 'Building: ' + m },
-            { re: /i (?:love|really like|enjoy|prefer)\s+([^.,\n]{3,35})/i, fn: m => 'Likes: ' + m },
-            { re: /i(?:'m| am) learning\s+([^.,\n]{3,35})/i, fn: m => 'Learning: ' + m },
+            { re: /i(?:'m| am) (?:building|working on)\s+([^.,\n]{5,50})/i, fn: m => 'Building: ' + m },
+            { re: /i (?:love|like|enjoy|prefer)\s+([^.,\n]{3,35})/i, fn: m => 'Likes: ' + m },
           ];
-          for (const { re, fn } of rules) {
-            const match = text.match(re);
-            if (match && match[1]) { const mem = fn(match[1].trim()); if (!mems.value.includes(mem)) { mems.value.push(mem); saveMems(mems.value); } }
-          }
+          for (const { re, fn } of rules) { const match = text.match(re); if (match && match[1]) { const mem = fn(match[1].trim()); if (!mems.value.includes(mem)) { mems.value.push(mem); saveMems(mems.value); } } }
         }
         function delMem(i) { mems.value.splice(i, 1); saveMems(mems.value); }
         function clearMems() { mems.value = []; saveMems(mems.value); }
+
+        function shareChat() {
+          if (!msgs.value.length) return;
+          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ title: title.value, messages: msgs.value }))));
+          shareUrl.value = window.location.origin + window.location.pathname + '?share=' + encoded;
+          shareOpen.value = true; shareCopied.value = false;
+        }
+        function copyShareUrl() { navigator.clipboard.writeText(shareUrl.value).then(() => { shareCopied.value = true; setTimeout(() => { shareCopied.value = false; }, 2000); }); }
 
         async function send() {
           const text = inp.value.trim(); if (!text || streaming.value) return;
           msgs.value.push({ role: 'user', content: text }); inp.value = '';
           nextTick(() => { if (taEl.value) taEl.value.style.height = 'auto'; });
-          userScrolled = false; scrollBottom(true);
-          extractMems(text);
-
-          // Web search if enabled
-          let searchContext = '';
+          userScrolled = false; scrollBottom(true); extractMems(text);
+          let searchCtx = '';
           if (webSearch.value) {
-            searching.value = true;
-            searchQuery.value = text.slice(0, 60);
+            searching.value = true; searchQuery.value = text.slice(0, 60);
             try {
               const res = await fetch(BACKEND + '/search?q=' + encodeURIComponent(text));
               const data = await res.json();
-              if (data.results && data.results.length > 0) {
-                searchContext = '\n\n[Web Search Results for: "' + text + '"]\n';
-                data.results.forEach((r, i) => {
-                  searchContext += (i + 1) + '. ' + r.title + '\n   ' + r.snippet + '\n   Source: ' + r.url + '\n';
-                });
-                // Show search results in chat
-                const searchHtml = data.results.map(r =>
-                  '<div class="search-result"><a href="' + r.url + '" target="_blank">' + r.title + '</a><p>' + r.snippet + '</p></div>'
-                ).join('');
-                msgs.value.push({
-                  role: 'assistant',
-                  content: '__SEARCH__' + JSON.stringify(data.results),
-                  isSearch: true,
-                  usedModel: 'Web Search'
-                });
+              if (data.results && data.results.length) {
+                searchCtx = '\n\n[Web results for: "' + text + '"]\n' + data.results.map((r, i) => (i + 1) + '. ' + r.title + '\n   ' + r.snippet + '\n   ' + r.url).join('\n');
+                msgs.value.push({ role: 'assistant', content: '__SEARCH__' + JSON.stringify(data.results), isSearch: true, usedModel: 'Web Search' });
               }
-            } catch (e) { console.error('Search failed', e); }
+            } catch (e) { console.error(e); }
             finally { searching.value = false; searchQuery.value = ''; }
           }
-
-          await callAPI(msgs.value, text, searchContext);
+          await callAPI(msgs.value, text, searchCtx);
         }
         function qs(text) { inp.value = text; send(); }
 
-        async function callAPI(msgList, userText, searchContext = '') {
+        async function callAPI(msgList, userText, searchCtx) {
           streaming.value = true; stxt.value = '';
           let resolvedId, resolvedLabel;
-          if (selModelId.value === 'auto') {
-            const picked = autoSelectModel(userText || msgList[msgList.length - 1]?.content || '');
-            resolvedId = picked.id; resolvedLabel = picked.label;
-          } else {
-            resolvedId = selModelId.value;
-            resolvedLabel = MODELS.find(m => m.id === resolvedId)?.name || resolvedId;
-          }
+          if (selModelId.value === 'auto') { const p = autoModel(userText || ''); resolvedId = p.id; resolvedLabel = p.label; }
+          else { resolvedId = selModelId.value; resolvedLabel = MODELS.find(m => m.id === resolvedId)?.name || resolvedId; }
           activeModel.value = resolvedLabel;
-          const trimmedMsgs = msgList.slice(-10);
-          const trimmedMems = mems.value.slice(-5);
-          const systemMsg = [{ role: 'system', content: 'You are Rex AI, a helpful assistant.' + (trimmedMems.length > 0 ? '\nUser facts:\n' + trimmedMems.map(m => '- ' + m).join('\n') : '') + searchContext }];
+          const sysMsgs = [{ role: 'system', content: 'You are Rex AI, a helpful assistant.' + (mems.value.length ? '\nUser facts:\n' + mems.value.slice(-5).map(m => '- ' + m).join('\n') : '') + (searchCtx || '') }];
+          const chatMsgs = msgList.slice(-10).filter(m => !m.isSearch).map(m => ({ role: m.role, content: m.content }));
           try {
-            const res = await fetch(BACKEND + '/chat', {
-              method: 'POST', mode: 'cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ model: resolvedId, messages: [...systemMsg, ...trimmedMsgs.filter(m => !m.isSearch).map(m => ({ role: m.role, content: m.content }))] })
-            });
-            const reader = res.body.getReader(); const dec = new TextDecoder();
-            let charBuffer = '', streamDone = false;
-            async function typewriter() {
-              while (!streamDone || charBuffer.length > 0) {
-                if (charBuffer.length > 0) {
-                  const chunk = Math.floor(Math.random() * 3) + 1;
-                  stxt.value += charBuffer.slice(0, chunk); charBuffer = charBuffer.slice(chunk);
-                  scrollBottom(); await new Promise(r => setTimeout(r, Math.random() * 14 + 8));
-                } else { await new Promise(r => setTimeout(r, 10)); }
-              }
-            }
-            async function readStream() {
-              while (true) {
-                const { value, done } = await reader.read(); if (done) break;
-                for (const line of dec.decode(value).split('\n')) {
-                  if (!line.startsWith('data: ')) continue;
-                  const d = line.slice(6); if (d === '[DONE]') break;
-                  try { const p = JSON.parse(d); if (p.error) { charBuffer += '\u26a0\ufe0f ' + p.error; break; } charBuffer += p.text; } catch (e) { }
-                }
-              }
-              streamDone = true;
-            }
-            await Promise.all([readStream(), typewriter()]);
+            const res = await fetch(BACKEND + '/chat', { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: resolvedId, messages: [...sysMsgs, ...chatMsgs] }) });
+            const reader = res.body.getReader(), dec = new TextDecoder();
+            let buf = '', done = false;
+            const read = async () => { while (true) { const { value, done: d } = await reader.read(); if (d) break; for (const line of dec.decode(value).split('\n')) { if (!line.startsWith('data: ')) continue; const s = line.slice(6); if (s === '[DONE]') break; try { const p = JSON.parse(s); if (p.error) { buf += '⚠️ ' + p.error; break; } buf += p.text; } catch (e) { } } }; done = true; };
+            const type = async () => { while (!done || buf.length) { if (buf.length) { const n = Math.floor(Math.random() * 3) + 1; stxt.value += buf.slice(0, n); buf = buf.slice(n); scrollBottom(); await new Promise(r => setTimeout(r, Math.random() * 14 + 8)); } else await new Promise(r => setTimeout(r, 10)); } };
+            await Promise.all([read(), type()]);
             msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: resolvedLabel });
             saveChat(msgs.value);
-          } catch (err) {
-            msgs.value.push({ role: 'assistant', content: '⚠️ Cannot reach backend.', usedModel: '' });
-          } finally {
-            streaming.value = false; stxt.value = ''; activeModel.value = ''; scrollBottom();
-          }
+          } catch (err) { msgs.value.push({ role: 'assistant', content: '⚠️ Cannot reach backend.', usedModel: '' }); }
+          finally { streaming.value = false; stxt.value = ''; activeModel.value = ''; scrollBottom(); }
         }
 
-        function forceScrollBottom() {
-          userScrolled = false;
-          showScrollBtn.value = false;
-          scrollBottom(true);
+        function startEdit(i, c) { editIdx.value = i; editTxt.value = c; nextTick(() => { if (editEl.value) editEl.value.focus(); }); }
+        function cancelEdit() { editIdx.value = null; editTxt.value = ''; }
+        async function saveEdit(i) {
+          const text = editTxt.value.trim(); if (!text) return;
+          msgs.value = msgs.value.slice(0, i); msgs.value.push({ role: 'user', content: text });
+          editIdx.value = null; editTxt.value = ''; userScrolled = false; scrollBottom(true);
+          await callAPI(msgs.value, text, '');
         }
-
-        function toggleTheme() {
-          isDark.value = !isDark.value;
-          document.body.classList.toggle('light', !isDark.value);
-          localStorage.setItem('rex-theme', isDark.value ? 'dark' : 'light');
-        }
-
-        function shareChat() {
-          if (msgs.value.length === 0) return;
-          const data = { title: title.value, messages: msgs.value };
-          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-          shareUrl.value = window.location.origin + window.location.pathname + '?share=' + encoded;
-          shareOpen.value = true;
-          shareCopied.value = false;
-        }
-
-        function copyShareUrl() {
-          navigator.clipboard.writeText(shareUrl.value).then(() => {
-            shareCopied.value = true;
-            setTimeout(() => { shareCopied.value = false; }, 2000);
-          });
-        }
-
-        function exportAllPDF() {
-          if (msgs.value.length === 0) return;
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-          const pageW = doc.internal.pageSize.getWidth();
-          const pageH = doc.internal.pageSize.getHeight();
-          const margin = 20;
-          const maxW = pageW - margin * 2;
-          const gold = [201, 168, 76];
-          const dark = [30, 30, 30];
-          const muted = [120, 112, 96];
-          const blue = [44, 62, 122];
-
-          // Cover header
-          doc.setFillColor(245, 240, 230);
-          doc.rect(0, 0, pageW, 42, 'F');
-          doc.setFont('times', 'bold');
-          doc.setFontSize(24);
-          doc.setTextColor(...gold);
-          doc.text('Rex AI', margin, 20);
-          doc.setFont('times', 'italic');
-          doc.setFontSize(10);
-          doc.setTextColor(...muted);
-          doc.text('Full Conversation Export', margin, 28);
-          doc.text(new Date().toLocaleString(), pageW - margin, 28, { align: 'right' });
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.8);
-          doc.line(margin, 36, pageW - margin, 36);
-
-          let y = 48;
-          const lineH = 6.5;
-
-          function checkPage() {
-            if (y > pageH - 28) { doc.addPage(); y = margin + 4; }
-          }
-
-          for (const msg of msgs.value) {
-            checkPage();
-            if (msg.role === 'user') {
-              // User message header
-              doc.setFillColor(240, 235, 220);
-              doc.roundedRect(margin - 2, y - 5, maxW + 4, 8, 2, 2, 'F');
-              doc.setFont('times', 'bold');
-              doc.setFontSize(10);
-              doc.setTextColor(...blue);
-              doc.text('You', margin + 2, y);
-              y += 8;
-              doc.setFont('times', 'normal');
-              doc.setFontSize(11);
-              doc.setTextColor(...dark);
-              const wrapped = doc.splitTextToSize(msg.content || '', maxW);
-              for (const l of wrapped) { checkPage(); doc.text(l, margin, y); y += lineH; }
-            } else {
-              // AI message header
-              doc.setFillColor(245, 240, 228);
-              doc.roundedRect(margin - 2, y - 5, maxW + 4, 8, 2, 2, 'F');
-              doc.setFont('times', 'bold');
-              doc.setFontSize(10);
-              doc.setTextColor(...gold);
-              doc.text('Rex AI' + (msg.usedModel ? '  (' + msg.usedModel + ')' : ''), margin + 2, y);
-              y += 8;
-
-              // Parse content
-              const lines = (msg.content || '').split('
-');
-          for (const line of lines) {
-                checkPage();
-                if (/^# /.test(line)) {
-                  doc.setFont('times', 'bold'); doc.setFontSize(14); doc.setTextColor(...gold);
-                  const w = doc.splitTextToSize(line.replace(/^# /, ''), maxW);
-                  for (const l of w) { checkPage(); doc.text(l, margin, y); y += 8; }
-                } else if (/^## /.test(line)) {
-                  doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(...gold);
-                  const w = doc.splitTextToSize(line.replace(/^## /, ''), maxW);
-                  for (const l of w) { checkPage(); doc.text(l, margin, y); y += 7; }
-                } else if (/^[*\-] /.test(line)) {
-                  const clean = line.replace(/^[*\-] /, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
-                  doc.setFont('times', 'normal'); doc.setFontSize(11);
-                  doc.setTextColor(...gold); doc.text('•', margin + 2, y);
-                  doc.setTextColor(...dark);
-                  const w = doc.splitTextToSize(clean, maxW - 8);
-                  for (let wi = 0; wi < w.length; wi++) { checkPage(); doc.text(w[wi], margin + 8, y); y += lineH; }
-                  continue;
-                } else if (/^\d+\. /.test(line)) {
-                  const num = line.match(/^(\d+)\./)[1];
-                  const clean = line.replace(/^\d+\. /, '').replace(/\*\*([^*]+)\*\*/g, '$1');
-                  doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(...gold);
-                  doc.text(num + '.', margin + 2, y);
-                  doc.setFont('times', 'normal'); doc.setTextColor(...dark);
-                  const w = doc.splitTextToSize(clean, maxW - 10);
-                  for (let wi = 0; wi < w.length; wi++) { checkPage(); doc.text(w[wi], margin + 10, y); y += lineH; }
-                  continue;
-                } else if (line.trim() === '') {
-                  y += 3;
-                } else if (/^```/.test(line)) {
-                  doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
-                  y += 2;
-                } else {
-                  const clean = line.replace(/\*\*\*([^*]+)\*\*\*/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1');
-                  doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...dark);
-                  const w = doc.splitTextToSize(clean, maxW);
-                  for (const l of w) { checkPage(); doc.text(l, margin, y); y += lineH; }
-                  continue;
-                }
-                y += lineH;
-              }
-            }
-            y += 6;
-            // Divider between messages
-            doc.setDrawColor(200, 190, 170); doc.setLineWidth(0.2);
-            doc.line(margin, y - 3, pageW - margin, y - 3);
-          }
-
-          // Footer on every page
-          const totalPages = doc.internal.getNumberOfPages();
-          for (let p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setDrawColor(...gold); doc.setLineWidth(0.3);
-            doc.line(margin, pageH - 18, pageW - margin, pageH - 18);
-            doc.setFont('times', 'normal'); doc.setFontSize(8);
-            doc.setTextColor(...muted);
-            doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh', margin, pageH - 13);
-            doc.setTextColor(...gold);
-            doc.textWithLink('instagram.com/raheeldurwesh', margin, pageH - 7, { url: 'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==' });
-            doc.setTextColor(...muted);
-            doc.text('Page ' + p + ' of ' + totalPages, pageW - margin, pageH - 7, { align: 'right' });
-          }
-
-          doc.save('rex-ai-conversation.pdf');
-        }
-
-        function goBottom() {
-          userScrolled = false;
-          showBottom.value = false;
-          scrollBottom(true);
-        }
+        function copyMsg(c, i) { navigator.clipboard.writeText(c).then(() => { cpIdx.value = i; setTimeout(() => { cpIdx.value = null; }, 2000); }); }
 
         function exportPDF(content, i) {
           const { jsPDF } = window.jspdf;
           const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-          const pageW = doc.internal.pageSize.getWidth();
-          const pageH = doc.internal.pageSize.getHeight();
-          const margin = 20;
-          const maxW = pageW - margin * 2;
-          const gold = [201, 168, 76];
-          const dark = [30, 30, 30];
-          const muted = [120, 112, 96];
-
-          // Header box
-          doc.setFillColor(245, 240, 230);
-          doc.rect(0, 0, pageW, 36, 'F');
-          doc.setFont('times', 'bold');
-          doc.setFontSize(22);
-          doc.setTextColor(...gold);
-          doc.text('Rex AI', margin, 18);
-          doc.setFont('times', 'italic');
-          doc.setFontSize(9);
-          doc.setTextColor(...muted);
+          const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), margin = 20, maxW = pageW - margin * 2;
+          const gold = [201, 168, 76], dark = [30, 30, 30], muted = [120, 112, 96];
+          doc.setFillColor(245, 240, 230); doc.rect(0, 0, pageW, 36, 'F');
+          doc.setFont('times', 'bold'); doc.setFontSize(22); doc.setTextColor(...gold); doc.text('Rex AI', margin, 18);
+          doc.setFont('times', 'italic'); doc.setFontSize(9); doc.setTextColor(...muted);
           doc.text('Your Intelligent Assistant', margin, 25);
-          doc.setFont('times', 'normal');
-          doc.setFontSize(9);
           doc.text(new Date().toLocaleString(), pageW - margin, 25, { align: 'right' });
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.8);
-          doc.line(margin, 33, pageW - margin, 33);
-
-          // Parse and render content line by line with styling
-          let y = 44;
-          const lineH = 7;
+          doc.setDrawColor(...gold); doc.setLineWidth(0.8); doc.line(margin, 33, pageW - margin, 33);
+          let y = 44; const lh = 7;
+          const checkPg = () => { if (y > pageH - 28) { doc.addPage(); y = margin + 6; } };
           const lines = content.split('\n');
-
-          function checkPage() {
-            if (y > pageH - 28) { doc.addPage(); y = margin + 6; }
-          }
-
-          for (let line of lines) {
-            checkPage();
-
-            // H1 heading
-            if (/^# /.test(line)) {
-              const text = line.replace(/^# /, '');
-              doc.setFont('times', 'bold');
-              doc.setFontSize(15);
-              doc.setTextColor(...gold);
-              const wrapped = doc.splitTextToSize(text, maxW);
-              for (const l of wrapped) { checkPage(); doc.text(l, margin, y); y += 8; }
-              y += 2;
-
-              // H2 heading
-            } else if (/^## /.test(line)) {
-              const text = line.replace(/^## /, '');
-              doc.setFont('times', 'bold');
-              doc.setFontSize(13);
-              doc.setTextColor(...gold);
-              const wrapped = doc.splitTextToSize(text, maxW);
-              for (const l of wrapped) { checkPage(); doc.text(l, margin, y); y += 7; }
-              y += 1;
-
-              // H3 heading
-            } else if (/^### /.test(line)) {
-              const text = line.replace(/^### /, '');
-              doc.setFont('times', 'bolditalic');
-              doc.setFontSize(12);
-              doc.setTextColor(...gold);
-              const wrapped = doc.splitTextToSize(text, maxW);
-              for (const l of wrapped) { checkPage(); doc.text(l, margin, y); y += 7; }
-
-              // Bullet points
-            } else if (/^[*\-] /.test(line)) {
-              const text = line.replace(/^[*\-] /, '');
-              const clean = text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
-              doc.setFont('times', 'normal');
-              doc.setFontSize(11);
-              doc.setTextColor(...gold);
-              doc.text('•', margin + 2, y);
-              doc.setTextColor(...dark);
-              const wrapped = doc.splitTextToSize(clean, maxW - 8);
-              for (let wi = 0; wi < wrapped.length; wi++) {
-                checkPage();
-                doc.text(wrapped[wi], margin + 8, y);
-                y += lineH;
-              }
-              continue;
-
-              // Numbered list
-            } else if (/^\d+\. /.test(line)) {
-              const num = line.match(/^(\d+)\. /)[1];
-              const text = line.replace(/^\d+\. /, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
-              doc.setFont('times', 'bold');
-              doc.setFontSize(11);
-              doc.setTextColor(...gold);
-              doc.text(num + '.', margin + 2, y);
-              doc.setFont('times', 'normal');
-              doc.setTextColor(...dark);
-              const wrapped = doc.splitTextToSize(text, maxW - 8);
-              for (let wi = 0; wi < wrapped.length; wi++) {
-                checkPage();
-                doc.text(wrapped[wi], margin + 10, y);
-                y += lineH;
-              }
-              continue;
-
-              // Code block line
-            } else if (/^```/.test(line)) {
-              doc.setFont('courier', 'normal');
-              doc.setFontSize(9);
-              doc.setTextColor(80, 80, 80);
-              y += 2;
-
-              // Horizontal rule
-            } else if (/^---+$/.test(line)) {
-              doc.setDrawColor(...gold);
-              doc.setLineWidth(0.3);
-              doc.line(margin, y - 2, pageW - margin, y - 2);
-              y += 3;
-
-              // Empty line
-            } else if (line.trim() === '') {
-              y += 3;
-
-              // Normal paragraph
-            } else {
-              const clean = line
-                .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
-                .replace(/\*\*([^*]+)\*\*/g, '$1')
-                .replace(/\*([^*]+)\*/g, '$1')
-                .replace(/`([^`]+)`/g, '$1');
-              doc.setFont('times', 'normal');
-              doc.setFontSize(11);
-              doc.setTextColor(...dark);
-              const wrapped = doc.splitTextToSize(clean, maxW);
-              for (const l of wrapped) { checkPage(); doc.text(l, margin, y); y += lineH; }
-              continue;
+          for (const line of lines) {
+            checkPg();
+            if (/^# /.test(line)) { doc.setFont('times', 'bold'); doc.setFontSize(15); doc.setTextColor(...gold); doc.splitTextToSize(line.replace(/^# /, ''), maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += 8; }); y += 2; }
+            else if (/^## /.test(line)) { doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(...gold); doc.splitTextToSize(line.replace(/^## /, ''), maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += 7; }); }
+            else if (/^### /.test(line)) { doc.setFont('times', 'bolditalic'); doc.setFontSize(12); doc.setTextColor(...gold); doc.splitTextToSize(line.replace(/^### /, ''), maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += 7; }); }
+            else if (/^[*\-] /.test(line)) {
+              const cl = line.replace(/^[*\-] /, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
+              doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...gold); doc.text('•', margin + 2, y);
+              doc.setTextColor(...dark); doc.splitTextToSize(cl, maxW - 8).forEach(l => { checkPg(); doc.text(l, margin + 8, y); y += lh; }); continue;
             }
-            y += lineH;
+            else if (/^\d+\. /.test(line)) {
+              const num = line.match(/^(\d+)\./)[1], cl = line.replace(/^\d+\. /, '').replace(/\*\*([^*]+)\*\*/g, '$1');
+              doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(...gold); doc.text(num + '.', margin + 2, y);
+              doc.setFont('times', 'normal'); doc.setTextColor(...dark); doc.splitTextToSize(cl, maxW - 8).forEach(l => { checkPg(); doc.text(l, margin + 10, y); y += lh; }); continue;
+            }
+            else if (/^---+$/.test(line)) { doc.setDrawColor(...gold); doc.setLineWidth(0.3); doc.line(margin, y - 2, pageW - margin, y - 2); y += 3; }
+            else if (line.trim() === '') { y += 3; }
+            else if (/^```/.test(line)) { doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(80, 80, 80); y += 2; }
+            else {
+              const cl = line.replace(/\*\*\*([^*]+)\*\*\*/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+              doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...dark);
+              doc.splitTextToSize(cl, maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += lh; }); continue;
+            }
+            y += lh;
           }
-
-          // Footer on every page
-          const totalPages = doc.internal.getNumberOfPages();
-          for (let p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setDrawColor(...gold);
-            doc.setLineWidth(0.3);
-            doc.line(margin, pageH - 18, pageW - margin, pageH - 18);
-            doc.setFont('times', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(...muted);
-            doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh', margin, pageH - 13);
-            doc.setTextColor(...gold);
-            doc.textWithLink('instagram.com/raheeldurwesh', margin, pageH - 7, { url: 'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==' });
-            doc.setTextColor(...muted);
-            doc.text('Page ' + p + ' of ' + totalPages, pageW - margin, pageH - 7, { align: 'right' });
-          }
-
+          pdfFooter(doc, pageH, margin, gold, muted, doc.internal.getNumberOfPages());
           doc.save('rex-ai-response.pdf');
-          pdfIdx.value = i;
-          setTimeout(() => { pdfIdx.value = null; }, 2000);
+          pdfIdx.value = i; setTimeout(() => { pdfIdx.value = null; }, 2000);
         }
 
-        function startEdit(i, content) { editIdx.value = i; editTxt.value = content; nextTick(() => { if (editEl.value) editEl.value.focus(); }); }
-        function cancelEdit() { editIdx.value = null; editTxt.value = ''; }
-        async function saveEdit(i) {
-          const text = editTxt.value.trim(); if (!text) return;
-          msgs.value = msgs.value.slice(0, i);
-          msgs.value.push({ role: 'user', content: text });
-          editIdx.value = null; editTxt.value = '';
-          userScrolled = false; scrollBottom(true);
-          await callAPI(msgs.value, text);
-        }
-        function copyMsg(content, i) {
-          navigator.clipboard.writeText(content).then(() => { cpIdx.value = i; setTimeout(() => { cpIdx.value = null; }, 2000); });
+        function exportAllPDF() {
+          if (!msgs.value.length) return;
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+          const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), margin = 20, maxW = pageW - margin * 2;
+          const gold = [201, 168, 76], dark = [30, 30, 30], muted = [120, 112, 96], blue = [44, 62, 122];
+          doc.setFillColor(245, 240, 230); doc.rect(0, 0, pageW, 42, 'F');
+          doc.setFont('times', 'bold'); doc.setFontSize(24); doc.setTextColor(...gold); doc.text('Rex AI', margin, 20);
+          doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(...muted);
+          doc.text('Full Conversation Export', margin, 28); doc.text(new Date().toLocaleString(), pageW - margin, 28, { align: 'right' });
+          doc.setDrawColor(...gold); doc.setLineWidth(0.8); doc.line(margin, 36, pageW - margin, 36);
+          let y = 48; const lh = 6.5;
+          const checkPg = () => { if (y > pageH - 28) { doc.addPage(); y = margin + 4; } };
+          for (const msg of msgs.value) {
+            if (msg.isSearch) continue;
+            checkPg();
+            if (msg.role === 'user') {
+              doc.setFillColor(240, 235, 220); doc.roundedRect(margin - 2, y - 5, maxW + 4, 8, 2, 2, 'F');
+              doc.setFont('times', 'bold'); doc.setFontSize(10); doc.setTextColor(...blue); doc.text('You', margin + 2, y); y += 8;
+              doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...dark);
+              doc.splitTextToSize(msg.content || '', maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += lh; });
+            } else {
+              doc.setFillColor(245, 240, 228); doc.roundedRect(margin - 2, y - 5, maxW + 4, 8, 2, 2, 'F');
+              doc.setFont('times', 'bold'); doc.setFontSize(10); doc.setTextColor(...gold);
+              doc.text('Rex AI' + (msg.usedModel ? ' (' + msg.usedModel + ')' : ''), margin + 2, y); y += 8;
+              const lines = (msg.content || '').split('\n');
+              for (const line of lines) {
+                checkPg();
+                if (/^[#]{1,3} /.test(line)) { doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(...gold); doc.splitTextToSize(line.replace(/^#+\s/, ''), maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += 7; }); }
+                else if (/^[*\-] /.test(line)) {
+                  const cl = line.replace(/^[*\-] /, '').replace(/\*\*([^*]+)\*\*/g, '$1');
+                  doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...gold); doc.text('•', margin + 2, y);
+                  doc.setTextColor(...dark); doc.splitTextToSize(cl, maxW - 8).forEach(l => { checkPg(); doc.text(l, margin + 8, y); y += lh; }); continue;
+                }
+                else if (line.trim() === '') { y += 3; }
+                else {
+                  const cl = line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+                  doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(...dark);
+                  doc.splitTextToSize(cl, maxW).forEach(l => { checkPg(); doc.text(l, margin, y); y += lh; }); continue;
+                }
+                y += lh;
+              }
+            }
+            y += 6; doc.setDrawColor(200, 190, 170); doc.setLineWidth(0.2); doc.line(margin, y - 3, pageW - margin, y - 3);
+          }
+          pdfFooter(doc, pageH, margin, gold, muted, doc.internal.getNumberOfPages());
+          doc.save('rex-ai-conversation.pdf');
         }
 
         return {
           MODELS, chats, cid, msgs, inp, streaming, stxt, activeModel,
           msgsEl, taEl, editEl, sbOpen, isMobile,
-          editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen, memOpen, mems, title, md,
-          newChat, loadChat, delChat, send, qs, onKey, resize, exportPDF, pdfIdx, showBottom, goBottom, exportAllPDF,
-          isDark, toggleTheme, webSearch, searching, searchQuery, shareOpen, shareUrl, shareCopied, shareChat, copyShareUrl, showScrollBtn, forceScrollBottom,
+          editIdx, editTxt, cpIdx, pdfIdx, selModelId, selModel, mdOpen,
+          memOpen, mems, title, renderMd, parseSearch,
+          newChat, loadChat, delChat, send, qs, onKey, resize,
+          exportPDF, exportAllPDF, showBottom, goBottom,
+          isDark, toggleTheme, webSearch, searching, searchQuery,
+          shareOpen, shareUrl, shareCopied, shareChat, copyShareUrl,
           pickModel, delMem, clearMems, startEdit, cancelEdit, saveEdit, copyMsg,
         };
       }
