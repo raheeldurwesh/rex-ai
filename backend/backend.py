@@ -2,6 +2,7 @@ import os
 import random
 import json
 import re
+import urllib.parse
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,39 +50,22 @@ async def search(q: str):
             html = r.text
             results = []
 
-            # Extract result blocks
-            blocks = re.findall(r'<div class="result__body">(.*?)</div>\s*</div>', html, re.DOTALL)
-            for block in blocks[:6]:
-                # Extract URL
-                url_match = re.search(r'href="(https?://[^"&]+)"', block)
-                # Extract title
-                title_match = re.search(r'<a[^>]+class="result__a"[^>]*>([^<]+)</a>', block)
-                # Extract snippet
-                snippet_match = re.search(r'<a[^>]+class="result__snippet"[^>]*>([^<]+)</a>', block)
-                if not snippet_match:
-                    snippet_match = re.search(r'class="result__snippet"[^>]*>(.*?)</a>', block, re.DOTALL)
+            # Extract uddg= redirect URLs (these are the real URLs encoded)
+            # DuckDuckGo wraps real URLs in uddg= parameter
+            raw_urls = re.findall(r'uddg=(https?[^&">\s]+)', html)
+            titles = re.findall(r'class="result__a"[^>]*>([^<]+)<', html)
+            snippets = re.findall(r'class="result__snippet"[^>]*>([^<]+)<', html)
 
-                if url_match and title_match:
-                    snippet = snippet_match.group(1).strip() if snippet_match else ""
-                    snippet = re.sub(r'<[^>]+>', '', snippet)
-                    results.append({
-                        "title": title_match.group(1).strip(),
-                        "url": url_match.group(1),
-                        "snippet": snippet[:250]
-                    })
-
-            if not results:
-                # Fallback: simpler extraction
-                urls = re.findall(r'uddg=(https?[^&"]+)', html)
-                titles = re.findall(r'class="result__a"[^>]*>([^<]+)<', html)
-                snippets = re.findall(r'class="result__snippet"[^>]*>([^<]+)<', html)
-                for i in range(min(5, len(urls), len(titles))):
-                    import urllib.parse
-                    results.append({
-                        "title": titles[i].strip(),
-                        "url": urllib.parse.unquote(urls[i]),
-                        "snippet": snippets[i].strip() if i < len(snippets) else ""
-                    })
+            for i in range(min(5, len(raw_urls), len(titles))):
+                real_url = urllib.parse.unquote(raw_urls[i])
+                # Skip duckduckgo internal links
+                if 'duckduckgo.com' in real_url:
+                    continue
+                results.append({
+                    "title": titles[i].strip(),
+                    "url": real_url,
+                    "snippet": snippets[i].strip() if i < len(snippets) else ""
+                })
 
             return {"results": results[:5]}
     except Exception as e:
