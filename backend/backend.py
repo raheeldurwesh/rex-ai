@@ -29,6 +29,23 @@ API_KEYS = [
 ]
 API_KEYS = [k for k in API_KEYS if k]
 
+FALLBACK_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "openai/gpt-oss-120b",
+    "moonshotai/kimi-k2-instruct-0905",
+]
+
+def is_rate_limit(err):
+    return '429' in str(err) or 'rate_limit' in str(err).lower() or 'rate limit' in str(err).lower()
+
+def get_reset_time(err):
+    match = re.search(r'try again in ([\dm\s\.]+s)', str(err), re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
+
 @app.get("/")
 def root():
     return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
@@ -49,16 +66,11 @@ async def search(q: str):
             )
             html = r.text
             results = []
-
-            # Split by result divs and extract each individually
             result_blocks = re.split(r'<div class="result ', html)
-
             for block in result_blocks[1:]:
-                # Extract real URL from uddg= in THIS block only
                 url_match = re.search(r'uddg=(https?[^&">\s]+)', block)
                 title_match = re.search(r'class="result__a"[^>]*>([^<]+)<', block)
                 snippet_match = re.search(r'class="result__snippet"[^>]*>([^<]+)<', block)
-
                 if url_match and title_match:
                     real_url = urllib.parse.unquote(url_match.group(1))
                     if 'duckduckgo.com' in real_url:
@@ -68,10 +80,8 @@ async def search(q: str):
                         "url": real_url,
                         "snippet": snippet_match.group(1).strip() if snippet_match else ""
                     })
-
                 if len(results) >= 5:
                     break
-
             return {"results": results}
     except Exception as e:
         return {"results": [], "error": str(e)}
@@ -80,30 +90,49 @@ async def search(q: str):
 async def chat(request: dict):
     async def generate():
         if not API_KEYS:
-            yield f"data: {json.dumps({'error': 'No API keys configured'})}\n\n"
+            yield f"data: {json.dumps({'text': '⚠️ Service unavailable. Please try again later.'})}\n\n"
             yield "data: [DONE]\n\n"
             return
+
+        requested_model = request.get("model", "llama-3.3-70b-versatile")
+        messages = request.get("messages", [])
+        models_to_try = [requested_model] + [m for m in FALLBACK_MODELS if m != requested_model]
         keys_to_try = API_KEYS.copy()
         random.shuffle(keys_to_try)
-        last_error = None
-        for key in keys_to_try:
-            try:
-                client = Groq(api_key=key)
-                stream = client.chat.completions.create(
-                    model=request.get("model", "llama-3.3-70b-versatile"),
-                    messages=request.get("messages", []),
-                    stream=True,
-                    max_tokens=4096,
-                )
-                for chunk in stream:
-                    text = chunk.choices[0].delta.content or ""
-                    if text:
-                        yield f"data: {json.dumps({'text': text})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            except Exception as e:
-                last_error = str(e)
-                continue
-        yield f"data: {json.dumps({'error': last_error})}\n\n"
+        last_reset_time = None
+
+        for model in models_to_try:
+            for key in keys_to_try:
+                try:
+                    client = Groq(api_key=key)
+                    stream = client.chat.completions.create(
+                        model=model,
+                        messages=messages,
+                        stream=True,
+                        max_tokens=4096,
+                    )
+                    for chunk in stream:
+                        text = chunk.choices[0].delta.content or ""
+                        if text:
+                            yield f"data: {json.dumps({'text': text})}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+                except Exception as e:
+                    if is_rate_limit(e):
+                        t = get_reset_time(e)
+                        if t:
+                            last_reset_time = t
+                        continue
+                    else:
+                        continue
+
+        # All exhausted - show clean message
+        if last_reset_time:
+            msg = f"⏳ I'm currently at capacity. Please try again in **{last_reset_time}**."
+        else:
+            msg = "⏳ I'm currently at capacity. Please try again in a few minutes."
+
+        yield f"data: {json.dumps({'text': msg})}\n\n"
         yield "data: [DONE]\n\n"
+
     return StreamingResponse(generate(), media_type="text/event-stream")
