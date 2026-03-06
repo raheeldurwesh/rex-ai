@@ -389,6 +389,18 @@ function renderMd(text){
   t=t.replace(/^# (.+)$/gm,'<h1>$1</h1>');
   t=t.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
   t=t.replace(/^---+$/gm,'<hr>');
+  // Tables
+  t=t.replace(/((?:^\|.+\|\n?)+)/gm,function(block){
+    var rows=block.trim().split('\n');
+    var html='<table>';
+    rows.forEach(function(row,i){
+      if(/^\|[-\s|:]+\|$/.test(row.trim()))return;
+      var cells=row.trim().replace(/^\|/,'').replace(/\|$/,'').split('|');
+      var tag=i===0?'th':'td';
+      html+='<tr>'+cells.map(function(c){return'<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
+    });
+    return html+'</table>';
+  });
   t=t.replace(/((?:^\d+\. .+\n?)+)/gm,function(m){return'<ol>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^\d+\. /,'')+'</li>';}).join('')+'</ol>';});
   t=t.replace(/((?:^[*\-] .+\n?)+)/gm,function(m){return'<ul>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^[*\-] /,'')+'</li>';}).join('')+'</ul>';});
   t=t.split(/\n\n+/).map(function(p){p=p.trim();if(!p)return'';if(/^<(h[123]|ul|ol|pre|blockquote|hr|div)/.test(p))return p;return'<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');
