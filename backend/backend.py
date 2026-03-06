@@ -1,6 +1,7 @@
 import os
 import random
 import json
+import re
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,32 +36,54 @@ def root():
 async def search(q: str):
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
-            # Try DuckDuckGo HTML search
             r = await client.get(
                 "https://html.duckduckgo.com/html/",
                 params={"q": q},
                 headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "text/html",
+                    "Accept": "text/html,application/xhtml+xml",
+                    "Accept-Language": "en-US,en;q=0.9",
                 },
                 timeout=10
             )
-            import re
+            html = r.text
             results = []
-            # Extract result titles and snippets
-            titles = re.findall(r'class="result__title"[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>([^<]+)', r.text)
-            snippets = re.findall(r'class="result__snippet"[^>]*>([^<]+)', r.text)
-            for i, (url, title) in enumerate(titles[:5]):
-                if url.startswith('http'):
+
+            # Extract result blocks
+            blocks = re.findall(r'<div class="result__body">(.*?)</div>\s*</div>', html, re.DOTALL)
+            for block in blocks[:6]:
+                # Extract URL
+                url_match = re.search(r'href="(https?://[^"&]+)"', block)
+                # Extract title
+                title_match = re.search(r'<a[^>]+class="result__a"[^>]*>([^<]+)</a>', block)
+                # Extract snippet
+                snippet_match = re.search(r'<a[^>]+class="result__snippet"[^>]*>([^<]+)</a>', block)
+                if not snippet_match:
+                    snippet_match = re.search(r'class="result__snippet"[^>]*>(.*?)</a>', block, re.DOTALL)
+
+                if url_match and title_match:
+                    snippet = snippet_match.group(1).strip() if snippet_match else ""
+                    snippet = re.sub(r'<[^>]+>', '', snippet)
                     results.append({
-                        "title": title.strip(),
-                        "url": url,
+                        "title": title_match.group(1).strip(),
+                        "url": url_match.group(1),
+                        "snippet": snippet[:250]
+                    })
+
+            if not results:
+                # Fallback: simpler extraction
+                urls = re.findall(r'uddg=(https?[^&"]+)', html)
+                titles = re.findall(r'class="result__a"[^>]*>([^<]+)<', html)
+                snippets = re.findall(r'class="result__snippet"[^>]*>([^<]+)<', html)
+                for i in range(min(5, len(urls), len(titles))):
+                    import urllib.parse
+                    results.append({
+                        "title": titles[i].strip(),
+                        "url": urllib.parse.unquote(urls[i]),
                         "snippet": snippets[i].strip() if i < len(snippets) else ""
                     })
-            # Debug: return raw length if no results
-            if not results:
-                return {"results": [], "debug": f"HTML length: {len(r.text)}, status: {r.status_code}"}
-            return {"results": results}
+
+            return {"results": results[:5]}
     except Exception as e:
         return {"results": [], "error": str(e)}
 
