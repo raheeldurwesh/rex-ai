@@ -50,24 +50,29 @@ async def search(q: str):
             html = r.text
             results = []
 
-            # Extract uddg= redirect URLs (these are the real URLs encoded)
-            # DuckDuckGo wraps real URLs in uddg= parameter
-            raw_urls = re.findall(r'uddg=(https?[^&">\s]+)', html)
-            titles = re.findall(r'class="result__a"[^>]*>([^<]+)<', html)
-            snippets = re.findall(r'class="result__snippet"[^>]*>([^<]+)<', html)
+            # Split by result divs and extract each individually
+            result_blocks = re.split(r'<div class="result ', html)
 
-            for i in range(min(5, len(raw_urls), len(titles))):
-                real_url = urllib.parse.unquote(raw_urls[i])
-                # Skip duckduckgo internal links
-                if 'duckduckgo.com' in real_url:
-                    continue
-                results.append({
-                    "title": titles[i].strip(),
-                    "url": real_url,
-                    "snippet": snippets[i].strip() if i < len(snippets) else ""
-                })
+            for block in result_blocks[1:]:
+                # Extract real URL from uddg= in THIS block only
+                url_match = re.search(r'uddg=(https?[^&">\s]+)', block)
+                title_match = re.search(r'class="result__a"[^>]*>([^<]+)<', block)
+                snippet_match = re.search(r'class="result__snippet"[^>]*>([^<]+)<', block)
 
-            return {"results": results[:5]}
+                if url_match and title_match:
+                    real_url = urllib.parse.unquote(url_match.group(1))
+                    if 'duckduckgo.com' in real_url:
+                        continue
+                    results.append({
+                        "title": title_match.group(1).strip(),
+                        "url": real_url,
+                        "snippet": snippet_match.group(1).strip() if snippet_match else ""
+                    })
+
+                if len(results) >= 5:
+                    break
+
+            return {"results": results}
     except Exception as e:
         return {"results": [], "error": str(e)}
 
