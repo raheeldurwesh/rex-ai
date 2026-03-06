@@ -365,11 +365,11 @@ const MODELS=[
 ];
 function autoModel(t){
   const tl=t.toLowerCase();
-  if(/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json|git)\b/.test(tl))return{id:'moonshotai/kimi-k2-instruct-0905',label:'Kimi K2 (coding)'};
-  if(/\b(math|reason|analyze|compare|explain why|evaluate|strategy|proof)\b/.test(tl))return{id:'openai/gpt-oss-120b',label:'GPT-OSS (reasoning)'};
-  if(/\b(summarize|document|long|translate|essay|report)\b/.test(tl))return{id:'meta-llama/llama-4-scout-17b-16e-instruct',label:'Llama 4 (long)'};
-  if(t.length<60&&/\b(what is|who is|when|where|define|quick)\b/.test(tl))return{id:'llama-3.1-8b-instant',label:'Llama 8B (quick)'};
-  return{id:'llama-3.3-70b-versatile',label:'Llama 3.3 (general)'};
+  if(/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json|git)\b/.test(tl))return{id:'moonshotai/kimi-k2-instruct-0905',label:'Kimi K2'};
+  if(/\b(math|reason|analyze|compare|explain why|evaluate|strategy|proof)\b/.test(tl))return{id:'openai/gpt-oss-120b',label:'GPT-OSS'};
+  if(/\b(summarize|document|long|translate|essay|report)\b/.test(tl))return{id:'meta-llama/llama-4-scout-17b-16e-instruct',label:'Llama 4'};
+  if(t.length<60&&/\b(what is|who is|when|where|define|quick)\b/.test(tl))return{id:'llama-3.1-8b-instant',label:'Llama 8B'};
+  return{id:'llama-3.3-70b-versatile',label:'Llama 3.3'};
 }
 window.copyCode=function(btn){
   const code=btn.closest('.code-wrap')&&btn.closest('.code-wrap').querySelector('pre code');
