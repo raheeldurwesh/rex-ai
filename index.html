@@ -458,6 +458,13 @@ createApp({
           });
         }
       });
+      // Keep Render backend alive - ping every 14 minutes
+      function pingBackend(){
+        fetch(BACKEND+'/').catch(function(){});
+      }
+      pingBackend();
+      setInterval(pingBackend, 14 * 60 * 1000);
+
       var params=new URLSearchParams(window.location.search);
       var shared=params.get('share');
       if(shared){
@@ -570,7 +577,7 @@ createApp({
               var line=lines[i];
               if(!line.startsWith('data: '))continue;
               var s=line.slice(6);if(s==='[DONE]')break;
-              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;break;}buf+=pp.text;}catch(e){}
+              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;break;}if(pp.model){activeModel.value=pp.model;}if(pp.text)buf+=pp.text;}catch(e){}
             }
           }
           done=true;
