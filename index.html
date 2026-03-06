@@ -2039,8 +2039,7 @@
               y += 8;
 
               // Parse content
-              const lines = (msg.content || '').split('
-');
+              const lines = (msg.content || '').split('');
           for (const line of lines) {
                 checkPage();
                 if (/^# /.test(line)) {
@@ -2301,5 +2300,6 @@
     }).mount('#app');
   </script>
 </body>
+
 
 </html>
