@@ -1,6 +1,7 @@
 import os
 import random
 import json
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -26,9 +27,33 @@ API_KEYS = [
 ]
 API_KEYS = [k for k in API_KEYS if k]
 
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDzhB6OKJPcPAiEJY9iMrpbiWOWyV54qjA")
+GOOGLE_CSE_ID  = os.getenv("GOOGLE_CSE_ID", "3757dc5f465e6427e")
+
 @app.get("/")
 def root():
     return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
+
+@app.get("/search")
+async def search(q: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://www.googleapis.com/customsearch/v1",
+                params={"key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID, "q": q, "num": 5},
+                timeout=8
+            )
+            data = r.json()
+            results = []
+            for item in data.get("items", [])[:5]:
+                results.append({
+                    "title": item.get("title", ""),
+                    "url": item.get("link", ""),
+                    "snippet": item.get("snippet", "")
+                })
+            return {"results": results}
+    except Exception as e:
+        return {"results": [], "error": str(e)}
 
 @app.post("/chat")
 async def chat(request: dict):
