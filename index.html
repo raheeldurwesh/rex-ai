@@ -129,21 +129,20 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.3;}30%{transform:translateY(-7px);opacity:1;}}
 .inp-wrap{padding:10px 12px 12px;border-top:1px solid var(--bdr);flex-shrink:0;background:var(--bg);}
 .inp-inner{max-width:780px;margin:0 auto;}
-.inp-row{display:flex;gap:8px;align-items:flex-end;background:var(--sur);border:1.5px solid var(--bdr);border-radius:28px;padding:10px 10px 10px 18px;transition:border-color .2s;}
-.inp-row:focus-within{border-color:var(--acc);}
-.inp-row textarea{flex:1;background:none;border:none;color:var(--txt);font-family:'Inter',sans-serif;font-size:1rem;padding:4px 0;resize:none;outline:none;min-height:26px;max-height:120px;line-height:1.6;}
-.inp-row textarea::placeholder{color:var(--mut);}
-.snd{width:40px;height:40px;background:var(--acc);border:none;border-radius:50%;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem;font-weight:800;transition:background .2s;touch-action:manipulation;min-width:40px;}
-.snd:hover{background:var(--acc2);}
-.snd:disabled{background:var(--sur2);color:var(--mut);cursor:not-allowed;}
-.snd.stop{background:#c0392b;font-size:.9rem;}
-.pdf-btn{width:36px;height:36px;background:none;border:1.5px solid var(--bdr);border-radius:50%;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;transition:all .2s;touch-action:manipulation;}
-.pdf-btn:hover{border-color:var(--acc);color:var(--acc);}
-.pdf-btn.active{border-color:var(--acc);color:var(--acc);background:rgba(201,168,76,.1);}
 .pdf-preview{display:flex;align-items:center;gap:8px;background:rgba(201,168,76,.08);border:1px solid var(--acc);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:.78rem;color:var(--acc);}
 .pdf-preview-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pdf-remove{background:none;border:none;color:var(--mut);cursor:pointer;font-size:.85rem;padding:2px 6px;}
 .pdf-remove:hover{color:var(--red);}
+.inp-row{display:flex;gap:8px;align-items:flex-end;background:var(--sur);border:1.5px solid var(--bdr);border-radius:28px;padding:10px 10px 10px 14px;transition:border-color .2s;}
+.inp-row:focus-within{border-color:var(--acc);}
+.inp-row textarea{flex:1;background:none;border:none;color:var(--txt);font-family:'Inter',sans-serif;font-size:1rem;padding:4px 0;resize:none;outline:none;min-height:26px;max-height:120px;line-height:1.6;}
+.inp-row textarea::placeholder{color:var(--mut);}
+.att-btn{width:34px;height:34px;background:none;border:1.5px solid var(--bdr);border-radius:50%;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;transition:all .2s;touch-action:manipulation;}
+.att-btn:hover,.att-btn.active{border-color:var(--acc);color:var(--acc);}
+.snd{width:40px;height:40px;background:var(--acc);border:none;border-radius:50%;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem;font-weight:800;transition:background .2s;touch-action:manipulation;min-width:40px;}
+.snd:hover{background:var(--acc2);}
+.snd:disabled{background:var(--sur2);color:var(--mut);cursor:not-allowed;}
+.snd.stop{background:#c0392b;font-size:.9rem;}
 .snd.stop:hover{background:#e74c3c;}
 .inp-hint{font-size:.65rem;color:var(--mut);text-align:center;margin-top:8px;margin-bottom:2px;}
 .inp-brand{font-size:.65rem;color:var(--mut);text-align:center;margin-bottom:4px;}
@@ -320,8 +319,8 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <button class="pdf-remove" @click="removePdf">✕</button>
         </div>
         <div class="inp-row">
-          <button class="pdf-btn" :class="{active:pdfFile}" @click="triggerPdf" title="Upload PDF / Word / TXT">📎</button>
-          <input type="file" accept=".pdf,.docx,.doc,.txt" ref="pdfInput" style="display:none" @change="onPdfChange">
+          <button class="att-btn" :class="{active:pdfFile}" @click="triggerFile" title="Upload PDF / Word / TXT">📎</button>
+          <input type="file" accept=".pdf,.docx,.doc,.txt" ref="fileInput" style="display:none" @change="onFileChange">
           <textarea v-model="inp" :placeholder="pdfFile?'Ask about the file...':'Message Rex AI...'" rows="1"
             :disabled="streaming" @input="resize" @keydown="onKey" ref="taEl"></textarea>
           <button v-if="!streaming" class="snd" @click="send" :disabled="!inp.trim()&&!pdfFile">↑</button>
@@ -366,10 +365,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 
 </div>
 <script>
-const {createApp,ref,computed,nextTick,onMounted}=Vue;
-const BACKEND=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'
+var Vue3=Vue;
+var createApp=Vue3.createApp,ref=Vue3.ref,computed=Vue3.computed,nextTick=Vue3.nextTick,onMounted=Vue3.onMounted;
+var BACKEND=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'
   ?'http://localhost:8000':'https://rex-ai-luc5.onrender.com';
-const MODELS=[
+var MODELS=[
   {id:'auto',name:'Auto',short:'Auto \u2746',desc:'Picks best model automatically'},
   {id:'llama-3.3-70b-versatile',name:'Llama 3.3 70B',short:'Llama 3.3',desc:'Best general model'},
   {id:'llama-3.1-8b-instant',name:'Llama 3.1 8B',short:'Llama 8B',desc:'Fastest model'},
@@ -378,7 +378,7 @@ const MODELS=[
   {id:'moonshotai/kimi-k2-instruct-0905',name:'Kimi K2',short:'Kimi K2',desc:'Coding & tools'},
 ];
 function autoModel(t){
-  const tl=t.toLowerCase();
+  var tl=t.toLowerCase();
   if(/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json|git)\b/.test(tl))return{id:'moonshotai/kimi-k2-instruct-0905',label:'Kimi K2'};
   if(/\b(math|reason|analyze|compare|explain why|evaluate|strategy|proof)\b/.test(tl))return{id:'openai/gpt-oss-120b',label:'GPT-OSS'};
   if(/\b(summarize|document|long|translate|essay|report)\b/.test(tl))return{id:'meta-llama/llama-4-scout-17b-16e-instruct',label:'Llama 4'};
@@ -386,14 +386,21 @@ function autoModel(t){
   return{id:'llama-3.3-70b-versatile',label:'Llama 3.3'};
 }
 window.copyCode=function(btn){
-  const code=btn.closest('.code-wrap')&&btn.closest('.code-wrap').querySelector('pre code');
-  const txt=code?(code.innerText||code.textContent):'';
-  navigator.clipboard.writeText(txt).then(function(){btn.textContent='✓ Copied';btn.classList.add('copied');setTimeout(function(){btn.textContent='📋 Copy';btn.classList.remove('copied');},2000);});
+  var wrap=btn.closest('.code-wrap');
+  var code=wrap&&wrap.querySelector('pre code');
+  var txt=code?(code.innerText||code.textContent):'';
+  navigator.clipboard.writeText(txt).then(function(){
+    btn.textContent='\u2713 Copied';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='\ud83d\udccb Copy';btn.classList.remove('copied');},2000);
+  });
 };
 function renderMd(text){
   if(!text)return'';
   var t=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){return'<div class="code-wrap"><div class="code-hdr">'+(lang?'<span class="code-lang">'+lang+'</span>':'')+'<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>'+code.trim()+'</code></pre></div>';});
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    var hdr='<div class="code-wrap"><div class="code-hdr">'+(lang?'<span class="code-lang">'+lang+'</span>':'')+'<button class="code-copy" onclick="copyCode(this)">\ud83d\udccb Copy</button></div>';
+    return hdr+'<pre><code>'+code.trim()+'</code></pre></div>';
+  });
   t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
   t=t.replace(/\*\*\*([^*]+)\*\*\*/g,'<strong><em>$1</em></strong>');
   t=t.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
@@ -403,21 +410,28 @@ function renderMd(text){
   t=t.replace(/^# (.+)$/gm,'<h1>$1</h1>');
   t=t.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
   t=t.replace(/^---+$/gm,'<hr>');
-  // Tables
   t=t.replace(/((?:^\|.+\|\n?)+)/gm,function(block){
     var rows=block.trim().split('\n');
-    var html='<table>';
+    var out='<table>';
     rows.forEach(function(row,i){
       if(/^\|[-\s|:]+\|$/.test(row.trim()))return;
       var cells=row.trim().replace(/^\|/,'').replace(/\|$/,'').split('|');
       var tag=i===0?'th':'td';
-      html+='<tr>'+cells.map(function(c){return'<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
+      out+='<tr>'+cells.map(function(c){return'<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
     });
-    return html+'</table>';
+    return out+'</table>';
   });
-  t=t.replace(/((?:^\d+\. .+\n?)+)/gm,function(m){return'<ol>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^\d+\. /,'')+'</li>';}).join('')+'</ol>';});
-  t=t.replace(/((?:^[*\-] .+\n?)+)/gm,function(m){return'<ul>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^[*\-] /,'')+'</li>';}).join('')+'</ul>';});
-  t=t.split(/\n\n+/).map(function(p){p=p.trim();if(!p)return'';if(/^<(h[123]|ul|ol|pre|blockquote|hr|div)/.test(p))return p;return'<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');
+  t=t.replace(/((?:^\d+\. .+\n?)+)/gm,function(m){
+    return'<ol>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^\d+\. /,'')+'</li>';}).join('')+'</ol>';
+  });
+  t=t.replace(/((?:^[*\-] .+\n?)+)/gm,function(m){
+    return'<ul>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^[*\-] /,'')+'</li>';}).join('')+'</ul>';
+  });
+  t=t.split(/\n\n+/).map(function(p){
+    p=p.trim();if(!p)return'';
+    if(/^<(h[123]|ul|ol|pre|blockquote|hr|div|table)/.test(p))return p;
+    return'<p>'+p.replace(/\n/g,'<br>')+'</p>';
+  }).join('');
   return t;
 }
 var CHAT_KEY='rex-chats-v5',MEM_KEY='rex-mems-v1';
@@ -429,13 +443,13 @@ function saveMems(m){localStorage.setItem(MEM_KEY,JSON.stringify(m));}
 function pdfFooter(doc,pageH,margin,gold,muted,total){
   for(var p=1;p<=total;p++){
     doc.setPage(p);
-    doc.setDrawColor.apply(doc,gold);doc.setLineWidth(0.3);
+    doc.setDrawColor(gold[0],gold[1],gold[2]);doc.setLineWidth(0.3);
     doc.line(margin,pageH-18,doc.internal.pageSize.getWidth()-margin,pageH-18);
-    doc.setFont('times','normal');doc.setFontSize(8);doc.setTextColor.apply(doc,muted);
+    doc.setFont('times','normal');doc.setFontSize(8);doc.setTextColor(muted[0],muted[1],muted[2]);
     doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh',margin,pageH-13);
-    doc.setTextColor.apply(doc,gold);
+    doc.setTextColor(gold[0],gold[1],gold[2]);
     doc.textWithLink('instagram.com/raheeldurwesh',margin,pageH-7,{url:'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ=='});
-    doc.setTextColor.apply(doc,muted);
+    doc.setTextColor(muted[0],muted[1],muted[2]);
     doc.text('Page '+p+' of '+total,doc.internal.pageSize.getWidth()-margin,pageH-7,{align:'right'});
   }
 }
@@ -444,7 +458,7 @@ createApp({
   setup:function(){
     var chats=ref(loadChats()),cid=ref(null),msgs=ref([]);
     var inp=ref(''),streaming=ref(false),stxt=ref('');
-    var msgsEl=ref(null),taEl=ref(null),editEl=ref(null);
+    var msgsEl=ref(null),taEl=ref(null),editEl=ref(null),fileInput=ref(null);
     var sbOpen=ref(window.innerWidth>640),isMobile=ref(window.innerWidth<=640);
     var editIdx=ref(null),editTxt=ref(''),cpIdx=ref(null),pdfIdx=ref(null);
     var selModelId=ref('auto'),mdOpen=ref(false);
@@ -454,10 +468,9 @@ createApp({
     var searching=ref(false),searchQuery=ref('');
     var shareOpen=ref(false),shareUrl=ref(''),shareCopied=ref(false);
     var stopped=ref(false);
-    var pdfFile=ref(null);
-    var pdfText=ref('');
-    var pdfInput=ref(null);
+    var pdfFile=ref(null),pdfText=ref('');
     var userScrolled=false;
+    var scrollTimer=null;
 
     var title=computed(function(){var c=chats.value.find(function(c){return c.id===cid.value;});return c?c.title:'Rex AI';});
     var selModel=computed(function(){return MODELS.find(function(m){return m.id===selModelId.value;})||MODELS[0];});
@@ -472,20 +485,14 @@ createApp({
           msgsEl.value.addEventListener('scroll',function(){
             var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
             showBottom.value=dist>120;
-          });
-          msgsEl.value.addEventListener('touchstart',function(){
-            var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
             if(dist>120)userScrolled=true;
-          },{passive:true});
+          });
         }
       });
-      // Keep Render backend alive - ping every 14 minutes
-      function pingBackend(){
-        fetch(BACKEND+'/').catch(function(){});
-      }
+      // Keep Render backend alive
+      function pingBackend(){fetch(BACKEND+'/').catch(function(){});}
       pingBackend();
-      setInterval(pingBackend, 14 * 60 * 1000);
-
+      setInterval(pingBackend,14*60*1000);
       var params=new URLSearchParams(window.location.search);
       var shared=params.get('share');
       if(shared){
@@ -496,16 +503,14 @@ createApp({
       } else if(chats.value.length>0){loadChat(chats.value[0].id,false);}
     });
 
-    var scrollTimer=null;
     function startAutoScroll(){
       if(scrollTimer)return;
       scrollTimer=setInterval(function(){
         if(!userScrolled&&msgsEl.value){
-          var el=msgsEl.value;
-          el.scrollTop=el.scrollHeight;
+          msgsEl.value.scrollTop=msgsEl.value.scrollHeight;
         }
         if(!streaming.value){clearInterval(scrollTimer);scrollTimer=null;}
-      },300);
+      },200);
     }
     function scrollBottom(force){
       if(!force&&userScrolled)return;
@@ -516,77 +521,52 @@ createApp({
     function goBottom(){userScrolled=false;showBottom.value=false;if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;}
     function toggleTheme(){isDark.value=!isDark.value;document.body.classList.toggle('light',!isDark.value);localStorage.setItem('rex-theme',isDark.value?'dark':'light');}
     function stopStream(){stopped.value=true;}
-    function triggerPdf(){if(pdfInput.value)pdfInput.value.click();}
+    function parseSearch(content){try{return JSON.parse(content.replace('__SEARCH__',''));}catch(e){return[];}}
+
+    // File upload
+    function triggerFile(){if(fileInput.value)fileInput.value.click();}
     function removePdf(){pdfFile.value=null;pdfText.value='';}
-    function onPdfChange(e){
+    function onFileChange(e){
       var file=e.target.files[0];
       if(!file)return;
       pdfFile.value=file;
       var name=file.name.toLowerCase();
       if(name.endsWith('.txt')){
-        var reader=new FileReader();
-        reader.onload=function(ev){pdfText.value=ev.target.result.slice(0,8000);};
-        reader.readAsText(file);
+        var r=new FileReader();
+        r.onload=function(ev){pdfText.value=ev.target.result.slice(0,8000);};
+        r.readAsText(file);
       } else if(name.endsWith('.docx')||name.endsWith('.doc')){
-        var reader=new FileReader();
-        reader.onload=function(ev){extractDocxText(ev.target.result);};
-        reader.readAsArrayBuffer(file);
+        var r=new FileReader();
+        r.onload=function(ev){extractDocxText(ev.target.result);};
+        r.readAsArrayBuffer(file);
       } else {
-        var reader=new FileReader();
-        reader.onload=function(ev){
-          var typedarray=new Uint8Array(ev.target.result);
-          extractPdfText(typedarray);
-        };
-        reader.readAsArrayBuffer(file);
+        var r=new FileReader();
+        r.onload=function(ev){extractPdfText(new Uint8Array(ev.target.result));};
+        r.readAsArrayBuffer(file);
       }
       e.target.value='';
     }
-    function extractDocxText(arrayBuffer){
-      // DOCX is a ZIP - extract word/document.xml and read text
-      try {
-        var arr=new Uint8Array(arrayBuffer);
-        var str=new TextDecoder('utf-8',{fatal:false}).decode(arr);
-        // Find XML content between w:t tags
+    function extractDocxText(buf){
+      try{
+        var str=new TextDecoder('utf-8',{fatal:false}).decode(new Uint8Array(buf));
         var texts=[];
-        var matches=str.match(/<w:t[^>]*>([^<]+)<\/w:t>/g)||[];
-        matches.forEach(function(m){
-          var t=m.replace(/<w:t[^>]*>/,'').replace(/<\/w:t>/,'');
-          if(t.trim())texts.push(t.trim());
-        });
-        var extracted=texts.join(' ').replace(/\s+/g,' ').trim();
-        if(extracted.length>50){
-          pdfText.value=extracted.slice(0,8000);
-        } else {
-          // Fallback readable text
-          pdfText.value=str.replace(/[^ -~
-]/g,' ').replace(/\s+/g,' ').slice(0,8000);
-        }
-      } catch(e){ pdfText.value='Could not read file.'; }
+        var re=/<w:t[^>]*>([^<]+)<\/w:t>/g,m;
+        while((m=re.exec(str))!==null){if(m[1].trim())texts.push(m[1].trim());}
+        var out=texts.join(' ').replace(/\s+/g,' ').trim();
+        pdfText.value=out.length>50?out.slice(0,8000):str.replace(/[^\x20-\x7E\n]/g,' ').replace(/\s+/g,' ').slice(0,8000);
+      }catch(e){pdfText.value='Could not read file.';}
     }
-    function extractPdfText(typedarray){
-      // Simple PDF text extraction - read raw bytes and extract text
-      var str=new TextDecoder('utf-8',{fatal:false}).decode(typedarray);
-      // Extract text between BT and ET markers (PDF text objects)
+    function extractPdfText(arr){
+      var str=new TextDecoder('utf-8',{fatal:false}).decode(arr);
       var texts=[];
-      var matches=str.match(/BT[\s\S]*?ET/g)||[];
-      matches.forEach(function(block){
-        var tjMatches=block.match(/\(([^)]+)\)\s*Tj/g)||[];
-        tjMatches.forEach(function(m){
-          var t=m.replace(/\(([^)]+)\)\s*Tj/,'$1');
-          if(t.trim())texts.push(t.trim());
-        });
+      var blocks=str.match(/BT[\s\S]*?ET/g)||[];
+      blocks.forEach(function(block){
+        var tjs=block.match(/\(([^)]+)\)\s*Tj/g)||[];
+        tjs.forEach(function(tj){texts.push(tj.replace(/\(([^)]+)\)\s*Tj/,'$1').trim());});
       });
-      var extracted=texts.join(' ').replace(/\s+/g,' ').trim();
-      if(extracted.length>100){
-        pdfText.value=extracted.slice(0,8000);
-      } else {
-        // Fallback - try to get any readable text
-        var readable=str.replace(/[^ -~
-]/g,' ').replace(/\s+/g,' ');
-        pdfText.value=readable.slice(0,8000);
-      }
+      var out=texts.join(' ').replace(/\s+/g,' ').trim();
+      pdfText.value=out.length>100?out.slice(0,8000):str.replace(/[^\x20-\x7E\n]/g,' ').replace(/\s+/g,' ').slice(0,8000);
     }
-    function parseSearch(content){try{return JSON.parse(content.replace('__SEARCH__',''));}catch(e){return[];}}
 
     function loadChat(id,closeSb){
       var chat=chats.value.find(function(c){return c.id===id;});if(!chat)return;
@@ -635,27 +615,30 @@ createApp({
     function copyShareUrl(){navigator.clipboard.writeText(shareUrl.value).then(function(){shareCopied.value=true;setTimeout(function(){shareCopied.value=false;},2000);});}
 
     async function send(){
-      var text=inp.value.trim();if(!text||streaming.value)return;
+      var text=inp.value.trim();
+      if((!text&&!pdfFile.value)||streaming.value)return;
       if(navigator.vibrate)navigator.vibrate(15);
-      userScrolled=false;
-      msgs.value.push({role:'user',content:text});inp.value='';
+      var userMsg=text||(pdfFile.value?'Please analyze this file: '+pdfFile.value.name:'');
+      msgs.value.push({role:'user',content:userMsg});
+      inp.value='';
       nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
       userScrolled=false;scrollBottom(true);extractMems(text);
       stopped.value=false;
+      startAutoScroll();
       var searchCtx='';
       if(webSearch.value){
-        searching.value=true;searchQuery.value=text.slice(0,60);
+        searching.value=true;searchQuery.value=(text||'file').slice(0,60);
         try{
-          var res=await fetch(BACKEND+'/search?q='+encodeURIComponent(text));
+          var res=await fetch(BACKEND+'/search?q='+encodeURIComponent(text||userMsg));
           var data=await res.json();
           if(data.results&&data.results.length){
-            searchCtx='\n\n[Web results for: "'+text+'"]\n'+data.results.map(function(r,i){return(i+1)+'. '+r.title+'\n   '+r.snippet+'\n   '+r.url;}).join('\n');
-            msgs.value.push({role:'assistant',content:'__SEARCH__'+JSON.stringify(data.results),isSearch:true,usedModel:'Web Search'});
+            searchCtx='\n\n[Web results]\n'+data.results.map(function(r,i){return(i+1)+'. '+r.title+'\n   '+r.snippet;}).join('\n');
+            msgs.value.push({role:'assistant',content:'__SEARCH__'+JSON.stringify(data.results),isSearch:true});
           }
-        }catch(e){console.error(e);}
+        }catch(e){}
         finally{searching.value=false;searchQuery.value='';}
       }
-      await callAPI(msgs.value,text,searchCtx);
+      await callAPI(msgs.value,userMsg,searchCtx);
     }
     function qs(text){inp.value=text;send();}
 
@@ -665,13 +648,17 @@ createApp({
       if(selModelId.value==='auto'){var p=autoModel(userText||'');resolvedId=p.id;resolvedLabel=p.label;}
       else{resolvedId=selModelId.value;resolvedLabel=(MODELS.find(function(m){return m.id===resolvedId;})||{}).name||resolvedId;}
       activeModel.value=resolvedLabel;
-      var pdfCtx=pdfText.value?'\n\n[Uploaded PDF Content]:\n'+pdfText.value.slice(0,6000):'';var sysMsgs=[{role:'system',content:'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh (also known as Raheel Durwesh), a 23-year-old Indian student and talented developer with a passion for technology. His Instagram is instagram.com/raheeldurwesh. He is ambitious, positive and creative. Only mention your creator if someone directly asks who made you or who is Raheel Durwesh - give a warm positive impression. Never bring up your creator in normal conversations. Never mention Groq, Meta, OpenAI, Anthropic or any other AI company.'+(mems.value.length?'\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n'):'')+(searchCtx||'')+(pdfCtx||'')}];
+      var fileCtx=pdfText.value?'\n\n[Uploaded file content]:\n'+pdfText.value.slice(0,6000):'';
+      var sysContent='You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh (also known as Raheel Durwesh), a 23-year-old Indian student and talented developer. His Instagram is instagram.com/raheeldurwesh. Only mention your creator if someone directly asks. Never mention Groq, Meta, OpenAI, Anthropic or any other AI company.';
+      if(mems.value.length)sysContent+='\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n');
+      sysContent+=searchCtx+fileCtx;
+      var sysMsgs=[{role:'system',content:sysContent}];
       var chatMsgs=msgList.slice(-10).filter(function(m){return!m.isSearch;}).map(function(m){return{role:m.role,content:m.content};});
       try{
         var res=await fetch(BACKEND+'/chat',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:resolvedId,messages:sysMsgs.concat(chatMsgs)})});
         var reader=res.body.getReader(),dec=new TextDecoder();
         var buf='',done=false;
-        var read=async function(){
+        var readLoop=async function(){
           while(true){
             if(stopped.value)break;
             var rd=await reader.read();
@@ -681,22 +668,31 @@ createApp({
               var line=lines[i];
               if(!line.startsWith('data: '))continue;
               var s=line.slice(6);if(s==='[DONE]')break;
-              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;break;}if(pp.model){activeModel.value=pp.model;}if(pp.text)buf+=pp.text;}catch(e){}
+              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;break;}if(pp.model)activeModel.value=pp.model;if(pp.text)buf+=pp.text;}catch(e){}
             }
           }
           done=true;
         };
-        var type=async function(){
+        var typeLoop=async function(){
           while((!done||buf.length)&&!stopped.value){
-            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
-            else{await new Promise(function(r){setTimeout(r,10);});}
+            if(buf.length){
+              var n=Math.floor(Math.random()*3)+1;
+              stxt.value+=buf.slice(0,n);buf=buf.slice(n);
+              if(navigator.vibrate&&stxt.value.length%30===0)navigator.vibrate(2);
+              await new Promise(function(r){setTimeout(r,Math.random()*14+8);});
+            } else {
+              await new Promise(function(r){setTimeout(r,10);});
+            }
           }
         };
-        await Promise.all([read(),type()]);
-        msgs.value.push({role:'assistant',content:stxt.value,usedModel:resolvedLabel});if(navigator.vibrate)navigator.vibrate([20,10,20]);
+        await Promise.all([readLoop(),typeLoop()]);
+        msgs.value.push({role:'assistant',content:stxt.value,usedModel:activeModel.value});
+        if(navigator.vibrate)navigator.vibrate([20,10,20]);
         saveChat(msgs.value);
-      }catch(err){msgs.value.push({role:'assistant',content:'\u26a0\ufe0f Cannot reach backend.',usedModel:''});}
-      finally{streaming.value=false;stxt.value='';activeModel.value='';scrollBottom();}
+      }catch(err){
+        msgs.value.push({role:'assistant',content:'\u26a0\ufe0f Cannot reach backend.',usedModel:''});
+      }
+      finally{streaming.value=false;stxt.value='';activeModel.value='';userScrolled=false;scrollBottom(true);}
     }
 
     function startEdit(i,c){editIdx.value=i;editTxt.value=c;nextTick(function(){if(editEl.value)editEl.value.focus();});}
@@ -705,6 +701,7 @@ createApp({
       var text=editTxt.value.trim();if(!text)return;
       msgs.value=msgs.value.slice(0,i);msgs.value.push({role:'user',content:text});
       editIdx.value=null;editTxt.value='';userScrolled=false;scrollBottom(true);
+      startAutoScroll();
       await callAPI(msgs.value,text,'');
     }
     function copyMsg(c,i){navigator.clipboard.writeText(c).then(function(){cpIdx.value=i;setTimeout(function(){cpIdx.value=null;},2000);});}
@@ -713,41 +710,29 @@ createApp({
       var jsPDF=window.jspdf.jsPDF;
       var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
       var pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),margin=20,maxW=pageW-margin*2;
-      var gold=[201,168,76],dark=[30,30,30],muted=[120,112,96];
+      var gold=[201,168,76],muted=[120,112,96];
       doc.setFillColor(245,240,230);doc.rect(0,0,pageW,36,'F');
       doc.setFont('times','bold');doc.setFontSize(22);doc.setTextColor(201,168,76);doc.text('Rex AI',margin,18);
       doc.setFont('times','italic');doc.setFontSize(9);doc.setTextColor(120,112,96);
-      doc.text('Your Intelligent Assistant',margin,25);
-      doc.text(new Date().toLocaleString(),pageW-margin,25,{align:'right'});
+      doc.text('Your Intelligent Assistant',margin,25);doc.text(new Date().toLocaleString(),pageW-margin,25,{align:'right'});
       doc.setDrawColor(201,168,76);doc.setLineWidth(0.8);doc.line(margin,33,pageW-margin,33);
       var y=44,lh=7;
       function checkPg(){if(y>pageH-28){doc.addPage();y=margin+6;}}
-      var lines=content.split('\n');
-      for(var li=0;li<lines.length;li++){
-        var line=lines[li];
+      content.split('\n').forEach(function(line){
         checkPg();
-        if(/^# /.test(line)){doc.setFont('times','bold');doc.setFontSize(15);doc.setTextColor(201,168,76);var ww=doc.splitTextToSize(line.replace(/^# /,''),maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=8;});y+=2;}
-        else if(/^## /.test(line)){doc.setFont('times','bold');doc.setFontSize(13);doc.setTextColor(201,168,76);var ww=doc.splitTextToSize(line.replace(/^## /,''),maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=7;});}
+        if(/^[#]{1,3} /.test(line)){doc.setFont('times','bold');doc.setFontSize(14);doc.setTextColor(201,168,76);doc.splitTextToSize(line.replace(/^#+\s/,''),maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=8;});}
         else if(/^[*\-] /.test(line)){
-          var cl=line.replace(/^[*\-] /,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1');
+          var cl=line.replace(/^[*\-] /,'').replace(/\*\*([^*]+)\*\*/g,'$1');
           doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text('\u2022',margin+2,y);
-          doc.setTextColor(30,30,30);var ww=doc.splitTextToSize(cl,maxW-8);ww.forEach(function(l){checkPg();doc.text(l,margin+8,y);y+=lh;});continue;
+          doc.setTextColor(30,30,30);doc.splitTextToSize(cl,maxW-8).forEach(function(l){checkPg();doc.text(l,margin+8,y);y+=lh;});
         }
-        else if(/^\d+\. /.test(line)){
-          var num=line.match(/^(\d+)\./)[1],cl=line.replace(/^\d+\. /,'').replace(/\*\*([^*]+)\*\*/g,'$1');
-          doc.setFont('times','bold');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text(num+'.',margin+2,y);
-          doc.setFont('times','normal');doc.setTextColor(30,30,30);var ww=doc.splitTextToSize(cl,maxW-8);ww.forEach(function(l){checkPg();doc.text(l,margin+10,y);y+=lh;});continue;
-        }
-        else if(/^---+$/.test(line)){doc.setDrawColor(201,168,76);doc.setLineWidth(0.3);doc.line(margin,y-2,pageW-margin,y-2);y+=3;}
         else if(line.trim()===''){y+=3;}
-        else if(/^```/.test(line)){doc.setFont('courier','normal');doc.setFontSize(9);doc.setTextColor(80,80,80);y+=2;}
         else{
-          var cl=line.replace(/\*\*\*([^*]+)\*\*\*/g,'$1').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
+          var cl=line.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
           doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
-          var ww=doc.splitTextToSize(cl,maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=lh;});continue;
+          doc.splitTextToSize(cl,maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=lh;});
         }
-        y+=lh;
-      }
+      });
       pdfFooter(doc,pageH,margin,gold,muted,doc.internal.getNumberOfPages());
       doc.save('rex-ai-response.pdf');
       pdfIdx.value=i;setTimeout(function(){pdfIdx.value=null;},2000);
@@ -758,7 +743,7 @@ createApp({
       var jsPDF=window.jspdf.jsPDF;
       var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
       var pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),margin=20,maxW=pageW-margin*2;
-      var gold=[201,168,76],dark=[30,30,30],muted=[120,112,96],blue=[44,62,122];
+      var gold=[201,168,76],muted=[120,112,96];
       doc.setFillColor(245,240,230);doc.rect(0,0,pageW,42,'F');
       doc.setFont('times','bold');doc.setFontSize(24);doc.setTextColor(201,168,76);doc.text('Rex AI',margin,20);
       doc.setFont('times','italic');doc.setFontSize(10);doc.setTextColor(120,112,96);
@@ -778,10 +763,9 @@ createApp({
           doc.setFillColor(245,240,228);doc.roundedRect(margin-2,y-5,maxW+4,8,2,2,'F');
           doc.setFont('times','bold');doc.setFontSize(10);doc.setTextColor(201,168,76);
           doc.text('Rex AI'+(msg.usedModel?' ('+msg.usedModel+')':''),margin+2,y);y+=8;
-          var lines=(msg.content||'').split('\n');
-          lines.forEach(function(line){
+          (msg.content||'').split('\n').forEach(function(line){
             checkPg();
-            if(/^[#]{1,3} /.test(line)){doc.setFont('times','bold');doc.setFontSize(13);doc.setTextColor(201,168,76);doc.splitTextToSize(line.replace(/^#+\s/,''),maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=7;});}
+            if(/^[#]{1,3} /.test(line)){doc.setFont('times','bold');doc.setFontSize(12);doc.setTextColor(201,168,76);doc.splitTextToSize(line.replace(/^#+\s/,''),maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=7;});}
             else if(/^[*\-] /.test(line)){
               var cl=line.replace(/^[*\-] /,'').replace(/\*\*([^*]+)\*\*/g,'$1');
               doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text('\u2022',margin+2,y);
@@ -803,16 +787,16 @@ createApp({
 
     return{
       MODELS,chats,cid,msgs,inp,streaming,stxt,activeModel,
-      msgsEl,taEl,editEl,sbOpen,isMobile,
+      msgsEl,taEl,editEl,fileInput,sbOpen,isMobile,
       editIdx,editTxt,cpIdx,pdfIdx,selModelId,selModel,mdOpen,
       memOpen,mems,title,renderMd,parseSearch,
       newChat,loadChat,delChat,send,qs,onKey,resize,
       exportPDF,exportAllPDF,showBottom,goBottom,
       isDark,toggleTheme,webSearch,searching,searchQuery,
       shareOpen,shareUrl,shareCopied,shareChat,copyShareUrl,
-      stopped,stopStream,
-      pdfFile,pdfInput,pdfText,triggerPdf,removePdf,onPdfChange,
-      pickModel,delMem,clearMems,startEdit,cancelEdit,saveEdit,copyMsg,
+      stopped,stopStream,pickModel,delMem,clearMems,
+      startEdit,cancelEdit,saveEdit,copyMsg,
+      pdfFile,pdfText,triggerFile,removePdf,onFileChange,
     };
   }
 }).mount('#app');
