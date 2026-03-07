@@ -534,6 +534,7 @@ createApp({
 
     async function send(){
       var text=inp.value.trim();if(!text||streaming.value)return;
+      if(navigator.vibrate)navigator.vibrate(15);
       msgs.value.push({role:'user',content:text});inp.value='';
       nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
       userScrolled=false;scrollBottom(true);extractMems(text);
