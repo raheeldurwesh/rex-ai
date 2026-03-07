@@ -454,7 +454,7 @@ createApp({
         if(msgsEl.value){
           msgsEl.value.addEventListener('scroll',function(){
             var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
-            userScrolled=dist>60;showBottom.value=dist>200;
+            showBottom.value=dist>200;
           });
         }
       });
@@ -535,6 +535,7 @@ createApp({
     async function send(){
       var text=inp.value.trim();if(!text||streaming.value)return;
       if(navigator.vibrate)navigator.vibrate(15);
+      userScrolled=false;
       msgs.value.push({role:'user',content:text});inp.value='';
       nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
       userScrolled=false;scrollBottom(true);extractMems(text);
@@ -585,7 +586,7 @@ createApp({
         };
         var type=async function(){
           while((!done||buf.length)&&!stopped.value){
-            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);scrollBottom();await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
+            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
             else{await new Promise(function(r){setTimeout(r,10);});}
           }
         };
