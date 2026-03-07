@@ -137,6 +137,13 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .snd:hover{background:var(--acc2);}
 .snd:disabled{background:var(--sur2);color:var(--mut);cursor:not-allowed;}
 .snd.stop{background:#c0392b;font-size:.9rem;}
+.pdf-btn{width:36px;height:36px;background:none;border:1.5px solid var(--bdr);border-radius:50%;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;transition:all .2s;touch-action:manipulation;}
+.pdf-btn:hover{border-color:var(--acc);color:var(--acc);}
+.pdf-btn.active{border-color:var(--acc);color:var(--acc);background:rgba(201,168,76,.1);}
+.pdf-preview{display:flex;align-items:center;gap:8px;background:rgba(201,168,76,.08);border:1px solid var(--acc);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:.78rem;color:var(--acc);}
+.pdf-preview-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdf-remove{background:none;border:none;color:var(--mut);cursor:pointer;font-size:.85rem;padding:2px 6px;}
+.pdf-remove:hover{color:var(--red);}
 .snd.stop:hover{background:#e74c3c;}
 .inp-hint{font-size:.65rem;color:var(--mut);text-align:center;margin-top:8px;margin-bottom:2px;}
 .inp-brand{font-size:.65rem;color:var(--mut);text-align:center;margin-bottom:4px;}
@@ -307,10 +314,17 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 
     <div class="inp-wrap">
       <div class="inp-inner">
+        <div v-if="pdfFile" class="pdf-preview">
+          <span>📄</span>
+          <span class="pdf-preview-name">{{ pdfFile.name }}</span>
+          <button class="pdf-remove" @click="removePdf">✕</button>
+        </div>
         <div class="inp-row">
-          <textarea v-model="inp" placeholder="Message Rex AI..." rows="1"
+          <button class="pdf-btn" :class="{active:pdfFile}" @click="triggerPdf" title="Upload PDF / Word / TXT">📎</button>
+          <input type="file" accept=".pdf,.docx,.doc,.txt" ref="pdfInput" style="display:none" @change="onPdfChange">
+          <textarea v-model="inp" :placeholder="pdfFile?'Ask about the file...':'Message Rex AI...'" rows="1"
             :disabled="streaming" @input="resize" @keydown="onKey" ref="taEl"></textarea>
-          <button v-if="!streaming" class="snd" @click="send" :disabled="!inp.trim()">↑</button>
+          <button v-if="!streaming" class="snd" @click="send" :disabled="!inp.trim()&&!pdfFile">↑</button>
           <button v-else class="snd stop" @click="stopStream">⏹</button>
         </div>
         <div class="inp-hint">Enter to send · Shift+Enter for new line</div>
@@ -440,6 +454,9 @@ createApp({
     var searching=ref(false),searchQuery=ref('');
     var shareOpen=ref(false),shareUrl=ref(''),shareCopied=ref(false);
     var stopped=ref(false);
+    var pdfFile=ref(null);
+    var pdfText=ref('');
+    var pdfInput=ref(null);
     var userScrolled=false;
 
     var title=computed(function(){var c=chats.value.find(function(c){return c.id===cid.value;});return c?c.title:'Rex AI';});
@@ -454,8 +471,12 @@ createApp({
         if(msgsEl.value){
           msgsEl.value.addEventListener('scroll',function(){
             var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
-            userScrolled=dist>60;showBottom.value=dist>200;
+            showBottom.value=dist>120;
           });
+          msgsEl.value.addEventListener('touchstart',function(){
+            var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
+            if(dist>120)userScrolled=true;
+          },{passive:true});
         }
       });
       // Keep Render backend alive - ping every 14 minutes
@@ -475,15 +496,96 @@ createApp({
       } else if(chats.value.length>0){loadChat(chats.value[0].id,false);}
     });
 
+    var scrollTimer=null;
+    function startAutoScroll(){
+      if(scrollTimer)return;
+      scrollTimer=setInterval(function(){
+        if(!userScrolled&&msgsEl.value){
+          var el=msgsEl.value;
+          el.scrollTop=el.scrollHeight;
+        }
+        if(!streaming.value){clearInterval(scrollTimer);scrollTimer=null;}
+      },300);
+    }
     function scrollBottom(force){
       if(!force&&userScrolled)return;
       nextTick(function(){if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;});
     }
     function resize(){var el=taEl.value;if(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}}
     function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
-    function goBottom(){userScrolled=false;showBottom.value=false;scrollBottom(true);}
+    function goBottom(){userScrolled=false;showBottom.value=false;if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;}
     function toggleTheme(){isDark.value=!isDark.value;document.body.classList.toggle('light',!isDark.value);localStorage.setItem('rex-theme',isDark.value?'dark':'light');}
     function stopStream(){stopped.value=true;}
+    function triggerPdf(){if(pdfInput.value)pdfInput.value.click();}
+    function removePdf(){pdfFile.value=null;pdfText.value='';}
+    function onPdfChange(e){
+      var file=e.target.files[0];
+      if(!file)return;
+      pdfFile.value=file;
+      var name=file.name.toLowerCase();
+      if(name.endsWith('.txt')){
+        var reader=new FileReader();
+        reader.onload=function(ev){pdfText.value=ev.target.result.slice(0,8000);};
+        reader.readAsText(file);
+      } else if(name.endsWith('.docx')||name.endsWith('.doc')){
+        var reader=new FileReader();
+        reader.onload=function(ev){extractDocxText(ev.target.result);};
+        reader.readAsArrayBuffer(file);
+      } else {
+        var reader=new FileReader();
+        reader.onload=function(ev){
+          var typedarray=new Uint8Array(ev.target.result);
+          extractPdfText(typedarray);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+      e.target.value='';
+    }
+    function extractDocxText(arrayBuffer){
+      // DOCX is a ZIP - extract word/document.xml and read text
+      try {
+        var arr=new Uint8Array(arrayBuffer);
+        var str=new TextDecoder('utf-8',{fatal:false}).decode(arr);
+        // Find XML content between w:t tags
+        var texts=[];
+        var matches=str.match(/<w:t[^>]*>([^<]+)<\/w:t>/g)||[];
+        matches.forEach(function(m){
+          var t=m.replace(/<w:t[^>]*>/,'').replace(/<\/w:t>/,'');
+          if(t.trim())texts.push(t.trim());
+        });
+        var extracted=texts.join(' ').replace(/\s+/g,' ').trim();
+        if(extracted.length>50){
+          pdfText.value=extracted.slice(0,8000);
+        } else {
+          // Fallback readable text
+          pdfText.value=str.replace(/[^ -~
+]/g,' ').replace(/\s+/g,' ').slice(0,8000);
+        }
+      } catch(e){ pdfText.value='Could not read file.'; }
+    }
+    function extractPdfText(typedarray){
+      // Simple PDF text extraction - read raw bytes and extract text
+      var str=new TextDecoder('utf-8',{fatal:false}).decode(typedarray);
+      // Extract text between BT and ET markers (PDF text objects)
+      var texts=[];
+      var matches=str.match(/BT[\s\S]*?ET/g)||[];
+      matches.forEach(function(block){
+        var tjMatches=block.match(/\(([^)]+)\)\s*Tj/g)||[];
+        tjMatches.forEach(function(m){
+          var t=m.replace(/\(([^)]+)\)\s*Tj/,'$1');
+          if(t.trim())texts.push(t.trim());
+        });
+      });
+      var extracted=texts.join(' ').replace(/\s+/g,' ').trim();
+      if(extracted.length>100){
+        pdfText.value=extracted.slice(0,8000);
+      } else {
+        // Fallback - try to get any readable text
+        var readable=str.replace(/[^ -~
+]/g,' ').replace(/\s+/g,' ');
+        pdfText.value=readable.slice(0,8000);
+      }
+    }
     function parseSearch(content){try{return JSON.parse(content.replace('__SEARCH__',''));}catch(e){return[];}}
 
     function loadChat(id,closeSb){
@@ -534,6 +636,8 @@ createApp({
 
     async function send(){
       var text=inp.value.trim();if(!text||streaming.value)return;
+      if(navigator.vibrate)navigator.vibrate(15);
+      userScrolled=false;
       msgs.value.push({role:'user',content:text});inp.value='';
       nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
       userScrolled=false;scrollBottom(true);extractMems(text);
@@ -561,7 +665,7 @@ createApp({
       if(selModelId.value==='auto'){var p=autoModel(userText||'');resolvedId=p.id;resolvedLabel=p.label;}
       else{resolvedId=selModelId.value;resolvedLabel=(MODELS.find(function(m){return m.id===resolvedId;})||{}).name||resolvedId;}
       activeModel.value=resolvedLabel;
-      var sysMsgs=[{role:'system',content:'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh (also known as Raheel Durwesh), a 23-year-old Indian student and talented developer with a passion for technology. His Instagram is instagram.com/raheeldurwesh. He is ambitious, positive and creative. Only mention your creator if someone directly asks who made you or who is Raheel Durwesh - give a warm positive impression. Never bring up your creator in normal conversations. Never mention Groq, Meta, OpenAI, Anthropic or any other AI company.'+(mems.value.length?'\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n'):'')+(searchCtx||'')}];
+      var pdfCtx=pdfText.value?'\n\n[Uploaded PDF Content]:\n'+pdfText.value.slice(0,6000):'';var sysMsgs=[{role:'system',content:'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh (also known as Raheel Durwesh), a 23-year-old Indian student and talented developer with a passion for technology. His Instagram is instagram.com/raheeldurwesh. He is ambitious, positive and creative. Only mention your creator if someone directly asks who made you or who is Raheel Durwesh - give a warm positive impression. Never bring up your creator in normal conversations. Never mention Groq, Meta, OpenAI, Anthropic or any other AI company.'+(mems.value.length?'\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n'):'')+(searchCtx||'')+(pdfCtx||'')}];
       var chatMsgs=msgList.slice(-10).filter(function(m){return!m.isSearch;}).map(function(m){return{role:m.role,content:m.content};});
       try{
         var res=await fetch(BACKEND+'/chat',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:resolvedId,messages:sysMsgs.concat(chatMsgs)})});
@@ -584,7 +688,7 @@ createApp({
         };
         var type=async function(){
           while((!done||buf.length)&&!stopped.value){
-            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);scrollBottom();await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
+            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
             else{await new Promise(function(r){setTimeout(r,10);});}
           }
         };
@@ -707,6 +811,7 @@ createApp({
       isDark,toggleTheme,webSearch,searching,searchQuery,
       shareOpen,shareUrl,shareCopied,shareChat,copyShareUrl,
       stopped,stopStream,
+      pdfFile,pdfInput,pdfText,triggerPdf,removePdf,onPdfChange,
       pickModel,delMem,clearMems,startEdit,cancelEdit,saveEdit,copyMsg,
     };
   }
