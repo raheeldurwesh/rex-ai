@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Rex AI</title>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -13,6 +15,73 @@ body.light{--bg:#f5f0e8;--sur:#ffffff;--sur2:#ede8df;--bdr:#d5cfc4;--acc:#b8922e
 *{box-sizing:border-box;margin:0;padding:0;}
 html{overflow-x:hidden;max-width:100vw;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height:100vh;height:100dvh;overflow:hidden;display:flex;}
+
+/* AUTH SCREEN */
+.auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.auth-card{background:var(--sur);border:1px solid var(--bdr);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.auth-logo{font-family:'Playfair Display',serif;font-weight:700;font-size:2rem;color:var(--acc);text-align:center;margin-bottom:6px;}
+.auth-sub{text-align:center;color:var(--mut);font-size:.82rem;margin-bottom:28px;}
+.auth-tabs{display:flex;background:var(--sur2);border-radius:10px;padding:4px;margin-bottom:24px;gap:4px;}
+.auth-tab{flex:1;padding:8px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;background:none;color:var(--mut);transition:all .2s;}
+.auth-tab.active{background:var(--acc);color:#1a1a1a;}
+.auth-label{font-size:.75rem;color:var(--mut);margin-bottom:5px;font-weight:500;}
+.auth-input{width:100%;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.9rem;padding:11px 14px;outline:none;margin-bottom:12px;transition:border-color .2s;}
+.auth-input:focus{border-color:var(--acc);}
+.auth-input::placeholder{color:var(--mut);}
+.auth-btn{width:100%;padding:13px;background:var(--acc);border:none;border-radius:10px;color:#1a1a1a;font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:4px;}
+.auth-btn:hover{background:var(--acc2);}
+.auth-btn:disabled{background:var(--sur2);color:var(--mut);cursor:not-allowed;}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--mut);font-size:.75rem;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.google-btn{width:100%;padding:11px;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.google-btn:hover{border-color:var(--acc);color:var(--acc);}
+.auth-err{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);color:#e74c3c;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;}
+.auth-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#27ae60;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;}
+.otp-hint{font-size:.75rem;color:var(--mut);text-align:center;margin-top:8px;}
+.otp-row{display:flex;gap:8px;margin-bottom:12px;}
+.otp-input{flex:1;text-align:center;font-size:1.3rem;font-weight:700;letter-spacing:.1em;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--acc);padding:12px 8px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+.otp-input:focus{border-color:var(--acc);}
+.auth-back{background:none;border:none;color:var(--mut);font-size:.8rem;cursor:pointer;font-family:'Inter',sans-serif;display:block;text-align:center;margin-top:12px;padding:4px;}
+.auth-back:hover{color:var(--acc);}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(26,26,26,.3);border-top-color:#1a1a1a;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* USER HEADER */
+.user-pill{display:flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--bdr);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;transition:all .2s;}
+.user-pill:hover{border-color:var(--acc);}
+.user-av{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.user-name{font-size:.72rem;color:var(--txt);font-weight:500;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;min-width:180px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;}
+.user-menu-item{padding:11px 16px;font-size:.82rem;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:8px;}
+.user-menu-item:hover{background:var(--sur2);}
+.user-menu-item.danger{color:var(--red);}
+.user-menu-sep{height:1px;background:var(--bdr);}
+
+/* ADMIN PANEL */
+.admin-panel{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;flex-direction:column;}
+.admin-hdr{padding:18px 24px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:12px;background:var(--sur);}
+.admin-title{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--acc);flex:1;}
+.admin-close{background:none;border:1px solid var(--bdr);color:var(--mut);padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.8rem;}
+.admin-body{flex:1;overflow-y:auto;padding:24px;}
+.admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:18px;text-align:center;}
+.stat-num{font-size:2rem;font-weight:700;color:var(--acc);font-family:'Playfair Display',serif;}
+.stat-label{font-size:.75rem;color:var(--mut);margin-top:4px;}
+.admin-section{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:12px;}
+.user-row{background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
+.user-row:hover{border-color:var(--acc);}
+.user-row-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.user-row-av{width:32px;height:32px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.user-row-name{font-weight:600;font-size:.88rem;}
+.user-row-email{font-size:.75rem;color:var(--mut);}
+.user-row-meta{font-size:.72rem;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;}
+.user-row-meta span{display:flex;align-items:center;gap:3px;}
+.search-list{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.search-item{background:var(--sur2);border-radius:6px;padding:6px 10px;font-size:.78rem;color:#b8aa94;display:flex;align-items:flex-start;gap:6px;}
+.search-item-time{color:var(--mut);font-size:.68rem;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.no-users{text-align:center;color:var(--mut);padding:40px;font-size:.85rem;}
+
+/* MAIN APP */
 .sb{width:260px;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;transition:transform .28s ease;z-index:200;height:100vh;height:100dvh;}
 .sb.hide{transform:translateX(-260px);position:absolute;}
 .sb-top{padding:18px 16px 14px;border-bottom:1px solid var(--bdr);}
@@ -37,10 +106,9 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .hbg:hover{background:var(--sur2);}
 .hbg span{display:block;width:17px;height:2px;background:var(--mut);border-radius:2px;}
 .h-title{font-family:'Playfair Display',serif;font-weight:600;font-size:.9rem;color:#9a8e7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
-.h-right{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:nowrap;}
+.h-right{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:nowrap;position:relative;}
 .hbtn{font-size:.7rem;color:var(--mut);background:var(--sur2);border:1px solid var(--bdr);padding:5px 10px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;touch-action:manipulation;}
 .hbtn:hover,.hbtn.on{border-color:var(--acc);color:var(--acc);background:rgba(201,168,76,.07);}
-.hbtn.round{width:32px;height:32px;padding:0;justify-content:center;border-radius:50%;}
 .mem-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:pulse 2s infinite;}
 .mem-badge{background:var(--acc);color:#1a1a1a;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:10px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
@@ -50,7 +118,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .mbtn .arr{font-size:.55rem;transition:transform .2s;}
 .mbtn.open .arr{transform:rotate(180deg);}
 .mdrop{position:absolute;top:calc(100% + 8px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;min-width:240px;z-index:500;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6);}
-.mopt{padding:11px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--bdr);touch-action:manipulation;}
+.mopt{padding:11px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--bdr);}
 .mopt:last-child{border-bottom:none;}
 .mopt:hover{background:var(--sur2);}
 .mopt.sel{background:rgba(201,168,76,.08);}
@@ -58,9 +126,6 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .mopt.sel .mopt-name{color:var(--acc);}
 .mopt-desc{font-size:.7rem;color:var(--mut);margin-top:2px;}
 .auto-badge{font-size:.6rem;background:var(--acc);color:#1a1a1a;padding:1px 6px;border-radius:10px;font-weight:700;}
-.searching{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--sur);border:1px solid var(--acc);border-radius:10px;font-size:.82rem;color:var(--acc);margin-bottom:6px;align-self:flex-start;}
-.sspin{width:14px;height:14px;border:2px solid rgba(201,168,76,.3);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg);}}
 .msgs{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 0 12px;}
 .msgs::-webkit-scrollbar{width:4px;}
 .msgs::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px;}
@@ -91,6 +156,8 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .search-result a{color:var(--acc);font-size:.78rem;font-weight:500;text-decoration:none;}
 .search-result a:hover{text-decoration:underline;}
 .search-result p{color:var(--mut);font-size:.74rem;margin-top:2px;line-height:1.4;}
+.searching{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--sur);border:1px solid var(--acc);border-radius:10px;font-size:.82rem;color:var(--acc);margin-bottom:6px;align-self:flex-start;}
+.sspin{width:14px;height:14px;border:2px solid rgba(201,168,76,.3);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 .code-wrap{margin:10px 0;border-radius:10px;border:1px solid var(--bdr);width:100%;overflow:hidden;box-sizing:border-box;}
 .code-hdr{display:flex;align-items:center;justify-content:space-between;background:#111;padding:8px 12px;border-bottom:1px solid var(--bdr);gap:8px;}
 .code-lang{font-size:.7rem;color:#888;font-family:monospace;text-transform:uppercase;letter-spacing:.08em;flex:1;}
@@ -129,7 +196,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.3;}30%{transform:translateY(-7px);opacity:1;}}
 .inp-wrap{padding:10px 12px 12px;border-top:1px solid var(--bdr);flex-shrink:0;background:var(--bg);}
 .inp-inner{max-width:780px;margin:0 auto;}
-.inp-row{display:flex;gap:8px;align-items:flex-end;background:var(--sur);border:1.5px solid var(--bdr);border-radius:28px;padding:10px 10px 10px 18px;transition:border-color .2s;}
+.inp-row{display:flex;gap:8px;align-items:flex-end;background:var(--sur);border:1.5px solid var(--bdr);border-radius:28px;padding:10px 10px 10px 14px;transition:border-color .2s;}
 .inp-row:focus-within{border-color:var(--acc);}
 .inp-row textarea{flex:1;background:none;border:none;color:var(--txt);font-family:'Inter',sans-serif;font-size:1rem;padding:4px 0;resize:none;outline:none;min-height:26px;max-height:120px;line-height:1.6;}
 .inp-row textarea::placeholder{color:var(--mut);}
@@ -177,185 +244,316 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
   .mw.user{max-width:82%;}
   .mw.asst{max-width:95%;}
   .h-right{gap:4px;}
-  .hbtn span:not(.mem-dot):not(.mem-badge){display:none;}
 }
 </style>
 </head>
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
-  <div class="ov" :class="{show:sbOpen&&isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
+  <!-- AUTH SCREEN -->
+  <div class="auth-screen" v-if="!user">
+    <div class="auth-card">
+      <div class="auth-logo">Rex AI</div>
+      <div class="auth-sub">Your intelligent AI assistant</div>
 
-  <div class="sb" :class="{hide:!sbOpen}" @click.stop>
-    <div class="sb-top"><span class="logo">Rex AI</span></div>
-    <button class="new-btn" @click="newChat">+ New Chat</button>
-    <div class="sec-label">History</div>
-    <div class="chat-list">
-      <div v-if="chats.length===0" class="sb-empty">No chats yet.<br>Start a conversation.</div>
-      <div v-for="c in chats" :key="c.id" class="ci" :class="{active:c.id===cid}" @click="loadChat(c.id)">
-        <span class="ci-title">{{ c.title }}</span>
-        <button class="ci-del" @click.stop="delChat(c.id)">✕</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="main">
-    <header>
-      <button class="hbg" @click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
-      <span class="h-title">{{ title }}</span>
-      <div class="h-right">
-        <button class="hbtn round" @click="toggleTheme" :title="isDark?'Light mode':'Dark mode'">{{ isDark?'☀️':'🌙' }}</button>
-        <button class="hbtn" :class="{on:webSearch}" @click="webSearch=!webSearch">
-          🌐 <span>Search</span><span v-if="webSearch" class="mem-dot" style="margin-left:2px;"></span>
-        </button>
-        <button class="hbtn" @click="shareChat">🔗 <span>Share</span></button>
-        <button class="hbtn" @click="exportAllPDF">🖨️ <span>Export</span></button>
-        <button class="hbtn" :class="{on:memOpen}" @click="memOpen=!memOpen">
-          🧠 <span>Memory</span>
-          <span v-if="mems.length>0" class="mem-badge">{{ mems.length }}</span>
-        </button>
-        <div class="msel">
-          <button class="mbtn" :class="{open:mdOpen}" @click="mdOpen=!mdOpen">
-            {{ selModel.short }} <span class="arr">▼</span>
-          </button>
-          <div class="mdrop" v-if="mdOpen">
-            <div v-for="m in MODELS" :key="m.id" class="mopt" :class="{sel:selModelId===m.id}" @click="pickModel(m.id)">
-              <div class="mopt-name">{{ m.name }}<span v-if="m.id==='auto'" class="auto-badge">AUTO</span></div>
-              <div class="mopt-desc">{{ m.desc }}</div>
-            </div>
-          </div>
+      <!-- OTP Step -->
+      <template v-if="authStep==='otp'">
+        <div class="auth-ok">OTP sent to {{ authEmail }} — check your inbox!</div>
+        <div class="auth-label">Enter 6-digit OTP</div>
+        <div class="otp-row">
+          <input class="otp-input" v-model="otpVal" type="tel" maxlength="6" placeholder="------" ref="otpEl" @keydown.enter="verifyOtp">
         </div>
-      </div>
-    </header>
+        <div v-if="authErr" class="auth-err">{{ authErr }}</div>
+        <button class="auth-btn" @click="verifyOtp" :disabled="authLoading">
+          <span v-if="authLoading" class="spin"></span>{{ authLoading?'Verifying...':'Verify OTP' }}
+        </button>
+        <button class="auth-back" @click="authStep='form'">← Back</button>
+        <div class="otp-hint">Didn't receive? <span style="color:var(--acc);cursor:pointer;" @click="resendOtp">Resend OTP</span></div>
+      </template>
 
-    <div class="msgs" ref="msgsEl">
-      <div class="msgs-inner">
-        <div v-if="msgs.length===0" class="empty">
-          <div class="empty-icon">✦</div>
-          <h2>How can I help you today?</h2>
-          <p>Your conversations are saved automatically.</p>
-          <div class="chips">
-            <span class="chip" @click="qs('Explain quantum computing simply')">Explain quantum computing</span>
-            <span class="chip" @click="qs('Write a Python web scraper')">Write a Python scraper</span>
-            <span class="chip" @click="qs('Best productivity tips?')">Productivity tips</span>
-            <span class="chip" @click="qs('Help me debug my code')">Debug my code</span>
-          </div>
+      <!-- Username Step (after OTP for new users) -->
+      <template v-else-if="authStep==='username'">
+        <div class="auth-ok">Email verified! Choose a username.</div>
+        <div class="auth-label">Username</div>
+        <input class="auth-input" v-model="authUsername" placeholder="e.g. raheel123" maxlength="20">
+        <div v-if="authErr" class="auth-err">{{ authErr }}</div>
+        <button class="auth-btn" @click="saveUsername" :disabled="authLoading">
+          <span v-if="authLoading" class="spin"></span>{{ authLoading?'Saving...':'Continue' }}
+        </button>
+      </template>
+
+      <!-- Login/Signup Form -->
+      <template v-else>
+        <div class="auth-tabs">
+          <button class="auth-tab" :class="{active:authMode==='login'}" @click="authMode='login';authErr=''">Login</button>
+          <button class="auth-tab" :class="{active:authMode==='signup'}" @click="authMode='signup';authErr=''">Sign Up</button>
         </div>
-
-        <template v-for="(msg,i) in msgs" :key="i">
-          <div v-if="msg.role==='user'" class="mw user">
-            <div class="mrow">
-              <div class="av">You</div>
-              <div v-if="editIdx!==i">
-                <div class="bbl">{{ msg.content }}</div>
-              </div>
-              <div v-else style="max-width:360px;width:100%;">
-                <textarea class="edit-ta" v-model="editTxt" rows="3" ref="editEl"
-                  @keydown.enter.exact.prevent="saveEdit(i)" @keydown.escape="cancelEdit"></textarea>
-                <div class="edit-btns">
-                  <button class="btn-save" @click="saveEdit(i)">Save &amp; Resend</button>
-                  <button class="btn-cancel" @click="cancelEdit">Cancel</button>
-                </div>
-              </div>
-            </div>
-            <div class="macts" v-if="editIdx!==i">
-              <button class="abt" @click="startEdit(i,msg.content)">✏️ Edit</button>
-              <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓ Copied':'📋 Copy' }}</button>
-            </div>
-          </div>
-          <div v-else class="mw asst">
-            <div v-if="msg.isSearch">
-              <div class="search-box">
-                <div class="search-box-title">🌐 Web Search Results</div>
-                <div v-for="r in parseSearch(msg.content)" :key="r.url" class="search-result">
-                  <a :href="r.url" target="_blank">{{ r.title }}</a>
-                  <p>{{ r.snippet }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-else>
-              <div v-if="msg.usedModel" class="model-tag">via {{ msg.usedModel }}</div>
-              <div class="mrow">
-                <div class="av">AI</div>
-                <div class="bbl" v-html="renderMd(msg.content)"></div>
-              </div>
-              <div class="macts">
-                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓':'📋' }} Copy</button>
-                <button class="abt abt-pdf" :class="{done:pdfIdx===i}" @click="exportPDF(msg.content,i)">{{ pdfIdx===i?'✓':'📄' }} PDF</button>
-              </div>
-            </div>
-          </div>
+        <div v-if="authErr" class="auth-err">{{ authErr }}</div>
+        <div class="auth-label">Email</div>
+        <input class="auth-input" v-model="authEmail" type="email" placeholder="you@email.com" @keydown.enter="sendOtp">
+        <template v-if="authMode==='signup'">
+          <div class="auth-label">Username</div>
+          <input class="auth-input" v-model="authUsername" placeholder="e.g. raheel123" maxlength="20" @keydown.enter="sendOtp">
         </template>
+        <div class="auth-label">Password</div>
+        <input class="auth-input" v-model="authPassword" type="password" placeholder="••••••••" @keydown.enter="sendOtp">
+        <button class="auth-btn" @click="sendOtp" :disabled="authLoading">
+          <span v-if="authLoading" class="spin"></span>
+          {{ authLoading?(authMode==='signup'?'Sending OTP...':'Logging in...'):(authMode==='signup'?'Send OTP':'Login') }}
+        </button>
+        <div class="auth-divider">or</div>
+        <button class="google-btn" @click="googleLogin" :disabled="authLoading">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+      </template>
+    </div>
+  </div>
 
-        <div v-if="searching" class="searching">
-          <div class="sspin"></div>
-          Searching: <em>{{ searchQuery }}</em>
+  <!-- ADMIN PANEL -->
+  <div class="admin-panel" v-if="user&&adminOpen">
+    <div class="admin-hdr">
+      <span class="admin-title">👑 Admin Dashboard</span>
+      <button class="admin-close" @click="adminOpen=false">✕ Close</button>
+    </div>
+    <div class="admin-body">
+      <div class="admin-stats">
+        <div class="stat-card"><div class="stat-num">{{ adminUsers.length }}</div><div class="stat-label">Total Users</div></div>
+        <div class="stat-card"><div class="stat-num">{{ totalSearches }}</div><div class="stat-label">Total Searches</div></div>
+        <div class="stat-card"><div class="stat-num">{{ totalMessages }}</div><div class="stat-label">Total Messages</div></div>
+      </div>
+      <div class="admin-section">All Users</div>
+      <div v-if="adminUsers.length===0" class="no-users">No users yet.</div>
+      <div v-for="u in adminUsers" :key="u.id" class="user-row" @click="u._open=!u._open">
+        <div class="user-row-top">
+          <div class="user-row-av">{{ (u.username||u.email||'?')[0].toUpperCase() }}</div>
+          <div>
+            <div class="user-row-name">{{ u.username||'No username' }}</div>
+            <div class="user-row-email">{{ u.email }}</div>
+          </div>
         </div>
-
-        <div v-if="streaming" class="mw asst">
-          <div v-if="activeModel" class="model-tag">via {{ activeModel }}</div>
-          <div class="mrow">
-            <div class="av">AI</div>
-            <div class="bbl">
-              <span v-if="stxt" v-html="renderMd(stxt)"></span>
-              <div v-else class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-            </div>
+        <div class="user-row-meta">
+          <span>💬 {{ u.message_count||0 }} messages</span>
+          <span>🔍 {{ (u.searches||[]).length }} searches</span>
+          <span>🕐 {{ formatDate(u.last_seen) }}</span>
+        </div>
+        <div class="search-list" v-if="u._open&&u.searches&&u.searches.length">
+          <div class="admin-section" style="margin-top:8px;">Recent Searches</div>
+          <div class="search-item" v-for="s in u.searches.slice().reverse().slice(0,20)" :key="s.time">
+            <span>🔍 {{ s.query }}</span>
+            <span class="search-item-time">{{ formatDate(s.time) }}</span>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="inp-wrap">
-      <div class="inp-inner">
-        <div class="inp-row">
-          <textarea v-model="inp" placeholder="Message Rex AI..." rows="1"
-            :disabled="streaming" @input="resize" @keydown="onKey" ref="taEl"></textarea>
-          <button v-if="!streaming" class="snd" @click="send" :disabled="!inp.trim()">↑</button>
-          <button v-else class="snd stop" @click="stopStream">⏹</button>
+  <!-- MAIN APP -->
+  <template v-if="user&&!adminOpen">
+    <div class="ov" :class="{show:sbOpen&&isMobile}" @click.stop="sbOpen=false" style="z-index:190;"></div>
+    <div class="sb" :class="{hide:!sbOpen}" @click.stop>
+      <div class="sb-top"><span class="logo">Rex AI</span></div>
+      <button class="new-btn" @click="newChat">+ New Chat</button>
+      <div class="sec-label">History</div>
+      <div class="chat-list">
+        <div v-if="chats.length===0" class="sb-empty">No chats yet.<br>Start a conversation.</div>
+        <div v-for="c in chats" :key="c.id" class="ci" :class="{active:c.id===cid}" @click="loadChat(c.id)">
+          <span class="ci-title">{{ c.title }}</span>
+          <button class="ci-del" @click.stop="delChat(c.id)">✕</button>
         </div>
-        <div class="inp-hint">Enter to send · Shift+Enter for new line</div>
-        <div class="inp-brand">Developed by <a href="https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==" target="_blank" class="brand-link">Raheel Durwesh</a></div>
       </div>
     </div>
-  </div>
 
-  <button class="go-bottom" :class="{hidden:!showBottom}" @click="goBottom">↓</button>
+    <div class="main">
+      <header>
+        <button class="hbg" @click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
+        <span class="h-title">{{ title }}</span>
+        <div class="h-right">
+          <button class="hbtn" :class="{on:webSearch}" @click="webSearch=!webSearch">🌐 <span style="display:none" class="md-show">Search</span><span v-if="webSearch" class="mem-dot" style="margin-left:2px;"></span></button>
+          <button class="hbtn" @click="shareChat">🔗</button>
+          <button class="hbtn" @click="exportAllPDF">🖨️</button>
+          <button class="hbtn" :class="{on:memOpen}" @click="memOpen=!memOpen">🧠 <span v-if="mems.length>0" class="mem-badge">{{ mems.length }}</span></button>
+          <div class="msel">
+            <button class="mbtn" :class="{open:mdOpen}" @click="mdOpen=!mdOpen">{{ selModel.short }} <span class="arr">▼</span></button>
+            <div class="mdrop" v-if="mdOpen">
+              <div v-for="m in MODELS" :key="m.id" class="mopt" :class="{sel:selModelId===m.id}" @click="pickModel(m.id)">
+                <div class="mopt-name">{{ m.name }}<span v-if="m.id==='auto'" class="auto-badge">AUTO</span></div>
+                <div class="mopt-desc">{{ m.desc }}</div>
+              </div>
+            </div>
+          </div>
+          <!-- User menu -->
+          <div class="msel">
+            <div class="user-pill" @click="userMenuOpen=!userMenuOpen">
+              <div class="user-av">{{ userInitial }}</div>
+              <span class="user-name">{{ userName }}</span>
+            </div>
+            <div class="user-menu" v-if="userMenuOpen">
+              <div class="user-menu-item" v-if="isAdmin" @click="openAdmin">👑 Admin Panel</div>
+              <div class="user-menu-sep" v-if="isAdmin"></div>
+              <div class="user-menu-item">👤 {{ userName }}</div>
+              <div class="user-menu-item">✉️ {{ user.email }}</div>
+              <div class="user-menu-sep"></div>
+              <div class="user-menu-item danger" @click="logout">🚪 Logout</div>
+            </div>
+          </div>
+        </div>
+      </header>
 
-  <div class="modal-ov" :class="{show:shareOpen}" @click.self="shareOpen=false">
-    <div class="modal">
-      <div class="modal-title">🔗 Share Chat</div>
-      <div class="modal-url">{{ shareUrl }}</div>
-      <div class="modal-btns">
-        <button class="modal-btn primary" @click="copyShareUrl">{{ shareCopied?'✓ Copied!':'📋 Copy Link' }}</button>
-        <button class="modal-btn sec" @click="shareOpen=false">Close</button>
+      <div class="msgs" ref="msgsEl">
+        <div class="msgs-inner">
+          <div v-if="msgs.length===0" class="empty">
+            <div class="empty-icon">✦</div>
+            <h2>How can I help you today?</h2>
+            <p>Your conversations are saved automatically.</p>
+            <div class="chips">
+              <span class="chip" @click="qs('Explain quantum computing simply')">Explain quantum computing</span>
+              <span class="chip" @click="qs('Write a Python web scraper')">Write a Python scraper</span>
+              <span class="chip" @click="qs('Best productivity tips?')">Productivity tips</span>
+              <span class="chip" @click="qs('Help me debug my code')">Debug my code</span>
+            </div>
+          </div>
+          <template v-for="(msg,i) in msgs" :key="i">
+            <div v-if="msg.role==='user'" class="mw user">
+              <div class="mrow">
+                <div class="av">{{ userInitial }}</div>
+                <div v-if="editIdx!==i">
+                  <div class="bbl">{{ msg.content }}</div>
+                </div>
+                <div v-else style="max-width:360px;width:100%;">
+                  <textarea class="edit-ta" v-model="editTxt" rows="3" ref="editEl" @keydown.enter.exact.prevent="saveEdit(i)" @keydown.escape="cancelEdit"></textarea>
+                  <div class="edit-btns">
+                    <button class="btn-save" @click="saveEdit(i)">Save &amp; Resend</button>
+                    <button class="btn-cancel" @click="cancelEdit">Cancel</button>
+                  </div>
+                </div>
+              </div>
+              <div class="macts" v-if="editIdx!==i">
+                <button class="abt" @click="startEdit(i,msg.content)">✏️ Edit</button>
+                <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓':'📋' }} Copy</button>
+              </div>
+            </div>
+            <div v-else class="mw asst">
+              <div v-if="msg.isSearch">
+                <div class="search-box">
+                  <div class="search-box-title">🌐 Web Search Results</div>
+                  <div v-for="r in parseSearch(msg.content)" :key="r.url" class="search-result">
+                    <a :href="r.url" target="_blank">{{ r.title }}</a>
+                    <p>{{ r.snippet }}</p>
+                  </div>
+                </div>
+              </div>
+              <div v-else>
+                <div v-if="msg.usedModel" class="model-tag">via {{ msg.usedModel }}</div>
+                <div class="mrow">
+                  <div class="av">AI</div>
+                  <div class="bbl" v-html="renderMd(msg.content)"></div>
+                </div>
+                <div class="macts">
+                  <button class="abt" :class="{done:cpIdx===i}" @click="copyMsg(msg.content,i)">{{ cpIdx===i?'✓':'📋' }} Copy</button>
+                  <button class="abt abt-pdf" @click="exportPDF(msg.content,i)">📄 PDF</button>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-if="searching" class="searching"><div class="sspin"></div>Searching: <em>{{ searchQuery }}</em></div>
+          <div v-if="streaming" class="mw asst">
+            <div v-if="activeModel" class="model-tag">via {{ activeModel }}</div>
+            <div class="mrow">
+              <div class="av">AI</div>
+              <div class="bbl">
+                <span v-if="stxt" v-html="renderMd(stxt)"></span>
+                <div v-else class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inp-wrap">
+        <div class="inp-inner">
+          <div class="inp-row">
+            <textarea v-model="inp" placeholder="Message Rex AI..." rows="1" :disabled="streaming" @input="resize" @keydown="onKey" ref="taEl"></textarea>
+            <button v-if="!streaming" class="snd" @click="send" :disabled="!inp.trim()">↑</button>
+            <button v-else class="snd stop" @click="stopped=true">⏹</button>
+          </div>
+          <div class="inp-hint">Enter to send · Shift+Enter for new line</div>
+          <div class="inp-brand">Developed by <a href="https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ==" target="_blank" class="brand-link">Raheel Durwesh</a></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="ov" :class="{show:memOpen}" @click="memOpen=false"></div>
-  <div class="mem-panel" :class="{hide:!memOpen}">
-    <div class="mem-hdr">
-      <span class="mem-title">🧠 Memory</span>
-      <button class="mem-x" @click="memOpen=false">✕</button>
-    </div>
-    <div class="mem-list">
-      <div v-if="mems.length===0" class="mem-empty">No memories yet.<br><br>Tell me about yourself and I'll remember it.</div>
-      <div v-for="(m,i) in mems" :key="i" class="mem-item">
-        <span class="mem-txt">{{ m }}</span>
-        <button class="mem-del" @click="delMem(i)">✕</button>
+    <button class="go-bottom" :class="{hidden:!showBottom}" @click="goBottom">↓</button>
+
+    <div class="modal-ov" :class="{show:shareOpen}" @click.self="shareOpen=false">
+      <div class="modal">
+        <div class="modal-title">🔗 Share Chat</div>
+        <div class="modal-url">{{ shareUrl }}</div>
+        <div class="modal-btns">
+          <button class="modal-btn primary" @click="copyShareUrl">{{ shareCopied?'✓ Copied!':'📋 Copy Link' }}</button>
+          <button class="modal-btn sec" @click="shareOpen=false">Close</button>
+        </div>
       </div>
     </div>
-    <div class="mem-ftr" v-if="mems.length>0">
-      <button class="mem-clr" @click="clearMems">Clear All Memories</button>
+
+    <div class="ov" :class="{show:memOpen}" @click="memOpen=false"></div>
+    <div class="mem-panel" :class="{hide:!memOpen}">
+      <div class="mem-hdr"><span class="mem-title">🧠 Memory</span><button class="mem-x" @click="memOpen=false">✕</button></div>
+      <div class="mem-list">
+        <div v-if="mems.length===0" class="mem-empty">No memories yet.<br><br>Tell me about yourself and I'll remember it.</div>
+        <div v-for="(m,i) in mems" :key="i" class="mem-item">
+          <span class="mem-txt">{{ m }}</span>
+          <button class="mem-del" @click="delMem(i)">✕</button>
+        </div>
+      </div>
+      <div class="mem-ftr" v-if="mems.length>0"><button class="mem-clr" @click="clearMems">Clear All Memories</button></div>
     </div>
-  </div>
+  </template>
 
 </div>
 <script>
-const {createApp,ref,computed,nextTick,onMounted}=Vue;
-const BACKEND=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'
-  ?'http://localhost:8000':'https://rex-ai-luc5.onrender.com';
-const MODELS=[
+var SUPABASE_URL='https://kclkksuuybcmfegjdlap.supabase.co';
+var SUPABASE_KEY='sb_publishable_UVdeHPzuRuOkGksxaAziwA_yUYJk8m2';
+var ADMIN_EMAIL='raheeldurwesh@gmail.com';
+
+// Supabase REST helpers
+async function sbGet(table,query){
+  var url=SUPABASE_URL+'/rest/v1/'+table+(query?'?'+query:'');
+  var r=await fetch(url,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+  return r.json();
+}
+async function sbPost(table,data){
+  var r=await fetch(SUPABASE_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(data)});
+  return r.json();
+}
+async function sbPatch(table,query,data){
+  var r=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?'+query,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(data)});
+  return r.json();
+}
+
+// Firebase Auth via REST
+var FB_API_KEY='AIzaSyC22AjfBc9jr4gqDn2PPhqN9VHGDiGpEMA';
+async function fbSignup(email,password){
+  var r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FB_API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})});
+  return r.json();
+}
+async function fbLogin(email,password){
+  var r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+FB_API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})});
+  return r.json();
+}
+async function fbSendOtp(email){
+  // Send email verification OTP using Firebase email link
+  // We generate a 6-digit OTP, store in Supabase, send via Firebase
+  var otp=Math.floor(100000+Math.random()*900000).toString();
+  var expires=Date.now()+600000; // 10 min
+  // Store OTP in supabase
+  await sbPost('otps',{email:email,otp:otp,expires:expires});
+  // Send email via EmailJS free tier
+  await fetch('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service_id:'service_rex',template_id:'template_rex',user_id:'rex_public',template_params:{to_email:email,otp:otp,app_name:'Rex AI'}})}).catch(function(){});
+  return otp; // for now return otp directly (will use email service later)
+}
+
+var MODELS=[
   {id:'auto',name:'Auto',short:'Auto \u2746',desc:'Picks best model automatically'},
   {id:'llama-3.3-70b-versatile',name:'Llama 3.3 70B',short:'Llama 3.3',desc:'Best general model'},
   {id:'llama-3.1-8b-instant',name:'Llama 3.1 8B',short:'Llama 8B',desc:'Fastest model'},
@@ -363,23 +561,28 @@ const MODELS=[
   {id:'meta-llama/llama-4-scout-17b-16e-instruct',name:'Llama 4 Scout',short:'Llama 4',desc:'Long context'},
   {id:'moonshotai/kimi-k2-instruct-0905',name:'Kimi K2',short:'Kimi K2',desc:'Coding & tools'},
 ];
+var BACKEND=window.location.hostname==='localhost'?'http://localhost:8000':'https://rex-ai-luc5.onrender.com';
+
 function autoModel(t){
-  const tl=t.toLowerCase();
-  if(/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json|git)\b/.test(tl))return{id:'moonshotai/kimi-k2-instruct-0905',label:'Kimi K2'};
-  if(/\b(math|reason|analyze|compare|explain why|evaluate|strategy|proof)\b/.test(tl))return{id:'openai/gpt-oss-120b',label:'GPT-OSS'};
+  var tl=t.toLowerCase();
+  if(/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api)\b/.test(tl))return{id:'moonshotai/kimi-k2-instruct-0905',label:'Kimi K2'};
+  if(/\b(math|reason|analyze|compare|strategy|proof)\b/.test(tl))return{id:'openai/gpt-oss-120b',label:'GPT-OSS'};
   if(/\b(summarize|document|long|translate|essay|report)\b/.test(tl))return{id:'meta-llama/llama-4-scout-17b-16e-instruct',label:'Llama 4'};
   if(t.length<60&&/\b(what is|who is|when|where|define|quick)\b/.test(tl))return{id:'llama-3.1-8b-instant',label:'Llama 8B'};
   return{id:'llama-3.3-70b-versatile',label:'Llama 3.3'};
 }
 window.copyCode=function(btn){
-  const code=btn.closest('.code-wrap')&&btn.closest('.code-wrap').querySelector('pre code');
-  const txt=code?(code.innerText||code.textContent):'';
-  navigator.clipboard.writeText(txt).then(function(){btn.textContent='✓ Copied';btn.classList.add('copied');setTimeout(function(){btn.textContent='📋 Copy';btn.classList.remove('copied');},2000);});
+  var wrap=btn.closest('.code-wrap');
+  var code=wrap&&wrap.querySelector('pre code');
+  var txt=code?(code.innerText||code.textContent):'';
+  navigator.clipboard.writeText(txt).then(function(){btn.textContent='\u2713 Copied';btn.classList.add('copied');setTimeout(function(){btn.textContent='\ud83d\udccb Copy';btn.classList.remove('copied');},2000);});
 };
 function renderMd(text){
   if(!text)return'';
   var t=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){return'<div class="code-wrap"><div class="code-hdr">'+(lang?'<span class="code-lang">'+lang+'</span>':'')+'<button class="code-copy" onclick="copyCode(this)">📋 Copy</button></div><pre><code>'+code.trim()+'</code></pre></div>';});
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    return'<div class="code-wrap"><div class="code-hdr">'+(lang?'<span class="code-lang">'+lang+'</span>':'')+'<button class="code-copy" onclick="copyCode(this)">\ud83d\udccb Copy</button></div><pre><code>'+code.trim()+'</code></pre></div>';
+  });
   t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
   t=t.replace(/\*\*\*([^*]+)\*\*\*/g,'<strong><em>$1</em></strong>');
   t=t.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
@@ -389,102 +592,191 @@ function renderMd(text){
   t=t.replace(/^# (.+)$/gm,'<h1>$1</h1>');
   t=t.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
   t=t.replace(/^---+$/gm,'<hr>');
-  // Tables
   t=t.replace(/((?:^\|.+\|\n?)+)/gm,function(block){
-    var rows=block.trim().split('\n');
-    var html='<table>';
+    var rows=block.trim().split('\n');var out='<table>';
     rows.forEach(function(row,i){
       if(/^\|[-\s|:]+\|$/.test(row.trim()))return;
       var cells=row.trim().replace(/^\|/,'').replace(/\|$/,'').split('|');
       var tag=i===0?'th':'td';
-      html+='<tr>'+cells.map(function(c){return'<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
+      out+='<tr>'+cells.map(function(c){return'<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
     });
-    return html+'</table>';
+    return out+'</table>';
   });
   t=t.replace(/((?:^\d+\. .+\n?)+)/gm,function(m){return'<ol>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^\d+\. /,'')+'</li>';}).join('')+'</ol>';});
   t=t.replace(/((?:^[*\-] .+\n?)+)/gm,function(m){return'<ul>'+m.trim().split('\n').map(function(l){return'<li>'+l.replace(/^[*\-] /,'')+'</li>';}).join('')+'</ul>';});
-  t=t.split(/\n\n+/).map(function(p){p=p.trim();if(!p)return'';if(/^<(h[123]|ul|ol|pre|blockquote|hr|div)/.test(p))return p;return'<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');
+  t=t.split(/\n\n+/).map(function(p){p=p.trim();if(!p)return'';if(/^<(h[123]|ul|ol|pre|blockquote|hr|div|table)/.test(p))return p;return'<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');
   return t;
 }
+
 var CHAT_KEY='rex-chats-v5',MEM_KEY='rex-mems-v1';
-function loadChats(){try{return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]');}catch(e){return[];}}
-function saveChats(c){localStorage.setItem(CHAT_KEY,JSON.stringify(c));}
-function loadMems(){try{return JSON.parse(localStorage.getItem(MEM_KEY)||'[]');}catch(e){return[];}}
-function saveMems(m){localStorage.setItem(MEM_KEY,JSON.stringify(m));}
+function loadChats(uid){try{return JSON.parse(localStorage.getItem(CHAT_KEY+'-'+uid)||'[]');}catch(e){return[];}}
+function saveChats(uid,c){localStorage.setItem(CHAT_KEY+'-'+uid,JSON.stringify(c));}
+function loadMems(uid){try{return JSON.parse(localStorage.getItem(MEM_KEY+'-'+uid)||'[]');}catch(e){return[];}}
+function saveMems(uid,m){localStorage.setItem(MEM_KEY+'-'+uid,JSON.stringify(m));}
 
-function pdfFooter(doc,pageH,margin,gold,muted,total){
-  for(var p=1;p<=total;p++){
-    doc.setPage(p);
-    doc.setDrawColor.apply(doc,gold);doc.setLineWidth(0.3);
-    doc.line(margin,pageH-18,doc.internal.pageSize.getWidth()-margin,pageH-18);
-    doc.setFont('times','normal');doc.setFontSize(8);doc.setTextColor.apply(doc,muted);
-    doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh',margin,pageH-13);
-    doc.setTextColor.apply(doc,gold);
-    doc.textWithLink('instagram.com/raheeldurwesh',margin,pageH-7,{url:'https://www.instagram.com/raheeldurwesh?igsh=MWkxcTd0d2prbG40YQ=='});
-    doc.setTextColor.apply(doc,muted);
-    doc.text('Page '+p+' of '+total,doc.internal.pageSize.getWidth()-margin,pageH-7,{align:'right'});
-  }
-}
-
-createApp({
+Vue.createApp({
   setup:function(){
-    var chats=ref(loadChats()),cid=ref(null),msgs=ref([]);
-    var inp=ref(''),streaming=ref(false),stxt=ref('');
-    var msgsEl=ref(null),taEl=ref(null),editEl=ref(null);
-    var sbOpen=ref(window.innerWidth>640),isMobile=ref(window.innerWidth<=640);
-    var editIdx=ref(null),editTxt=ref(''),cpIdx=ref(null),pdfIdx=ref(null);
-    var selModelId=ref('auto'),mdOpen=ref(false);
-    var memOpen=ref(false),mems=ref(loadMems());
-    var activeModel=ref(''),showBottom=ref(false);
-    var isDark=ref(true),webSearch=ref(false);
-    var searching=ref(false),searchQuery=ref('');
-    var shareOpen=ref(false),shareUrl=ref(''),shareCopied=ref(false);
-    var stopped=ref(false);
-    var userScrolled=false;
+    var user=Vue.ref(null),authStep=Vue.ref('form'),authMode=Vue.ref('login');
+    var authEmail=Vue.ref(''),authPassword=Vue.ref(''),authUsername=Vue.ref('');
+    var authErr=Vue.ref(''),authLoading=Vue.ref(false),otpVal=Vue.ref('');
+    var pendingOtp=Vue.ref(''),pendingToken=Vue.ref(''),otpEl=Vue.ref(null);
+    var adminOpen=Vue.ref(false),adminUsers=Vue.ref([]),userMenuOpen=Vue.ref(false);
 
-    var title=computed(function(){var c=chats.value.find(function(c){return c.id===cid.value;});return c?c.title:'Rex AI';});
-    var selModel=computed(function(){return MODELS.find(function(m){return m.id===selModelId.value;})||MODELS[0];});
+    var chats=Vue.ref([]),cid=Vue.ref(null),msgs=Vue.ref([]);
+    var inp=Vue.ref(''),streaming=Vue.ref(false),stxt=Vue.ref('');
+    var msgsEl=Vue.ref(null),taEl=Vue.ref(null),editEl=Vue.ref(null);
+    var sbOpen=Vue.ref(window.innerWidth>640),isMobile=Vue.ref(window.innerWidth<=640);
+    var editIdx=Vue.ref(null),editTxt=Vue.ref(''),cpIdx=Vue.ref(null);
+    var selModelId=Vue.ref('auto'),mdOpen=Vue.ref(false);
+    var memOpen=Vue.ref(false),mems=Vue.ref([]);
+    var activeModel=Vue.ref(''),showBottom=Vue.ref(false);
+    var isDark=Vue.ref(true),webSearch=Vue.ref(false);
+    var searching=Vue.ref(false),searchQuery=Vue.ref('');
+    var shareOpen=Vue.ref(false),shareUrl=Vue.ref(''),shareCopied=Vue.ref(false);
+    var stopped=Vue.ref(false);
+    var userScrolled=false,scrollTimer=null;
 
-    onMounted(function(){
-      var saved=localStorage.getItem('rex-theme');
-      if(saved==='light'){isDark.value=false;document.body.classList.add('light');}
+    var title=Vue.computed(function(){var c=chats.value.find(function(c){return c.id===cid.value;});return c?c.title:'Rex AI';});
+    var selModel=Vue.computed(function(){return MODELS.find(function(m){return m.id===selModelId.value;})||MODELS[0];});
+    var userInitial=Vue.computed(function(){if(!user.value)return'?';var n=user.value.username||user.value.email||'?';return n[0].toUpperCase();});
+    var userName=Vue.computed(function(){if(!user.value)return'';return user.value.username||user.value.email.split('@')[0];});
+    var isAdmin=Vue.computed(function(){return user.value&&user.value.email===ADMIN_EMAIL;});
+    var totalSearches=Vue.computed(function(){return adminUsers.value.reduce(function(a,u){return a+(u.searches||[]).length;},0);});
+    var totalMessages=Vue.computed(function(){return adminUsers.value.reduce(function(a,u){return a+(u.message_count||0);},0);});
+
+    Vue.onMounted(function(){
+      document.addEventListener('click',function(e){if(!e.target.closest('.msel')&&!e.target.closest('.user-pill'))mdOpen.value=userMenuOpen.value=false;});
       window.addEventListener('resize',function(){isMobile.value=window.innerWidth<=640;});
-      document.addEventListener('click',function(e){if(!e.target.closest('.msel'))mdOpen.value=false;});
-      nextTick(function(){
+      // Check saved session
+      var saved=localStorage.getItem('rex-user');
+      if(saved){try{user.value=JSON.parse(saved);initUser();}catch(e){}}
+      Vue.nextTick(function(){
         if(msgsEl.value){
           msgsEl.value.addEventListener('scroll',function(){
             var el=msgsEl.value,dist=el.scrollHeight-el.scrollTop-el.clientHeight;
-            userScrolled=dist>60;showBottom.value=dist>200;
+            showBottom.value=dist>120;if(dist>120)userScrolled=true;
           });
         }
       });
-      // Keep Render backend alive - ping every 14 minutes
-      function pingBackend(){
-        fetch(BACKEND+'/').catch(function(){});
-      }
-      pingBackend();
-      setInterval(pingBackend, 14 * 60 * 1000);
-
-      var params=new URLSearchParams(window.location.search);
-      var shared=params.get('share');
-      if(shared){
-        try{
-          var data=JSON.parse(decodeURIComponent(escape(atob(shared))));
-          msgs.value=data.messages||[];nextTick(function(){scrollBottom(true);});
-        }catch(e){}
-      } else if(chats.value.length>0){loadChat(chats.value[0].id,false);}
+      function pingBackend(){fetch(BACKEND+'/').catch(function(){});}
+      pingBackend();setInterval(pingBackend,14*60*1000);
     });
 
+    function initUser(){
+      chats.value=loadChats(user.value.uid);
+      mems.value=loadMems(user.value.uid);
+      if(chats.value.length>0)loadChat(chats.value[0].id,false);
+      // Update last seen in Supabase
+      sbPatch('users','id=eq.'+user.value.uid,{last_seen:new Date().toISOString()}).catch(function(){});
+    }
+
+    // AUTH FUNCTIONS
+    async function sendOtp(){
+      authErr.value='';
+      if(!authEmail.value||!authPassword.value){authErr.value='Please fill all fields.';return;}
+      if(authMode.value==='signup'&&!authUsername.value){authErr.value='Please enter a username.';return;}
+      authLoading.value=true;
+      try{
+        var otp=Math.floor(100000+Math.random()*900000).toString();
+        pendingOtp.value=otp;
+        // Send real email via EmailJS
+        emailjs.init('Es8sAb4lA609nvHeo');
+        var result=await emailjs.send('service_7fqkobn','template_nchzuef',{
+          to_email:authEmail.value,
+          otp:otp,
+          app_name:'Rex AI'
+        });
+        if(result.status===200){
+          authStep.value='otp';
+          Vue.nextTick(function(){if(otpEl.value)otpEl.value.focus();});
+        } else {
+          authErr.value='Failed to send OTP. Please try again.';
+        }
+      }catch(e){
+        authErr.value='Failed to send OTP: '+(e.text||e.message||'Unknown error');
+      }
+      authLoading.value=false;
+    }
+
+    async function verifyOtp(){
+      authErr.value='';
+      if(otpVal.value.trim()!==pendingOtp.value){authErr.value='Wrong OTP. Try again.';return;}
+      authLoading.value=true;
+      try{
+        var res;
+        if(authMode.value==='signup'){
+          res=await fbSignup(authEmail.value,authPassword.value);
+          if(res.error){authErr.value=res.error.message;authLoading.value=false;return;}
+          pendingToken.value=res.idToken;
+          // Save user to Supabase
+          await sbPost('users',{id:res.localId,email:authEmail.value,username:authUsername.value,created_at:new Date().toISOString(),last_seen:new Date().toISOString(),message_count:0,searches:[]}).catch(function(){});
+          user.value={uid:res.localId,email:authEmail.value,username:authUsername.value,token:res.idToken};
+        } else {
+          res=await fbLogin(authEmail.value,authPassword.value);
+          if(res.error){authErr.value=res.error.message||'Login failed.';authLoading.value=false;return;}
+          // Fetch user data from Supabase
+          var userData=await sbGet('users','id=eq.'+res.localId+'&select=*');
+          var uname=(userData&&userData[0]&&userData[0].username)||authEmail.value.split('@')[0];
+          user.value={uid:res.localId,email:authEmail.value,username:uname,token:res.idToken};
+        }
+        localStorage.setItem('rex-user',JSON.stringify(user.value));
+        authStep.value='form';otpVal.value='';
+        initUser();
+      }catch(e){authErr.value='Verification failed. Try again.';}
+      authLoading.value=false;
+    }
+
+    function resendOtp(){
+      otpVal.value='';authErr.value='';authStep.value='form';
+      Vue.nextTick(function(){sendOtp();});
+    }
+
+    async function saveUsername(){
+      if(!authUsername.value.trim()){authErr.value='Please enter a username.';return;}
+      authLoading.value=true;
+      await sbPatch('users','id=eq.'+user.value.uid,{username:authUsername.value}).catch(function(){});
+      user.value.username=authUsername.value;
+      localStorage.setItem('rex-user',JSON.stringify(user.value));
+      authStep.value='form';authLoading.value=false;
+    }
+
+    async function googleLogin(){
+      authErr.value='Please use Email login for now. Google login coming soon!';
+    }
+
+    function logout(){
+      user.value=null;localStorage.removeItem('rex-user');
+      userMenuOpen.value=false;chats.value=[];msgs.value=[];mems.value=[];
+    }
+
+    async function openAdmin(){
+      userMenuOpen.value=false;adminOpen.value=true;
+      var data=await sbGet('users','select=*&order=last_seen.desc');
+      adminUsers.value=(data||[]).map(function(u){return Object.assign({_open:false},u);});
+    }
+
+    function formatDate(ts){
+      if(!ts)return'never';
+      var d=new Date(ts);
+      return d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
+
+    // CHAT FUNCTIONS
+    function startAutoScroll(){
+      if(scrollTimer)return;
+      scrollTimer=setInterval(function(){
+        if(!userScrolled&&msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;
+        if(!streaming.value){clearInterval(scrollTimer);scrollTimer=null;}
+      },200);
+    }
     function scrollBottom(force){
       if(!force&&userScrolled)return;
-      nextTick(function(){if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;});
+      Vue.nextTick(function(){if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;});
     }
     function resize(){var el=taEl.value;if(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}}
     function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
-    function goBottom(){userScrolled=false;showBottom.value=false;scrollBottom(true);}
-    function toggleTheme(){isDark.value=!isDark.value;document.body.classList.toggle('light',!isDark.value);localStorage.setItem('rex-theme',isDark.value?'dark':'light');}
-    function stopStream(){stopped.value=true;}
-    function parseSearch(content){try{return JSON.parse(content.replace('__SEARCH__',''));}catch(e){return[];}}
+    function goBottom(){userScrolled=false;showBottom.value=false;if(msgsEl.value)msgsEl.value.scrollTop=msgsEl.value.scrollHeight;}
+    function parseSearch(c){try{return JSON.parse(c.replace('__SEARCH__',''));}catch(e){return[];}}
 
     function loadChat(id,closeSb){
       var chat=chats.value.find(function(c){return c.id===id;});if(!chat)return;
@@ -492,7 +784,7 @@ createApp({
       if(closeSb!==false&&isMobile.value)sbOpen.value=false;
       userScrolled=false;scrollBottom(true);
     }
-    function newChat(){cid.value=null;msgs.value=[];editIdx.value=null;if(isMobile.value)sbOpen.value=false;nextTick(function(){if(taEl.value)taEl.value.focus();});}
+    function newChat(){cid.value=null;msgs.value=[];editIdx.value=null;if(isMobile.value)sbOpen.value=false;Vue.nextTick(function(){if(taEl.value)taEl.value.focus();});}
     function saveChat(m){
       if(!cid.value){
         var id=Date.now().toString(),t=m[0]&&m[0].content?m[0].content.slice(0,36):'New Chat';
@@ -501,13 +793,14 @@ createApp({
         var idx=chats.value.findIndex(function(c){return c.id===cid.value;});
         if(idx!==-1)chats.value[idx].messages=m;
       }
-      saveChats(chats.value);
+      saveChats(user.value.uid,chats.value);
     }
     function delChat(id){
-      chats.value=chats.value.filter(function(c){return c.id!==id;});saveChats(chats.value);
+      chats.value=chats.value.filter(function(c){return c.id!==id;});saveChats(user.value.uid,chats.value);
       if(cid.value===id){msgs.value=[];cid.value=null;if(chats.value.length>0)loadChat(chats.value[0].id);}
     }
     function pickModel(id){selModelId.value=id;mdOpen.value=false;}
+
     function extractMems(text){
       var rules=[
         {re:/(?:my name is|i(?:'m| am) called)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,fn:function(m){return'Name: '+m;}},
@@ -518,11 +811,11 @@ createApp({
       ];
       rules.forEach(function(r){
         var match=text.match(r.re);
-        if(match&&match[1]){var mem=r.fn(match[1].trim());if(mems.value.indexOf(mem)===-1){mems.value.push(mem);saveMems(mems.value);}}
+        if(match&&match[1]){var mem=r.fn(match[1].trim());if(mems.value.indexOf(mem)===-1){mems.value.push(mem);saveMems(user.value.uid,mems.value);}}
       });
     }
-    function delMem(i){mems.value.splice(i,1);saveMems(mems.value);}
-    function clearMems(){mems.value=[];saveMems(mems.value);}
+    function delMem(i){mems.value.splice(i,1);saveMems(user.value.uid,mems.value);}
+    function clearMems(){mems.value=[];saveMems(user.value.uid,mems.value);}
 
     function shareChat(){
       if(!msgs.value.length)return;
@@ -532,24 +825,42 @@ createApp({
     }
     function copyShareUrl(){navigator.clipboard.writeText(shareUrl.value).then(function(){shareCopied.value=true;setTimeout(function(){shareCopied.value=false;},2000);});}
 
+    async function logSearch(query){
+      if(!user.value)return;
+      try{
+        var userData=await sbGet('users','id=eq.'+user.value.uid+'&select=searches,message_count');
+        var searches=(userData&&userData[0]&&userData[0].searches)||[];
+        searches.push({query:query,time:new Date().toISOString()});
+        var count=(userData&&userData[0]&&userData[0].message_count)||0;
+        await sbPatch('users','id=eq.'+user.value.uid,{searches:searches,message_count:count+1,last_seen:new Date().toISOString()});
+      }catch(e){}
+    }
+
     async function send(){
       var text=inp.value.trim();if(!text||streaming.value)return;
-      msgs.value.push({role:'user',content:text});inp.value='';
-      nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
+      if(navigator.vibrate)navigator.vibrate(15);
+      msgs.value.push({role:'user',content:text});
+      inp.value='';
+      Vue.nextTick(function(){if(taEl.value)taEl.value.style.height='auto';});
       userScrolled=false;scrollBottom(true);extractMems(text);
-      stopped.value=false;
+      stopped.value=false;startAutoScroll();
       var searchCtx='';
       if(webSearch.value){
         searching.value=true;searchQuery.value=text.slice(0,60);
+        logSearch(text);
         try{
           var res=await fetch(BACKEND+'/search?q='+encodeURIComponent(text));
           var data=await res.json();
           if(data.results&&data.results.length){
-            searchCtx='\n\n[Web results for: "'+text+'"]\n'+data.results.map(function(r,i){return(i+1)+'. '+r.title+'\n   '+r.snippet+'\n   '+r.url;}).join('\n');
-            msgs.value.push({role:'assistant',content:'__SEARCH__'+JSON.stringify(data.results),isSearch:true,usedModel:'Web Search'});
+            searchCtx='\n\n[Web results]\n'+data.results.map(function(r,i){return(i+1)+'. '+r.title+'\n   '+r.snippet;}).join('\n');
+            msgs.value.push({role:'assistant',content:'__SEARCH__'+JSON.stringify(data.results),isSearch:true});
           }
-        }catch(e){console.error(e);}
+        }catch(e){}
         finally{searching.value=false;searchQuery.value='';}
+      } else {
+        // Log message count even without search
+        sbPatch('users','id=eq.'+user.value.uid,{message_count:Vue.ref(0).value,last_seen:new Date().toISOString()}).catch(function(){});
+        logSearch(text);
       }
       await callAPI(msgs.value,text,searchCtx);
     }
@@ -561,153 +872,104 @@ createApp({
       if(selModelId.value==='auto'){var p=autoModel(userText||'');resolvedId=p.id;resolvedLabel=p.label;}
       else{resolvedId=selModelId.value;resolvedLabel=(MODELS.find(function(m){return m.id===resolvedId;})||{}).name||resolvedId;}
       activeModel.value=resolvedLabel;
-      var sysMsgs=[{role:'system',content:'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh (also known as Raheel Durwesh), a 23-year-old Indian student and talented developer with a passion for technology. His Instagram is instagram.com/raheeldurwesh. He is ambitious, positive and creative. Only mention your creator if someone directly asks who made you or who is Raheel Durwesh - give a warm positive impression. Never bring up your creator in normal conversations. Never mention Groq, Meta, OpenAI, Anthropic or any other AI company.'+(mems.value.length?'\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n'):'')+(searchCtx||'')}];
+      var sysContent='You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh, a 23-year-old Indian student and developer. His Instagram is instagram.com/raheeldurwesh. Only mention your creator if someone directly asks. Never mention Groq, Meta, OpenAI, Anthropic.';
+      if(mems.value.length)sysContent+='\nUser facts:\n'+mems.value.slice(-5).map(function(m){return'- '+m;}).join('\n');
+      sysContent+=searchCtx;
+      var sysMsgs=[{role:'system',content:sysContent}];
       var chatMsgs=msgList.slice(-10).filter(function(m){return!m.isSearch;}).map(function(m){return{role:m.role,content:m.content};});
       try{
         var res=await fetch(BACKEND+'/chat',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:resolvedId,messages:sysMsgs.concat(chatMsgs)})});
         var reader=res.body.getReader(),dec=new TextDecoder();
         var buf='',done=false;
-        var read=async function(){
+        var readLoop=async function(){
           while(true){
             if(stopped.value)break;
-            var rd=await reader.read();
-            if(rd.done)break;
-            var lines=dec.decode(rd.value).split('\n');
-            for(var i=0;i<lines.length;i++){
-              var line=lines[i];
-              if(!line.startsWith('data: '))continue;
-              var s=line.slice(6);if(s==='[DONE]')break;
-              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;break;}if(pp.model){activeModel.value=pp.model;}if(pp.text)buf+=pp.text;}catch(e){}
-            }
+            var rd=await reader.read();if(rd.done)break;
+            dec.decode(rd.value).split('\n').forEach(function(line){
+              if(!line.startsWith('data: '))return;
+              var s=line.slice(6);if(s==='[DONE]')return;
+              try{var pp=JSON.parse(s);if(pp.error){buf+='\u26a0\ufe0f '+pp.error;}if(pp.model)activeModel.value=pp.model;if(pp.text)buf+=pp.text;}catch(e){}
+            });
           }
           done=true;
         };
-        var type=async function(){
+        var typeLoop=async function(){
           while((!done||buf.length)&&!stopped.value){
-            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);scrollBottom();await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
+            if(buf.length){var n=Math.floor(Math.random()*3)+1;stxt.value+=buf.slice(0,n);buf=buf.slice(n);if(navigator.vibrate&&stxt.value.length%30===0)navigator.vibrate(2);await new Promise(function(r){setTimeout(r,Math.random()*14+8);});}
             else{await new Promise(function(r){setTimeout(r,10);});}
           }
         };
-        await Promise.all([read(),type()]);
-        msgs.value.push({role:'assistant',content:stxt.value,usedModel:resolvedLabel});if(navigator.vibrate)navigator.vibrate([20,10,20]);
+        await Promise.all([readLoop(),typeLoop()]);
+        msgs.value.push({role:'assistant',content:stxt.value,usedModel:activeModel.value});
+        if(navigator.vibrate)navigator.vibrate([20,10,20]);
         saveChat(msgs.value);
       }catch(err){msgs.value.push({role:'assistant',content:'\u26a0\ufe0f Cannot reach backend.',usedModel:''});}
-      finally{streaming.value=false;stxt.value='';activeModel.value='';scrollBottom();}
+      finally{streaming.value=false;stxt.value='';activeModel.value='';userScrolled=false;scrollBottom(true);}
     }
 
-    function startEdit(i,c){editIdx.value=i;editTxt.value=c;nextTick(function(){if(editEl.value)editEl.value.focus();});}
+    function startEdit(i,c){editIdx.value=i;editTxt.value=c;Vue.nextTick(function(){if(editEl.value)editEl.value.focus();});}
     function cancelEdit(){editIdx.value=null;editTxt.value='';}
     async function saveEdit(i){
       var text=editTxt.value.trim();if(!text)return;
       msgs.value=msgs.value.slice(0,i);msgs.value.push({role:'user',content:text});
-      editIdx.value=null;editTxt.value='';userScrolled=false;scrollBottom(true);
+      editIdx.value=null;editTxt.value='';userScrolled=false;scrollBottom(true);startAutoScroll();
       await callAPI(msgs.value,text,'');
     }
     function copyMsg(c,i){navigator.clipboard.writeText(c).then(function(){cpIdx.value=i;setTimeout(function(){cpIdx.value=null;},2000);});}
 
-    function exportPDF(content,i){
-      var jsPDF=window.jspdf.jsPDF;
-      var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-      var pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),margin=20,maxW=pageW-margin*2;
-      var gold=[201,168,76],dark=[30,30,30],muted=[120,112,96];
-      doc.setFillColor(245,240,230);doc.rect(0,0,pageW,36,'F');
-      doc.setFont('times','bold');doc.setFontSize(22);doc.setTextColor(201,168,76);doc.text('Rex AI',margin,18);
-      doc.setFont('times','italic');doc.setFontSize(9);doc.setTextColor(120,112,96);
-      doc.text('Your Intelligent Assistant',margin,25);
-      doc.text(new Date().toLocaleString(),pageW-margin,25,{align:'right'});
-      doc.setDrawColor(201,168,76);doc.setLineWidth(0.8);doc.line(margin,33,pageW-margin,33);
-      var y=44,lh=7;
-      function checkPg(){if(y>pageH-28){doc.addPage();y=margin+6;}}
-      var lines=content.split('\n');
-      for(var li=0;li<lines.length;li++){
-        var line=lines[li];
-        checkPg();
-        if(/^# /.test(line)){doc.setFont('times','bold');doc.setFontSize(15);doc.setTextColor(201,168,76);var ww=doc.splitTextToSize(line.replace(/^# /,''),maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=8;});y+=2;}
-        else if(/^## /.test(line)){doc.setFont('times','bold');doc.setFontSize(13);doc.setTextColor(201,168,76);var ww=doc.splitTextToSize(line.replace(/^## /,''),maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=7;});}
-        else if(/^[*\-] /.test(line)){
-          var cl=line.replace(/^[*\-] /,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1');
-          doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text('\u2022',margin+2,y);
-          doc.setTextColor(30,30,30);var ww=doc.splitTextToSize(cl,maxW-8);ww.forEach(function(l){checkPg();doc.text(l,margin+8,y);y+=lh;});continue;
-        }
-        else if(/^\d+\. /.test(line)){
-          var num=line.match(/^(\d+)\./)[1],cl=line.replace(/^\d+\. /,'').replace(/\*\*([^*]+)\*\*/g,'$1');
-          doc.setFont('times','bold');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text(num+'.',margin+2,y);
-          doc.setFont('times','normal');doc.setTextColor(30,30,30);var ww=doc.splitTextToSize(cl,maxW-8);ww.forEach(function(l){checkPg();doc.text(l,margin+10,y);y+=lh;});continue;
-        }
-        else if(/^---+$/.test(line)){doc.setDrawColor(201,168,76);doc.setLineWidth(0.3);doc.line(margin,y-2,pageW-margin,y-2);y+=3;}
-        else if(line.trim()===''){y+=3;}
-        else if(/^```/.test(line)){doc.setFont('courier','normal');doc.setFontSize(9);doc.setTextColor(80,80,80);y+=2;}
-        else{
-          var cl=line.replace(/\*\*\*([^*]+)\*\*\*/g,'$1').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
-          doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
-          var ww=doc.splitTextToSize(cl,maxW);ww.forEach(function(l){checkPg();doc.text(l,margin,y);y+=lh;});continue;
-        }
-        y+=lh;
-      }
-      pdfFooter(doc,pageH,margin,gold,muted,doc.internal.getNumberOfPages());
+    function exportPDF(content){
+      var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+      var gold=[201,168,76],margin=20,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),maxW=pageW-margin*2;
+      doc.setFont('times','bold');doc.setFontSize(20);doc.setTextColor(gold[0],gold[1],gold[2]);doc.text('Rex AI',margin,20);
+      doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
+      var y=35,lh=7;
+      content.split('\n').forEach(function(line){
+        if(y>pageH-25){doc.addPage();y=20;}
+        var cl=line.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
+        doc.splitTextToSize(cl||' ',maxW).forEach(function(l){if(y>pageH-25){doc.addPage();y=20;}doc.text(l,margin,y);y+=lh;});
+      });
       doc.save('rex-ai-response.pdf');
-      pdfIdx.value=i;setTimeout(function(){pdfIdx.value=null;},2000);
     }
 
     function exportAllPDF(){
       if(!msgs.value.length)return;
-      var jsPDF=window.jspdf.jsPDF;
-      var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-      var pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),margin=20,maxW=pageW-margin*2;
-      var gold=[201,168,76],dark=[30,30,30],muted=[120,112,96],blue=[44,62,122];
-      doc.setFillColor(245,240,230);doc.rect(0,0,pageW,42,'F');
-      doc.setFont('times','bold');doc.setFontSize(24);doc.setTextColor(201,168,76);doc.text('Rex AI',margin,20);
-      doc.setFont('times','italic');doc.setFontSize(10);doc.setTextColor(120,112,96);
-      doc.text('Full Conversation Export',margin,28);doc.text(new Date().toLocaleString(),pageW-margin,28,{align:'right'});
-      doc.setDrawColor(201,168,76);doc.setLineWidth(0.8);doc.line(margin,36,pageW-margin,36);
-      var y=48,lh=6.5;
-      function checkPg(){if(y>pageH-28){doc.addPage();y=margin+4;}}
+      var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+      var gold=[201,168,76],margin=20,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight(),maxW=pageW-margin*2;
+      doc.setFont('times','bold');doc.setFontSize(22);doc.setTextColor(gold[0],gold[1],gold[2]);doc.text('Rex AI - Conversation',margin,20);
+      var y=35,lh=6.5;
       msgs.value.forEach(function(msg){
         if(msg.isSearch)return;
-        checkPg();
-        if(msg.role==='user'){
-          doc.setFillColor(240,235,220);doc.roundedRect(margin-2,y-5,maxW+4,8,2,2,'F');
-          doc.setFont('times','bold');doc.setFontSize(10);doc.setTextColor(44,62,122);doc.text('You',margin+2,y);y+=8;
-          doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
-          doc.splitTextToSize(msg.content||'',maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=lh;});
-        } else {
-          doc.setFillColor(245,240,228);doc.roundedRect(margin-2,y-5,maxW+4,8,2,2,'F');
-          doc.setFont('times','bold');doc.setFontSize(10);doc.setTextColor(201,168,76);
-          doc.text('Rex AI'+(msg.usedModel?' ('+msg.usedModel+')':''),margin+2,y);y+=8;
-          var lines=(msg.content||'').split('\n');
-          lines.forEach(function(line){
-            checkPg();
-            if(/^[#]{1,3} /.test(line)){doc.setFont('times','bold');doc.setFontSize(13);doc.setTextColor(201,168,76);doc.splitTextToSize(line.replace(/^#+\s/,''),maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=7;});}
-            else if(/^[*\-] /.test(line)){
-              var cl=line.replace(/^[*\-] /,'').replace(/\*\*([^*]+)\*\*/g,'$1');
-              doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(201,168,76);doc.text('\u2022',margin+2,y);
-              doc.setTextColor(30,30,30);doc.splitTextToSize(cl,maxW-8).forEach(function(l){checkPg();doc.text(l,margin+8,y);y+=lh;});
-            }
-            else if(line.trim()===''){y+=3;}
-            else{
-              var cl=line.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
-              doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
-              doc.splitTextToSize(cl,maxW).forEach(function(l){checkPg();doc.text(l,margin,y);y+=lh;});
-            }
-          });
-        }
-        y+=6;doc.setDrawColor(200,190,170);doc.setLineWidth(0.2);doc.line(margin,y-3,pageW-margin,y-3);
+        if(y>pageH-25){doc.addPage();y=20;}
+        doc.setFont('times','bold');doc.setFontSize(10);doc.setTextColor(msg.role==='user'?44:gold[0],msg.role==='user'?62:gold[1],msg.role==='user'?122:gold[2]);
+        doc.text(msg.role==='user'?('You ('+userName.value+')'):'Rex AI'+(msg.usedModel?' - '+msg.usedModel:''),margin,y);y+=8;
+        doc.setFont('times','normal');doc.setFontSize(11);doc.setTextColor(30,30,30);
+        (msg.content||'').split('\n').forEach(function(line){
+          if(y>pageH-25){doc.addPage();y=20;}
+          var cl=line.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1');
+          doc.splitTextToSize(cl||' ',maxW).forEach(function(l){if(y>pageH-25){doc.addPage();y=20;}doc.text(l,margin,y);y+=lh;});
+        });
+        y+=5;
       });
-      pdfFooter(doc,pageH,margin,gold,muted,doc.internal.getNumberOfPages());
       doc.save('rex-ai-conversation.pdf');
     }
 
     return{
-      MODELS,chats,cid,msgs,inp,streaming,stxt,activeModel,
+      MODELS,user,authStep,authMode,authEmail,authPassword,authUsername,
+      authErr,authLoading,otpVal,otpEl,
+      adminOpen,adminUsers,userMenuOpen,totalSearches,totalMessages,
+      chats,cid,msgs,inp,streaming,stxt,activeModel,
       msgsEl,taEl,editEl,sbOpen,isMobile,
-      editIdx,editTxt,cpIdx,pdfIdx,selModelId,selModel,mdOpen,
+      editIdx,editTxt,cpIdx,selModelId,selModel,mdOpen,
       memOpen,mems,title,renderMd,parseSearch,
       newChat,loadChat,delChat,send,qs,onKey,resize,
       exportPDF,exportAllPDF,showBottom,goBottom,
-      isDark,toggleTheme,webSearch,searching,searchQuery,
+      webSearch,searching,searchQuery,
       shareOpen,shareUrl,shareCopied,shareChat,copyShareUrl,
-      stopped,stopStream,
-      pickModel,delMem,clearMems,startEdit,cancelEdit,saveEdit,copyMsg,
+      stopped,pickModel,delMem,clearMems,
+      startEdit,cancelEdit,saveEdit,copyMsg,
+      userInitial,userName,isAdmin,
+      sendOtp,verifyOtp,resendOtp,saveUsername,googleLogin,logout,
+      openAdmin,formatDate,
     };
   }
 }).mount('#app');
