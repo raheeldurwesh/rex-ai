@@ -681,7 +681,7 @@ Vue.createApp({
         pendingOtp.value=otp;
         // Send real email via EmailJS
         emailjs.init('Es8sAb4lA609nvHeo');
-        var result=await emailjs.send('service_7fqkobn','template_nchzuef',{
+        var result=await emailjs.send('service_3l8grsw','template_nchzuef',{
           to_email:authEmail.value,
           otp:otp,
           app_name:'Rex AI'
