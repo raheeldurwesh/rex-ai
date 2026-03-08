@@ -59,6 +59,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 .sb{width:260px;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;transition:transform .28s ease;z-index:200;height:100vh;height:100dvh;}
 .sb.hide{transform:translateX(-260px);position:absolute;}
 .sb-top{padding:18px 16px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;}
+.sb-userrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .15s;}
+.sb-userrow:hover{background:rgba(201,168,76,.07);}
+.sb-uav{width:34px;height:34px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-uinfo{flex:1;min-width:0;}
+.sb-uname{font-size:.8rem;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-uemail{font-size:.66rem;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.sb-chev{font-size:.62rem;color:var(--mut);flex-shrink:0;}
+.sb-udrop{background:var(--sur2);border-bottom:1px solid var(--bdr);}
+.sb-udrop-item{padding:9px 16px;font-size:.81rem;color:var(--txt);cursor:pointer;transition:background .15s;}
+.sb-udrop-item:hover{background:rgba(201,168,76,.07);}
+.sb-udrop-item.danger{color:#e57373;}
+.sb-udrop-item.danger:hover{background:rgba(229,115,115,.07);}
+.sb-udrop-sep{height:1px;background:var(--bdr);margin:2px 0;}
+.sb-udrop-info{padding:7px 16px;font-size:.69rem;color:var(--mut);}
 .logo{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--acc);}
 .new-btn{margin:10px;padding:12px;background:var(--acc);border:none;border-radius:8px;color:#1a1a1a;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;width:calc(100% - 20px);transition:background .2s;}
 .new-btn:hover{background:var(--acc2);}
@@ -489,6 +503,21 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
       <div class="sb-top">
         <span class="logo">Rex AI</span>
       </div>
+      <div class="sb-userrow" v-on:click="umOpen=!umOpen">
+        <div class="sb-uav">{{ userInitial }}</div>
+        <div class="sb-uinfo">
+          <div class="sb-uname">{{ userName }}</div>
+          <div class="sb-uemail">{{ user.email }}</div>
+        </div>
+        <span class="sb-chev">{{ umOpen ? '▲' : '▼' }}</span>
+      </div>
+      <div class="sb-udrop" v-if="umOpen">
+        <div class="sb-udrop-item" v-if="isAdmin" v-on:click="openAdmin">👑 Admin Panel</div>
+        <div class="sb-udrop-sep" v-if="isAdmin"></div>
+        <div class="sb-udrop-info">Session: <b>{{ sessionExpiry }}</b></div>
+        <div class="sb-udrop-sep"></div>
+        <div class="sb-udrop-item danger" v-on:click="doLogout">🚪 Logout</div>
+      </div>
       <button class="new-btn" v-on:click="newChat">+ New Chat</button>
       <div class="sec-lbl">History</div>
       <div class="chat-list">
@@ -532,28 +561,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
             <span style="font-size:.65rem;color:var(--acc);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);padding:2px 7px;border-radius:12px;font-weight:700;white-space:nowrap;">{{ 5 - guestMsgCount }}/5</span>
             <button class="hbtn" style="background:var(--acc);color:#1a1a1a;border-color:var(--acc);font-weight:700;padding:4px 10px;font-size:.7rem;white-space:nowrap;" v-on:click="guestSignup">Sign Up</button>
           </div>
-          <div class="msel" v-if="!isGuest">
-            <div class="upill" v-on:click="umOpen=!umOpen">
-              <div class="uav">{{ userInitial }}</div>
-              <span class="uname">{{ userName }}</span>
-            </div>
-            <div class="umenu" v-if="umOpen">
-              <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);">
-                <div style="width:36px;height:36px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ userInitial }}</div>
-                <div>
-                  <div style="font-size:.85rem;font-weight:600;color:var(--txt);">{{ userName }}</div>
-                  <div style="font-size:.72rem;color:var(--mut);margin-top:2px;">{{ user.email }}</div>
-                </div>
-              </div>
-              <div class="umenu-item" v-if="isAdmin" v-on:click="openAdmin">👑 Admin Panel</div>
-              <div class="umenu-sep" v-if="isAdmin"></div>
-              <div style="padding:6px 16px 10px;font-size:.68rem;color:var(--mut);">
-                Session expires: {{ sessionExpiry }}
-              </div>
-              <div class="umenu-sep"></div>
-              <div class="umenu-item danger" v-on:click="doLogout">🚪 Logout</div>
-            </div>
-          </div>
+          
         </div>
       </header>
 
@@ -586,7 +594,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
                 </div>
               </div>
               <div class="macts" v-if="editIdx!==i">
-                <button class="abt" v-on:click="startEdit(i, msg.content)">Edit</button>
+                <button class="abt" v-if="i === lastUserMsgIdx" v-on:click="startEdit(i, msg.content)">Edit</button>
                 <button class="abt" :class="{done: cpIdx===i}" v-on:click="copyMsg(msg.content, i)">{{ cpIdx===i ? 'Copied' : 'Copy' }}</button>
               </div>
             </div>
@@ -993,7 +1001,7 @@ Vue.createApp({
       if (th === 'light') { isDark.value = false; document.body.classList.add('light'); }
       window.addEventListener('resize', function() { isMobile.value = window.innerWidth <= 640; });
       document.addEventListener('click', function(e) {
-        if (!e.target.closest('.msel') && !e.target.closest('.upill')) { mdOpen.value = false; umOpen.value = false; }
+        if (!e.target.closest('.msel') && !e.target.closest('.sb-userrow') && !e.target.closest('.sb-udrop')) { mdOpen.value = false; umOpen.value = false; }
       });
       Vue.nextTick(function() {
         if (msgsEl.value) {
@@ -1283,6 +1291,14 @@ Vue.createApp({
       if (!user.value || !user.value.login_time) return 'Unknown';
       var exp = new Date(user.value.login_time + 30 * 24 * 60 * 60 * 1000);
       return exp.toLocaleDateString();
+    });
+
+    var lastUserMsgIdx = Vue.computed(function() {
+      var last = -1;
+      for (var i = 0; i < msgs.value.length; i++) {
+        if (msgs.value[i].role === 'user') last = i;
+      }
+      return last;
     });
 
     function fmtDate(ts) {
@@ -1639,7 +1655,7 @@ Vue.createApp({
       msgsEl, taEl, editEl, sbOpen, isMobile,
       editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen,
       memOpen, mems, chatTitle, renderMd, parseSearch,
-      newChat, loadChat, delChat, send, qs, onKey, resizeTa,
+      newChat, loadChat, delChat, send, lastUserMsgIdx, qs, onKey, resizeTa,
       exportPDF, exportAllPDF, showBottom, goBottom,
       webSearch, searching, searchQuery,
       shareOpen, shareUrl, shareCopied, shareChat, copyShareUrl,
