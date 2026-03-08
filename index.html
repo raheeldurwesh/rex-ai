@@ -754,8 +754,37 @@ async function sbSignin(email, password) {
   return r.json();
 }
 async function hashPwd(pw) {
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  // Hash on backend (more secure than client-side SHA-256)
+  try {
+    var r = await fetch(BACKEND + '/hash', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: pw})
+    });
+    var d = await r.json();
+    return d.hash;
+  } catch(e) {
+    // Fallback to client-side SHA-256 if backend unreachable
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+}
+
+async function verifyPwd(password, hash) {
+  // Verify password on backend
+  try {
+    var r = await fetch(BACKEND + '/verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: password, hash: hash})
+    });
+    var d = await r.json();
+    return d.valid;
+  } catch(e) {
+    // Fallback to client-side comparison
+    var clientHash = await hashPwd(password);
+    return clientHash === hash;
+  }
 }
 
 // Models
@@ -1306,7 +1335,21 @@ Vue.createApp({
       shareUrl.value = window.location.origin + window.location.pathname + '?share=' + enc;
       shareOpen.value = true; shareCopied.value = false;
     }
-    function copyShareUrl() { navigator.clipboard.writeText(shareUrl.value).then(function() { shareCopied.value = true; setTimeout(function() { shareCopied.value = false; }, 2000); }); }
+    function copyShareUrl() {
+      var url = shareUrl.value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+          shareCopied.value = true; setTimeout(function() { shareCopied.value = false; }, 2000);
+        }).catch(function() { fallbackCopy(url); });
+      } else { fallbackCopy(url); }
+    }
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand('copy'); shareCopied.value = true; setTimeout(function() { shareCopied.value = false; }, 2000); } catch(e) {}
+      document.body.removeChild(ta);
+    }
 
     async function logActivity(query) {
       if (!user.value) return;
