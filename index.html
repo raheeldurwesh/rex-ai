@@ -239,6 +239,20 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .guest-feat-icon{font-size:.9rem;flex-shrink:0;}
 .guest-counter{display:inline-block;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--acc);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:14px;}
 
+/* SHARED VIEW */
+.shared-wrap{min-height:100vh;background:var(--bg);display:flex;flex-direction:column;}
+.shared-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bdr);background:var(--sur);position:sticky;top:0;z-index:10;}
+.shared-login-btn{font-size:.78rem;color:var(--acc);font-weight:600;text-decoration:none;padding:6px 12px;border:1px solid var(--acc);border-radius:8px;}
+.shared-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--acc);padding:16px 20px 8px;}
+.shared-msgs{flex:1;padding:0 20px 20px;max-width:800px;margin:0 auto;width:100%;}
+.shared-msg{margin-bottom:18px;padding:14px 16px;border-radius:14px;background:var(--sur);}
+.shared-msg.user{background:var(--sur2);border:1px solid var(--bdr);}
+.shared-msg.assistant{border:1px solid rgba(201,168,76,.15);}
+.shared-msg-label{font-size:.72rem;font-weight:700;color:var(--mut);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.shared-msg-content{font-size:.92rem;color:var(--txt);line-height:1.7;}
+.shared-footer{text-align:center;padding:16px;border-top:1px solid var(--bdr);font-size:.78rem;color:var(--mut);display:flex;align-items:center;justify-content:center;gap:16px;}
+.shared-signup-btn{background:var(--acc);color:#1a1a1a;font-weight:700;font-size:.8rem;padding:8px 16px;border-radius:10px;text-decoration:none;}
+
 /* ADMIN */
 .admin-wrap{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;flex-direction:column;}
 .admin-hdr{padding:16px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;background:var(--sur);}
@@ -275,8 +289,30 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 <body>
 <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
+  <!-- SHARED CHAT VIEW (read-only, no login needed) -->
+  <div class="shared-wrap" v-if="sharedView">
+    <div class="shared-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="logo" style="font-size:1.1rem;">Rex AI</span>
+        <span style="font-size:.75rem;color:var(--mut);background:var(--sur2);border:1px solid var(--bdr);padding:2px 8px;border-radius:10px;">Shared Chat</span>
+      </div>
+      <a href="/" class="shared-login-btn">Login to Rex AI →</a>
+    </div>
+    <div class="shared-title">{{ sharedView.title }}</div>
+    <div class="shared-msgs">
+      <div v-for="(msg, i) in sharedView.messages" :key="i" class="shared-msg" :class="msg.role">
+        <div class="shared-msg-label">{{ msg.role === 'user' ? '👤 User' : '🤖 Rex AI' }}</div>
+        <div class="shared-msg-content" v-html="renderMd(msg.content || '')"></div>
+      </div>
+    </div>
+    <div class="shared-footer">
+      <span>Powered by Rex AI</span>
+      <a href="/" class="shared-signup-btn">✨ Try Rex AI Free</a>
+    </div>
+  </div>
+
   <!-- AUTH SCREEN -->
-  <div class="auth-wrap" v-if="!user">
+  <div class="auth-wrap" v-if="!user && !sharedView">
     <div class="auth-card">
       <div style="text-align:center;margin-bottom:8px;">
         <div class="auth-logo">Rex AI</div>
@@ -445,7 +481,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
   </div>
 
   <!-- MAIN APP -->
-  <template v-if="user && !adminOpen">
+  <template v-if="user && !adminOpen && !sharedView">
     <div class="ov" :class="{show: sbOpen && isMobile}" v-on:click="sbOpen=false" style="z-index:190;"></div>
 
     <!-- Sidebar -->
@@ -862,6 +898,7 @@ Vue.createApp({
     var shareOpen = Vue.ref(false);
     var shareUrl = Vue.ref('');
     var shareCopied = Vue.ref(false);
+    var sharedView = Vue.ref(null); // {title, messages} when viewing a shared chat
     var isGuest = Vue.ref(false);
     var guestMsgCount = Vue.ref(0);
     var guestPrompt = Vue.ref(false);
@@ -912,6 +949,18 @@ Vue.createApp({
           });
         }
       });
+      // Check for shared chat link first
+      var params = new URLSearchParams(window.location.search);
+      var shareParam = params.get('share');
+      if (shareParam) {
+        try {
+          var decoded = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
+          if (decoded && decoded.messages) {
+            sharedView.value = decoded;
+            return; // Don't load user, show shared view only
+          }
+        } catch(e) {}
+      }
       var saved = localStorage.getItem('rex-user');
       if (saved) { try { user.value = JSON.parse(saved); initUser(); } catch(e) {} }
       function ping() { fetch(BACKEND + '/').catch(function() {}); }
@@ -1488,7 +1537,8 @@ Vue.createApp({
       sendOtp, verifyOtp, resendOtp, doLogin,
       sendResetOtp, doResetPassword, googleMsg, doLogout,
       openAdmin, fmtDate, rotatingChips,
-      isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup
+      isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
+      sharedView
     };
   }
 }).mount('#app');
