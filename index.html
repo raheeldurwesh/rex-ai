@@ -42,6 +42,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 .auth-div::before,.auth-div::after{content:'';flex:1;height:1px;background:var(--bdr);}
 .google-btn{width:100%;padding:11px;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
 .google-btn:hover{border-color:var(--acc);color:var(--acc);}
+.guest-btn{width:100%;padding:11px;background:none;border:1.5px dashed var(--bdr);border-radius:10px;color:var(--mut);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s;}
+.guest-btn:hover{border-color:var(--acc);color:var(--acc);}
 .auth-err{background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.3);color:#e74c3c;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;line-height:1.5;}
 .auth-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#27ae60;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;line-height:1.5;}
 .auth-link{background:none;border:none;color:var(--acc);font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif;display:block;text-align:center;margin-top:10px;padding:4px;}
@@ -227,6 +229,15 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .mbtn2{padding:8px 16px;border-radius:8px;border:none;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;}
 .mbtn2.p{background:var(--acc);color:#1a1a1a;}
 .mbtn2.s{background:var(--sur2);color:var(--txt);border:1px solid var(--bdr);}
+/* Guest prompt modal */
+.guest-modal{background:var(--sur);border:1px solid var(--acc);border-radius:18px;padding:28px 24px;width:92%;max-width:380px;text-align:center;}
+.guest-modal-icon{font-size:2.2rem;margin-bottom:10px;}
+.guest-modal-title{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--acc);margin-bottom:8px;}
+.guest-modal-sub{font-size:.82rem;color:var(--mut);margin-bottom:18px;line-height:1.6;}
+.guest-features{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;text-align:left;}
+.guest-feat{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--txt);}
+.guest-feat-icon{font-size:.9rem;flex-shrink:0;}
+.guest-counter{display:inline-block;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--acc);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:14px;}
 
 /* ADMIN */
 .admin-wrap{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;flex-direction:column;}
@@ -343,6 +354,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
           <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continue with Google
         </button>
+        <button class="guest-btn" v-on:click="continueAsGuest">👤 Continue as Guest</button>
+        <div style="text-align:center;margin-top:8px;">
+          <span style="font-size:.72rem;color:var(--mut);">Guest: 5 free messages · No history · No memory</span>
+        </div>
       </template>
     </div>
   </div>
@@ -412,12 +427,12 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         <span class="h-title">{{ chatTitle }}</span>
         <div class="h-right">
           <button class="hbtn" v-on:click="toggleTheme">{{ isDark ? '☀️' : '🌙' }}</button>
-          <button class="hbtn" :class="{on: webSearch}" v-on:click="webSearch=!webSearch" title="Web Search">
+          <button class="hbtn" :class="{on: webSearch}" v-on:click="isGuest ? guestPrompt=true : webSearch=!webSearch" title="Web Search" :style="isGuest ? 'opacity:.4' : ''">
             Web<span v-if="webSearch" class="mdot" style="margin-left:2px;"></span>
           </button>
-          <button class="hbtn" v-on:click="shareChat">Share</button>
-          <button class="hbtn" v-on:click="exportAllPDF">PDF</button>
-          <button class="hbtn" :class="{on: memOpen}" v-on:click="memOpen=!memOpen">
+          <button class="hbtn" v-on:click="isGuest ? guestPrompt=true : shareChat()" :style="isGuest ? 'opacity:.4' : ''">Share</button>
+          <button class="hbtn" v-on:click="isGuest ? guestPrompt=true : exportAllPDF()" :style="isGuest ? 'opacity:.4' : ''">PDF</button>
+          <button class="hbtn" :class="{on: memOpen}" v-on:click="isGuest ? guestPrompt=true : (memOpen=!memOpen)" :style="isGuest ? 'opacity:.4' : ''">
             Mem<span v-if="mems.length>0" class="mbadge">{{ mems.length }}</span>
           </button>
           <div class="msel">
@@ -431,7 +446,11 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
               </div>
             </div>
           </div>
-          <div class="msel">
+          <div v-if="isGuest" style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:.68rem;color:var(--acc);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);padding:3px 8px;border-radius:12px;font-weight:600;">{{ 5 - guestMsgCount }}/5 left</span>
+            <button class="hbtn" style="background:var(--acc);color:#1a1a1a;border-color:var(--acc);font-weight:700;" v-on:click="guestSignup">Sign Up</button>
+          </div>
+          <div class="msel" v-if="!isGuest">
             <div class="upill" v-on:click="umOpen=!umOpen">
               <div class="uav">{{ userInitial }}</div>
               <span class="uname">{{ userName }}</span>
@@ -458,7 +477,8 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
           <div v-if="msgs.length===0" class="empty-wrap">
             <div class="empty-icon">&#10022;</div>
             <h2>How can I help you today?</h2>
-            <p>Hi {{ userName }}! Your conversations are saved automatically.</p>
+            <p v-if="!isGuest">Hi {{ userName }}! Your conversations are saved automatically.</p>
+            <p v-else style="color:var(--acc);">You have <b>5 free messages</b>. Sign up to unlock history, memory, web search and PDF!</p>
             <div class="chips">
               <span class="chip" v-for="chip in rotatingChips" :key="chip.label" v-on:click="qs(chip.query)">{{ chip.label }}</span>
             </div>
@@ -541,6 +561,27 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
     </div>
 
     <button class="go-btn" :class="{hidden: !showBottom}" v-on:click="goBottom">&#8595;</button>
+
+    <!-- Guest signup prompt modal -->
+    <div class="modal-ov" :class="{show: guestPrompt}" v-on:click.self="guestPrompt=false">
+      <div class="guest-modal">
+        <div class="guest-modal-icon">✨</div>
+        <div class="guest-modal-title">Unlock the Full Experience</div>
+        <div class="guest-counter">{{ 5 - guestMsgCount }} free messages used up</div>
+        <div class="guest-modal-sub">You have used all your free guest messages. Sign up free to unlock everything!</div>
+        <div class="guest-features">
+          <div class="guest-feat"><span class="guest-feat-icon">💾</span> Save your chat history</div>
+          <div class="guest-feat"><span class="guest-feat-icon">🧠</span> Personalized memory</div>
+          <div class="guest-feat"><span class="guest-feat-icon">🌐</span> Web search</div>
+          <div class="guest-feat"><span class="guest-feat-icon">📄</span> Export to PDF</div>
+          <div class="guest-feat"><span class="guest-feat-icon">🔄</span> Cross-device sync</div>
+        </div>
+        <div class="modal-btns" style="justify-content:center;">
+          <button class="mbtn2 p" style="flex:1;padding:12px;" v-on:click="guestSignup">🚀 Sign Up Free</button>
+          <button class="mbtn2 s" v-on:click="guestPrompt=false">Later</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Share modal -->
     <div class="modal-ov" :class="{show: shareOpen}" v-on:click.self="shareOpen=false">
@@ -771,6 +812,9 @@ Vue.createApp({
     var shareOpen = Vue.ref(false);
     var shareUrl = Vue.ref('');
     var shareCopied = Vue.ref(false);
+    var isGuest = Vue.ref(false);
+    var guestMsgCount = Vue.ref(0);
+    var guestPrompt = Vue.ref(false);
     var sbOpen = Vue.ref(window.innerWidth > 640);
     var isMobile = Vue.ref(window.innerWidth <= 640);
     var userScrolled = false;
@@ -971,6 +1015,19 @@ Vue.createApp({
 
     function googleMsg() { authErr.value = 'Google login coming soon! Please use Email login.'; }
 
+    function continueAsGuest() {
+      isGuest.value = true;
+      guestMsgCount.value = 0;
+      user.value = { uid: 'guest', email: 'guest', username: 'Guest', isGuest: true };
+      msgs.value = []; chats.value = []; mems.value = [];
+    }
+
+    function guestSignup() {
+      guestPrompt.value = false;
+      user.value = null; isGuest.value = false; guestMsgCount.value = 0;
+      msgs.value = []; authStep.value = 'form'; authMode.value = 'signup';
+    }
+
     function doLogout() {
       user.value = null; localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
@@ -1103,12 +1160,17 @@ Vue.createApp({
 
     async function send() {
       var text = inp.value.trim(); if (!text || streaming.value) return;
+      // Guest limit check
+      if (isGuest.value) {
+        if (guestMsgCount.value >= 5) { guestPrompt.value = true; return; }
+        guestMsgCount.value++;
+      }
       msgs.value.push({ role: 'user', content: text });
       inp.value = '';
       Vue.nextTick(function() { if (taEl.value) taEl.value.style.height = 'auto'; });
-      userScrolled = false; scrollBottom(true); extractMems(text);
+      userScrolled = false; scrollBottom(true); if (!isGuest.value) extractMems(text);
       stopped.value = false; startAutoScroll();
-      logActivity(text);
+      if (!isGuest.value) logActivity(text);
       var searchCtx = '';
       if (webSearch.value) {
         searching.value = true; searchQuery.value = text.slice(0, 60);
@@ -1165,7 +1227,7 @@ Vue.createApp({
         };
         await Promise.all([readLoop(), typeLoop()]);
         msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: activeModel.value });
-        saveChat(msgs.value);
+        if (!isGuest.value) saveChat(msgs.value);
       } catch(err) { msgs.value.push({ role: 'assistant', content: 'Cannot reach backend. Please try again.', usedModel: '' }); }
       finally { streaming.value = false; stxt.value = ''; activeModel.value = ''; userScrolled = false; scrollBottom(true); }
     }
@@ -1311,7 +1373,8 @@ Vue.createApp({
       userInitial, userName, isAdmin, toggleTheme, isDark,
       sendOtp, verifyOtp, resendOtp, doLogin,
       sendResetOtp, doResetPassword, googleMsg, doLogout,
-      openAdmin, fmtDate, rotatingChips
+      openAdmin, fmtDate, rotatingChips,
+      isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup
     };
   }
 }).mount('#app');
