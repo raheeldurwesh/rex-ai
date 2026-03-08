@@ -102,8 +102,9 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .auto-badge{font-size:.58rem;background:var(--acc);color:#1a1a1a;padding:1px 5px;border-radius:8px;font-weight:700;}
 .upill{display:flex;align-items:center;gap:5px;background:var(--sur2);border:1px solid var(--bdr);border-radius:20px;padding:3px 9px 3px 3px;cursor:pointer;transition:all .2s;}
 .upill:hover{border-color:var(--acc);}
-.uav{width:24px;height:24px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.uav{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .uname{font-size:.7rem;color:var(--txt);font-weight:500;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media(max-width:640px){.uname{display:none;}.upill{padding:2px;border-radius:50%;border:2px solid var(--acc);}}
 .umenu{position:absolute;top:calc(100% + 6px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;min-width:190px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;}
 .umenu-item{padding:10px 16px;font-size:.8rem;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:8px;}
 .umenu-item:hover{background:var(--sur2);}
@@ -436,12 +437,16 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
               <span class="uname">{{ userName }}</span>
             </div>
             <div class="umenu" v-if="umOpen">
-              <div class="umenu-info">{{ userName }}</div>
-              <div class="umenu-info" style="padding-top:0;">{{ user.email }}</div>
-              <div class="umenu-sep"></div>
-              <div class="umenu-item" v-if="isAdmin" v-on:click="openAdmin">Admin Panel</div>
+              <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ userInitial }}</div>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:var(--txt);">{{ userName }}</div>
+                  <div style="font-size:.72rem;color:var(--mut);margin-top:2px;">{{ user.email }}</div>
+                </div>
+              </div>
+              <div class="umenu-item" v-if="isAdmin" v-on:click="openAdmin">👑 Admin Panel</div>
               <div class="umenu-sep" v-if="isAdmin"></div>
-              <div class="umenu-item danger" v-on:click="doLogout">Logout</div>
+              <div class="umenu-item danger" v-on:click="doLogout">🚪 Logout</div>
             </div>
           </div>
         </div>
