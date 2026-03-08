@@ -674,6 +674,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
       <div class="modal">
         <div class="modal-title">Share Chat</div>
         <div class="modal-url">{{ shareUrl }}</div>
+        <div style="font-size:.7rem;color:var(--mut);margin-bottom:10px;">⏱ Expires in: <b style="color:var(--acc);">{{ shareExpiry }}</b></div>
         <div class="modal-btns">
           <button class="mbtn2 p" v-on:click="copyShareUrl">{{ shareCopied ? 'Copied!' : 'Copy Link' }}</button>
           <button class="mbtn2 s" v-on:click="shareOpen=false">Close</button>
@@ -720,13 +721,43 @@ var EJS_KEY = 'Es8sAb4lA609nvHeo';
 emailjs.init(EJS_KEY);
 
 // Supabase helpers
+// ── DB via backend proxy (Supabase key never exposed) ──
+async function dbGetUser(params) {
+  var q = params.id ? 'id=' + params.id : 'email=' + encodeURIComponent(params.email);
+  var r = await fetch(BACKEND + '/db/user?' + q);
+  return r.json();
+}
+async function dbCreateUser(data) {
+  var r = await fetch(BACKEND + '/db/user', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+  });
+  return r.json();
+}
+async function dbUpdateUser(id, data) {
+  var r = await fetch(BACKEND + '/db/user', {
+    method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id: id, data: data})
+  });
+  return r.json();
+}
+async function dbGetAllUsers(adminEmail) {
+  var r = await fetch(BACKEND + '/db/users?admin_email=' + encodeURIComponent(adminEmail));
+  return r.json();
+}
 async function sbGet(table, q) {
+  if (table === 'users') {
+    var params = {};
+    if (q && q.includes('id=eq.')) params.id = q.split('id=eq.')[1].split('&')[0];
+    else if (q && q.includes('email=eq.')) params.email = decodeURIComponent(q.split('email=eq.')[1].split('&')[0]);
+    return dbGetUser(params);
+  }
   var url = SB_URL + '/rest/v1/' + table + (q ? '?' + q : '');
   var r = await fetch(url, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
   return r.json();
 }
 async function sbPost(table, data) {
-  var r = await fetch(SB_URL + '/rest/v1/' + table, {
+  if (table === 'users') return dbCreateUser(data);
+  var url = SB_URL + '/rest/v1/' + table;
+  var r = await fetch(url, {
     method: 'POST',
     headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify(data)
@@ -734,29 +765,19 @@ async function sbPost(table, data) {
   return r.json();
 }
 async function sbPatch(table, q, data) {
-  var r = await fetch(SB_URL + '/rest/v1/' + table + '?' + q, {
+  if (table === 'users') {
+    var id = q.split('id=eq.')[1];
+    return dbUpdateUser(id, data);
+  }
+  var url = SB_URL + '/rest/v1/' + table + '?' + q;
+  var r = await fetch(url, {
     method: 'PATCH',
-    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
   return r.json();
 }
-async function sbSignup(email, password) {
-  var r = await fetch(SB_URL + '/auth/v1/signup', {
-    method: 'POST',
-    headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, password: password })
-  });
-  return r.json();
-}
-async function sbSignin(email, password) {
-  var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
-    method: 'POST',
-    headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, password: password })
-  });
-  return r.json();
-}
+
 async function hashPwd(pw) {
   // Hash on backend (more secure than client-side SHA-256)
   try {
@@ -932,6 +953,7 @@ Vue.createApp({
     var shareOpen = Vue.ref(false);
     var shareUrl = Vue.ref('');
     var shareCopied = Vue.ref(false);
+    var shareExpiry = Vue.ref('72 hours');
     var sharedView = Vue.ref(null); // {title, messages} when viewing a shared chat
     var isGuest = Vue.ref(false);
     var guestMsgCount = Vue.ref(0);
@@ -987,12 +1009,18 @@ Vue.createApp({
       var params = new URLSearchParams(window.location.search);
       var shareParam = params.get('share');
       if (shareParam) {
+        // Try backend token first
+        try {
+          var sr = await fetch(BACKEND + '/share/' + shareParam);
+          if (sr.ok) {
+            var sd = await sr.json();
+            if (sd && sd.messages) { sharedView.value = sd; return; }
+          }
+        } catch(e) {}
+        // Fallback: try old base64 format
         try {
           var decoded = JSON.parse(decodeURIComponent(escape(atob(shareParam))));
-          if (decoded && decoded.messages) {
-            sharedView.value = decoded;
-            return; // Don't load user, show shared view only
-          }
+          if (decoded && decoded.messages) { sharedView.value = decoded; return; }
         } catch(e) {}
       }
       var saved = localStorage.getItem('rex-user');
@@ -1185,7 +1213,7 @@ Vue.createApp({
 
     async function openAdmin() {
       umOpen.value = false; adminOpen.value = true;
-      var data = await sbGet('users', 'select=*&order=last_seen.desc');
+      var data = await dbGetAllUsers(user.value.email);
       adminUsers.value = (data || []).map(function(u) { return Object.assign({ _open: false }, u); });
       Vue.nextTick(function() { drawCharts(); });
     }
@@ -1357,10 +1385,23 @@ Vue.createApp({
     function delMem(i) { mems.value.splice(i, 1); svMems(user.value.uid, mems.value); }
     function clearMems() { mems.value = []; svMems(user.value.uid, mems.value); }
 
-    function shareChat() {
+    async function shareChat() {
       if (!msgs.value.length) return;
-      var enc = btoa(unescape(encodeURIComponent(JSON.stringify({ title: chatTitle.value, messages: msgs.value }))));
-      shareUrl.value = window.location.origin + window.location.pathname + '?share=' + enc;
+      try {
+        var r = await fetch(BACKEND + '/share', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ title: chatTitle.value, messages: msgs.value, expires_hours: 72 })
+        });
+        var d = await r.json();
+        shareUrl.value = window.location.origin + window.location.pathname + '?share=' + d.token;
+        shareExpiry.value = '72 hours';
+      } catch(e) {
+        // Fallback to URL encoding if backend unavailable
+        var enc = btoa(unescape(encodeURIComponent(JSON.stringify({ title: chatTitle.value, messages: msgs.value }))));
+        shareUrl.value = window.location.origin + window.location.pathname + '?share=' + enc;
+        shareExpiry.value = 'Never';
+      }
       shareOpen.value = true; shareCopied.value = false;
     }
     function copyShareUrl() {
@@ -1609,7 +1650,7 @@ Vue.createApp({
       sendResetOtp, doResetPassword, googleMsg, doLogout,
       openAdmin, fmtDate, rotatingChips,
       isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
-      sharedView, sessionExpiry
+      sharedView, sessionExpiry, shareExpiry
     };
   }
 }).mount('#app');
