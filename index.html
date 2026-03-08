@@ -547,6 +547,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
               </div>
               <div class="umenu-item" v-if="isAdmin" v-on:click="openAdmin">👑 Admin Panel</div>
               <div class="umenu-sep" v-if="isAdmin"></div>
+              <div style="padding:6px 16px 10px;font-size:.68rem;color:var(--mut);">
+                Session expires: {{ sessionExpiry }}
+              </div>
+              <div class="umenu-sep"></div>
               <div class="umenu-item danger" v-on:click="doLogout">🚪 Logout</div>
             </div>
           </div>
@@ -891,6 +895,7 @@ Vue.createApp({
     var authLoading = Vue.ref(false);
     var otpVal = Vue.ref('');
     var pendingOtp = Vue.ref('');
+    var otpExpiry = Vue.ref(null);
     var otpEl = Vue.ref(null);
     var newPassword = Vue.ref('');
     var showPwd = Vue.ref(false);
@@ -991,7 +996,20 @@ Vue.createApp({
         } catch(e) {}
       }
       var saved = localStorage.getItem('rex-user');
-      if (saved) { try { user.value = JSON.parse(saved); initUser(); } catch(e) {} }
+      if (saved) {
+        try {
+          var parsed = JSON.parse(saved);
+          var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+          if (parsed.login_time && (Date.now() - parsed.login_time) > THIRTY_DAYS) {
+            // Session expired - auto logout
+            localStorage.removeItem('rex-user');
+            console.log('Session expired, please login again.');
+          } else {
+            user.value = parsed;
+            initUser();
+          }
+        } catch(e) {}
+      }
       function ping() { fetch(BACKEND + '/').catch(function() {}); }
       ping(); setInterval(ping, 14 * 60 * 1000);
     });
@@ -1031,6 +1049,7 @@ Vue.createApp({
         if (Array.isArray(existing) && existing.length > 0) { authErr.value = 'Email already registered. Please login.'; authLoading.value = false; return; }
         var otp = Math.floor(100000 + Math.random() * 900000).toString();
         pendingOtp.value = otp;
+        otpExpiry.value = Date.now() + 10 * 60 * 1000; // 10 minutes
         var result = await emailjs.send(EJS_SVC, EJS_TPL, { to_email: authEmail.value, otp: otp, app_name: 'Rex AI' });
         if (result.status === 200) {
           authStep.value = 'otp';
@@ -1045,6 +1064,8 @@ Vue.createApp({
     async function verifyOtp() {
       authErr.value = '';
       if (otpVal.value.trim() !== pendingOtp.value) { authErr.value = 'Wrong OTP. Please try again.'; return; }
+      // Check OTP hasn't expired (10 minutes)
+      if (otpExpiry.value && Date.now() > otpExpiry.value) { authErr.value = 'OTP expired. Please request a new one.'; authStep.value = 'form'; return; }
       authLoading.value = true;
       try {
         var pwHash = await hashPwd(authPassword.value);
@@ -1072,7 +1093,7 @@ Vue.createApp({
           }
         }
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
-        localStorage.setItem('rex-user', JSON.stringify(user.value));
+        user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
         authStep.value = 'form'; otpVal.value = '';
         initUser();
       } catch(e) { authErr.value = 'Error: ' + (e.message || JSON.stringify(e)); }
@@ -1101,7 +1122,7 @@ Vue.createApp({
         var uid = userData[0].id;
         var uname = userData[0].username || authEmail.value.split('@')[0];
         user.value = { uid: uid, email: authEmail.value, username: uname };
-        localStorage.setItem('rex-user', JSON.stringify(user.value));
+        user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
         await sbPatch('users', 'id=eq.' + uid, { last_seen: new Date().toISOString() }).catch(function() {});
         initUser();
       } catch(e) { authErr.value = 'Login failed. Try again.'; }
@@ -1117,6 +1138,7 @@ Vue.createApp({
         if (!Array.isArray(existing) || existing.length === 0) { authErr.value = 'No account with this email.'; authLoading.value = false; return; }
         var otp = Math.floor(100000 + Math.random() * 900000).toString();
         pendingOtp.value = otp;
+        otpExpiry.value = Date.now() + 10 * 60 * 1000; // 10 minutes
         var result = await emailjs.send(EJS_SVC, EJS_TPL, { to_email: authEmail.value, otp: otp, app_name: 'Rex AI' });
         if (result.status === 200) { authOk.value = 'OTP sent! Check your inbox.'; authStep.value = 'reset'; }
         else { authErr.value = 'Failed to send OTP.'; }
@@ -1228,6 +1250,12 @@ Vue.createApp({
         ctx.fillText(lbl, x + barW/2, H - 7);
       });
     }
+
+    var sessionExpiry = Vue.computed(function() {
+      if (!user.value || !user.value.login_time) return 'Unknown';
+      var exp = new Date(user.value.login_time + 30 * 24 * 60 * 60 * 1000);
+      return exp.toLocaleDateString();
+    });
 
     function fmtDate(ts) {
       if (!ts) return 'never';
@@ -1581,7 +1609,7 @@ Vue.createApp({
       sendResetOtp, doResetPassword, googleMsg, doLogout,
       openAdmin, fmtDate, rotatingChips,
       isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
-      sharedView
+      sharedView, sessionExpiry
     };
   }
 }).mount('#app');
