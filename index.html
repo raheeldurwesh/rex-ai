@@ -240,18 +240,18 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .guest-counter{display:inline-block;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--acc);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:14px;}
 
 /* SHARED VIEW */
-.shared-wrap{min-height:100vh;background:var(--bg);display:flex;flex-direction:column;}
-.shared-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bdr);background:var(--sur);position:sticky;top:0;z-index:10;}
-.shared-login-btn{font-size:.78rem;color:var(--acc);font-weight:600;text-decoration:none;padding:6px 12px;border:1px solid var(--acc);border-radius:8px;}
-.shared-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--acc);padding:16px 20px 8px;}
-.shared-msgs{flex:1;padding:0 20px 20px;max-width:800px;margin:0 auto;width:100%;}
-.shared-msg{margin-bottom:18px;padding:14px 16px;border-radius:14px;background:var(--sur);}
+.shared-wrap{min-height:100vh;width:100%;background:var(--bg);display:flex;flex-direction:column;overflow-x:hidden;box-sizing:border-box;}
+.shared-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bdr);background:var(--sur);position:sticky;top:0;z-index:10;box-sizing:border-box;width:100%;}
+.shared-login-btn{font-size:.75rem;color:var(--acc);font-weight:600;text-decoration:none;padding:5px 10px;border:1px solid var(--acc);border-radius:8px;white-space:nowrap;flex-shrink:0;}
+.shared-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--acc);padding:14px 16px 6px;box-sizing:border-box;}
+.shared-msgs{flex:1;padding:0 16px 80px;width:100%;box-sizing:border-box;overflow-y:auto;}
+.shared-msg{margin-bottom:14px;padding:12px 14px;border-radius:14px;background:var(--sur);width:100%;box-sizing:border-box;overflow-wrap:break-word;word-break:break-word;}
 .shared-msg.user{background:var(--sur2);border:1px solid var(--bdr);}
 .shared-msg.assistant{border:1px solid rgba(201,168,76,.15);}
-.shared-msg-label{font-size:.72rem;font-weight:700;color:var(--mut);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
-.shared-msg-content{font-size:.92rem;color:var(--txt);line-height:1.7;}
-.shared-footer{text-align:center;padding:16px;border-top:1px solid var(--bdr);font-size:.78rem;color:var(--mut);display:flex;align-items:center;justify-content:center;gap:16px;}
-.shared-signup-btn{background:var(--acc);color:#1a1a1a;font-weight:700;font-size:.8rem;padding:8px 16px;border-radius:10px;text-decoration:none;}
+.shared-msg-label{font-size:.7rem;font-weight:700;color:var(--mut);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+.shared-msg-content{font-size:.88rem;color:var(--txt);line-height:1.7;overflow-wrap:break-word;word-break:break-word;}
+.shared-footer{text-align:center;padding:14px 16px;border-top:1px solid var(--bdr);font-size:.75rem;color:var(--mut);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+.shared-signup-btn{background:var(--acc);color:#1a1a1a;font-weight:700;font-size:.78rem;padding:7px 14px;border-radius:10px;text-decoration:none;}
 
 /* ADMIN */
 .admin-wrap{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;flex-direction:column;}
@@ -290,7 +290,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
   <!-- SHARED CHAT VIEW (read-only, no login needed) -->
-  <div class="shared-wrap" v-if="sharedView">
+  <div class="shared-wrap" v-if="sharedView" style="overflow-y:auto;height:100vh;">
     <div class="shared-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="logo" style="font-size:1.1rem;">Rex AI</span>
