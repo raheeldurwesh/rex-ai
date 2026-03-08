@@ -988,7 +988,7 @@ Vue.createApp({
       return adminUsers.value.reduce(function(a, u) { return a + (u.message_count || 0); }, 0);
     });
 
-    Vue.onMounted(function() {
+    Vue.onMounted(async function() {
       var th = localStorage.getItem('rex-theme');
       if (th === 'light') { isDark.value = false; document.body.classList.add('light'); }
       window.addEventListener('resize', function() { isMobile.value = window.innerWidth <= 640; });
