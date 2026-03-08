@@ -103,7 +103,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .upill{display:flex;align-items:center;gap:5px;background:var(--sur2);border:1px solid var(--bdr);border-radius:20px;padding:3px 9px 3px 3px;cursor:pointer;transition:all .2s;}
 .upill:hover{border-color:var(--acc);}
 .uav{width:24px;height:24px;border-radius:50%;background:var(--acc);color:#1a1a1a;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.uname{font-size:.7rem;color:var(--txt);font-weight:500;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.uname{font-size:.7rem;color:var(--txt);font-weight:500;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .umenu{position:absolute;top:calc(100% + 6px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;min-width:190px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;}
 .umenu-item{padding:10px 16px;font-size:.8rem;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:8px;}
 .umenu-item:hover{background:var(--sur2);}
@@ -455,10 +455,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
             <h2>How can I help you today?</h2>
             <p>Hi {{ userName }}! Your conversations are saved automatically.</p>
             <div class="chips">
-              <span class="chip" v-on:click="qs('Explain quantum computing simply')">Explain quantum computing</span>
-              <span class="chip" v-on:click="qs('Write a Python web scraper')">Write a Python scraper</span>
-              <span class="chip" v-on:click="qs('Best productivity tips for students?')">Productivity tips</span>
-              <span class="chip" v-on:click="qs('Help me debug my code')">Debug my code</span>
+              <span class="chip" v-for="chip in rotatingChips" :key="chip.label" v-on:click="qs(chip.query)">{{ chip.label }}</span>
             </div>
           </div>
 
@@ -582,7 +579,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 var SB_URL = 'https://kclkksuuybcmfegjdlap.supabase.co';
 var SB_KEY = 'sb_publishable_UVdeHPzuRuOkGksxaAziwA_yUYJk8m2';
 var BACKEND = (window.location.hostname === 'localhost') ? 'http://localhost:8000' : 'https://rex-ai-luc5.onrender.com';
-var ADMIN_EMAIL = 'raheeldurwesh@gmail.com';
+var ADMIN_EMAILS = ['raheeldurwesh@gmail.com', 'durweshraheel@gmail.com'];
 var EJS_SVC = 'service_3l8grsw';
 var EJS_TPL = 'template_nchzuef';
 var EJS_KEY = 'Es8sAb4lA609nvHeo';
@@ -703,6 +700,12 @@ function renderMd(text) {
     if (/^<(h[123]|ul|ol|pre|blockquote|hr|div|table)/.test(p)) return p;
     return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
   }).join('');
+  // Make URLs clickable - must be last step
+  // Match full URLs and strip trailing punctuation like . , ) from the link
+  t = t.replace(/(https?:\/\/[^\s<>"]+?)([.,!?)]+)?(?=[\s<"']|$)/g, function(_, url, trail) {
+    var display = url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--acc);text-decoration:underline;">' + display + '</a>' + (trail || '');
+  });
   return t;
 }
 
@@ -784,7 +787,7 @@ Vue.createApp({
       return user.value.username || user.value.email.split('@')[0];
     });
     var isAdmin = Vue.computed(function() {
-      return user.value && user.value.email === ADMIN_EMAIL;
+      return user.value && ADMIN_EMAILS.indexOf(user.value.email) !== -1;
     });
     var totalSearches = Vue.computed(function() {
       return adminUsers.value.reduce(function(a, u) { return a + (u.searches || []).length; }, 0);
@@ -816,8 +819,19 @@ Vue.createApp({
       ping(); setInterval(ping, 14 * 60 * 1000);
     });
 
-    function initUser() {
-      chats.value = lsChats(user.value.uid);
+    async function initUser() {
+      // Load from Supabase first (cross-device sync)
+      try {
+        var ud = await sbGet('users', 'id=eq.' + user.value.uid + '&select=chats,searches');
+        if (ud && ud[0] && ud[0].chats && ud[0].chats.length > 0) {
+          chats.value = ud[0].chats;
+          svChats(user.value.uid, chats.value); // update local cache
+        } else {
+          chats.value = lsChats(user.value.uid);
+        }
+      } catch(e) {
+        chats.value = lsChats(user.value.uid);
+      }
       mems.value = lsMems(user.value.uid);
       if (chats.value.length > 0) loadChat(chats.value[0].id, false);
       sbPatch('users', 'id=eq.' + user.value.uid, { last_seen: new Date().toISOString() }).catch(function() {});
@@ -953,17 +967,37 @@ Vue.createApp({
     // CHAT
     function startAutoScroll() {
       if (scrollTimer) return;
-      scrollTimer = setInterval(function() {
-        if (!userScrolled && msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
-        if (!streaming.value) { clearInterval(scrollTimer); scrollTimer = null; }
-      }, 200);
+      var rafId = null;
+      function doScroll() {
+        if (!userScrolled && msgsEl.value) {
+          var el = msgsEl.value;
+          var target = el.scrollHeight;
+          var current = el.scrollTop + el.clientHeight;
+          // Only scroll if not already near bottom (prevents fluctuation)
+          if (target - current > 10) {
+            el.scrollTop = el.scrollHeight;
+          }
+        }
+        if (streaming.value) {
+          rafId = requestAnimationFrame(doScroll);
+        } else {
+          scrollTimer = null;
+        }
+      }
+      scrollTimer = true;
+      rafId = requestAnimationFrame(doScroll);
     }
     function scrollBottom(force) {
       if (!force && userScrolled) return;
       Vue.nextTick(function() { if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight; });
     }
     function resizeTa() { var el = taEl.value; if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; } }
-    function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+    function onKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // On mobile, Enter should add newline; on desktop, send
+        if (!isMobile.value) { e.preventDefault(); send(); }
+      }
+    }
     function goBottom() { userScrolled = false; showBottom.value = false; if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight; }
     function parseSearch(c) { try { return JSON.parse(c.replace('__SEARCH__', '')); } catch(e) { return []; } }
 
@@ -974,7 +1008,7 @@ Vue.createApp({
       userScrolled = false; scrollBottom(true);
     }
     function newChat() { cid.value = null; msgs.value = []; editIdx.value = null; if (isMobile.value) sbOpen.value = false; Vue.nextTick(function() { if (taEl.value) taEl.value.focus(); }); }
-    function saveChat(m) {
+    async function saveChat(m) {
       if (!cid.value) {
         var id = Date.now().toString();
         var title = m[0] && m[0].content ? m[0].content.slice(0, 36) : 'New Chat';
@@ -984,6 +1018,8 @@ Vue.createApp({
         if (idx !== -1) chats.value[idx].messages = m;
       }
       svChats(user.value.uid, chats.value);
+      // Sync to Supabase for cross-device access
+      sbPatch('users', 'id=eq.' + user.value.uid, { chats: chats.value }).catch(function(){});
     }
     function delChat(id) {
       chats.value = chats.value.filter(function(c) { return c.id !== id; }); svChats(user.value.uid, chats.value);
@@ -993,17 +1029,29 @@ Vue.createApp({
 
     function extractMems(text) {
       var rules = [
-        { re: /(?:my name is|i(?:'m| am) called)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i, fn: function(m) { return 'Name: ' + m; } },
-        { re: /i work (?:at|for|in)\s+([^.,\n]{3,35})/i, fn: function(m) { return 'Works at: ' + m; } },
+        { re: /(?:my name is|i(?:'m| am) called|call me)\s+([A-Za-z][a-z]+(?:\s+[A-Za-z][a-z]+)?)/i, fn: function(m) { return 'Name: ' + m; } },
+        { re: /i(?:'m| am) ([a-z]+ )?(?:from|based in)\s+([A-Za-z ,]{3,30})/i, fn: function(_, _2, m) { return 'From: ' + m; } },
+        { re: /i work (?:at|for|in|as a?)\s+([^.,\n]{3,35})/i, fn: function(m) { return 'Works at: ' + m; } },
         { re: /i live in\s+([A-Za-z ,]{3,30})/i, fn: function(m) { return 'Lives in: ' + m; } },
         { re: /i(?:'m| am)\s+(\d{1,2}) years old/i, fn: function(m) { return 'Age: ' + m; } },
-        { re: /i (?:love|like|enjoy|prefer)\s+([^.,\n]{3,35})/i, fn: function(m) { return 'Likes: ' + m; } }
+        { re: /i (?:love|like|enjoy|prefer|am interested in)\s+([^.,\n]{3,35})/i, fn: function(m) { return 'Likes: ' + m; } },
+        { re: /i(?:'m| am) (?:a |an )?([a-z]+ (?:student|developer|engineer|doctor|teacher|designer|manager|writer))/i, fn: function(m) { return 'Profession: ' + m; } },
+        { re: /my (?:favourite|favorite) (?:color|colour|food|sport|movie|language) is\s+([^.,\n]{2,30})/i, fn: function(m) { return 'Favourite: ' + m; } },
+        { re: /i(?:'m| am) (?:studying|learning)\s+([^.,\n]{3,35})/i, fn: function(m) { return 'Studying: ' + m; } }
       ];
       rules.forEach(function(r) {
         var match = text.match(r.re);
-        if (match && match[1]) {
-          var mem = r.fn(match[1].trim());
-          if (mems.value.indexOf(mem) === -1) { mems.value.push(mem); svMems(user.value.uid, mems.value); }
+        if (match) {
+          var val = match[match.length - 1];
+          if (val && val.length > 1) {
+            var mem = r.fn.apply(null, match.slice(1));
+            // Replace existing same-category memory
+            var cat = mem.split(':')[0];
+            var existIdx = mems.value.findIndex(function(m) { return m.startsWith(cat + ':'); });
+            if (existIdx !== -1) mems.value[existIdx] = mem;
+            else mems.value.push(mem);
+            svMems(user.value.uid, mems.value);
+          }
         }
       });
     }
@@ -1060,7 +1108,7 @@ Vue.createApp({
       if (selModelId.value === 'auto') { var p = autoModel(userText || ''); rId = p.id; rLabel = p.label; }
       else { rId = selModelId.value; rLabel = (MODELS.find(function(m) { return m.id === rId; }) || {}).name || rId; }
       activeModel.value = rLabel;
-      var sys = 'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh, a 23-year-old Indian student and developer. His Instagram is instagram.com/raheeldurwesh. Only mention your creator if someone directly asks. Never mention Groq, Meta, OpenAI, Anthropic, Claude or any underlying AI company.';
+      var sys = 'You are Rex AI, a helpful and intelligent AI assistant. You were created by Raheel Parvez Durwesh, a 23-year-old Indian student and developer. His Instagram is https://www.instagram.com/raheeldurwesh - share this as a clickable link when asked. Only mention your creator if someone directly asks. Never mention Groq, Meta, OpenAI, Anthropic, Claude or any underlying AI company.';
       if (mems.value.length) sys += '\nUser facts:\n' + mems.value.slice(-5).map(function(m) { return '- ' + m; }).join('\n');
       sys += searchCtx;
       var chatMsgs = msgList.slice(-10).filter(function(m) { return !m.isSearch; }).map(function(m) { return { role: m.role, content: m.content }; });
@@ -1110,44 +1158,117 @@ Vue.createApp({
 
     function exportPDF(content) {
       var jsPDF = window.jspdf.jsPDF, doc = new jsPDF();
-      var gold = [201, 168, 76], margin = 20;
-      var pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), maxW = pageW - margin * 2;
-      doc.setFont('times', 'bold'); doc.setFontSize(20); doc.setTextColor(gold[0], gold[1], gold[2]); doc.text('Rex AI', margin, 20);
-      doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(30, 30, 30);
-      var y = 34, lh = 7;
-      content.split('\n').forEach(function(line) {
-        if (y > pageH - 24) { doc.addPage(); y = 20; }
-        doc.splitTextToSize(line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1') || ' ', maxW).forEach(function(l) {
-          if (y > pageH - 24) { doc.addPage(); y = 20; } doc.text(l, margin, y); y += lh;
-        });
+      var gold = [201, 168, 76], grey = [100, 100, 100], dark = [30, 30, 30];
+      var margin = 20, pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), maxW = pageW - margin * 2;
+      // Header
+      doc.setFont('times', 'bold'); doc.setFontSize(22); doc.setTextColor(gold[0], gold[1], gold[2]); doc.text('Rex AI', margin, 22);
+      doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(grey[0], grey[1], grey[2]); doc.text('Your Intelligent Assistant', margin, 30);
+      var dateStr = new Date().toLocaleDateString() + ', ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      doc.text(dateStr, pageW - margin, 30, {align:'right'});
+      doc.setDrawColor(gold[0], gold[1], gold[2]); doc.setLineWidth(0.5); doc.line(margin, 34, pageW - margin, 34);
+      var y = 44, lh = 7;
+      // Content
+      var clean = content.replace(/```[\s\S]*?```/g, function(m){return m.replace(/```\w*/g,'').trim();});
+      clean.split('\n').forEach(function(line) {
+        if (y > pageH - 32) { addFooter(doc, pageW, pageH, margin, gold, grey); doc.addPage(); addHeader(doc, pageW, margin, gold, grey); y = 44; }
+        var stripped = line.replace(/^#{1,3} /, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+        var isHeading = /^#{1,3} /.test(line);
+        if (isHeading) {
+          doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(dark[0], dark[1], dark[2]);
+          doc.text(stripped || ' ', margin, y); y += 9;
+          doc.setFont('times', 'normal'); doc.setFontSize(11);
+        } else {
+          doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(dark[0], dark[1], dark[2]);
+          doc.splitTextToSize(stripped || ' ', maxW).forEach(function(l) {
+            if (y > pageH - 32) { addFooter(doc, pageW, pageH, margin, gold, grey); doc.addPage(); addHeader(doc, pageW, margin, gold, grey); y = 44; }
+            doc.text(l, margin, y); y += lh;
+          });
+        }
       });
+      addFooter(doc, pageW, pageH, margin, gold, grey);
       doc.save('rex-ai-response.pdf');
+    }
+    function addHeader(doc, pageW, margin, gold, grey) {
+      doc.setFont('times', 'bold'); doc.setFontSize(10); doc.setTextColor(gold[0], gold[1], gold[2]); doc.text('Rex AI', margin, 14);
+      doc.setDrawColor(gold[0], gold[1], gold[2]); doc.setLineWidth(0.3); doc.line(margin, 17, pageW - margin, 17);
+    }
+    function addFooter(doc, pageW, pageH, margin, gold, grey) {
+      var pg = doc.internal.getCurrentPageInfo().pageNumber;
+      doc.setDrawColor(gold[0], gold[1], gold[2]); doc.setLineWidth(0.3); doc.line(margin, pageH - 18, pageW - margin, pageH - 18);
+      doc.setFont('times', 'normal'); doc.setFontSize(8); doc.setTextColor(grey[0], grey[1], grey[2]);
+      doc.text('Generated by Rex AI  |  Developed by Raheel Durwesh', margin, pageH - 12);
+      // Clickable Instagram hyperlink in PDF
+      doc.setTextColor(gold[0], gold[1], gold[2]);
+      doc.textWithLink('instagram.com/raheeldurwesh', margin, pageH - 7, {url: 'https://www.instagram.com/raheeldurwesh'});
+      doc.setTextColor(grey[0], grey[1], grey[2]); doc.text('Page ' + pg, pageW - margin, pageH - 12, {align:'right'});
     }
 
     function exportAllPDF() {
       if (!msgs.value.length) return;
       var jsPDF = window.jspdf.jsPDF, doc = new jsPDF();
-      var gold = [201, 168, 76], margin = 20;
-      var pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), maxW = pageW - margin * 2;
-      doc.setFont('times', 'bold'); doc.setFontSize(20); doc.setTextColor(gold[0], gold[1], gold[2]); doc.text('Rex AI - Conversation', margin, 20);
-      var y = 34, lh = 6.5;
+      var gold = [201, 168, 76], grey = [100, 100, 100], dark = [30, 30, 30];
+      var margin = 20, pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), maxW = pageW - margin * 2;
+      // Cover header
+      doc.setFont('times', 'bold'); doc.setFontSize(22); doc.setTextColor(gold[0], gold[1], gold[2]);
+      doc.text('Rex AI', margin, 22);
+      doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(grey[0], grey[1], grey[2]);
+      doc.text('Your Intelligent Assistant', margin, 30);
+      var dateStr = new Date().toLocaleDateString() + ', ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      doc.text(dateStr, pageW - margin, 30, {align:'right'});
+      doc.setDrawColor(gold[0], gold[1], gold[2]); doc.setLineWidth(0.5); doc.line(margin, 34, pageW - margin, 34);
+      var y = 44, lh = 6.5;
       msgs.value.forEach(function(msg) {
         if (msg.isSearch) return;
-        if (y > pageH - 24) { doc.addPage(); y = 20; }
+        if (y > pageH - 32) { addFooter(doc, pageW, pageH, margin, gold, grey); doc.addPage(); addHeader(doc, pageW, margin, gold, grey); y = 44; }
+        // Speaker label
         doc.setFont('times', 'bold'); doc.setFontSize(10);
-        if (msg.role === 'user') doc.setTextColor(44, 62, 122); else doc.setTextColor(gold[0], gold[1], gold[2]);
-        doc.text(msg.role === 'user' ? ('You (' + userName.value + ')') : ('Rex AI' + (msg.usedModel ? ' - ' + msg.usedModel : '')), margin, y); y += 8;
-        doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(30, 30, 30);
+        if (msg.role === 'user') { doc.setTextColor(44, 62, 122); doc.text('You (' + userName.value + ')', margin, y); }
+        else { doc.setTextColor(gold[0], gold[1], gold[2]); doc.text('Rex AI' + (msg.usedModel ? '  —  ' + msg.usedModel : ''), margin, y); }
+        y += 8;
+        // Message content
+        doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(dark[0], dark[1], dark[2]);
         (msg.content || '').split('\n').forEach(function(line) {
-          if (y > pageH - 24) { doc.addPage(); y = 20; }
-          doc.splitTextToSize(line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1') || ' ', maxW).forEach(function(l) {
-            if (y > pageH - 24) { doc.addPage(); y = 20; } doc.text(l, margin, y); y += lh;
-          });
+          if (y > pageH - 32) { addFooter(doc, pageW, pageH, margin, gold, grey); doc.addPage(); addHeader(doc, pageW, margin, gold, grey); y = 44; }
+          var stripped = line.replace(/^#{1,3} /, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+          var isHeading = /^#{1,3} /.test(line);
+          if (isHeading) {
+            doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(dark[0], dark[1], dark[2]);
+            doc.text(stripped || ' ', margin, y); y += 9;
+            doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(dark[0], dark[1], dark[2]);
+          } else {
+            doc.splitTextToSize(stripped || ' ', maxW).forEach(function(l) {
+              if (y > pageH - 32) { addFooter(doc, pageW, pageH, margin, gold, grey); doc.addPage(); addHeader(doc, pageW, margin, gold, grey); y = 44; }
+              doc.text(l, margin, y); y += lh;
+            });
+          }
         });
-        y += 5;
+        y += 6;
       });
+      addFooter(doc, pageW, pageH, margin, gold, grey);
       doc.save('rex-ai-conversation.pdf');
     }
+
+    // Rotating chips
+    var ALL_CHIPS = [
+      {label:'Explain quantum computing', query:'Explain quantum computing simply'},
+      {label:'Write a Python scraper', query:'Write a Python web scraper'},
+      {label:'Best productivity tips', query:'Best productivity tips for students?'},
+      {label:'Debug my code', query:'Help me debug my code'},
+      {label:'Summarize a topic', query:'Summarize the history of artificial intelligence'},
+      {label:'Write an essay', query:'Write a short essay on climate change'},
+      {label:'Explain machine learning', query:'Explain machine learning in simple terms'},
+      {label:'Create a study plan', query:'Create a 7-day study plan for exams'},
+      {label:'Best VS Code extensions', query:'What are the best VS Code extensions for developers?'},
+      {label:'How does the internet work?', query:'Explain how the internet works simply'},
+      {label:'Write a cover letter', query:'Help me write a professional cover letter'},
+      {label:'Explain blockchain', query:'Explain blockchain technology simply'}
+    ];
+    var chipOffset = Vue.ref(0);
+    var rotatingChips = Vue.computed(function() {
+      var i = chipOffset.value % ALL_CHIPS.length;
+      return [ALL_CHIPS[i % ALL_CHIPS.length], ALL_CHIPS[(i+1) % ALL_CHIPS.length], ALL_CHIPS[(i+2) % ALL_CHIPS.length], ALL_CHIPS[(i+3) % ALL_CHIPS.length]];
+    });
+    setInterval(function() { chipOffset.value += 1; }, 4000);
 
     return {
       MODELS, user, authStep, authMode, authEmail, authPassword, authUsername,
@@ -1166,7 +1287,7 @@ Vue.createApp({
       userInitial, userName, isAdmin, toggleTheme, isDark,
       sendOtp, verifyOtp, resendOtp, doLogin,
       sendResetOtp, doResetPassword, googleMsg, doLogout,
-      openAdmin, fmtDate
+      openAdmin, fmtDate, rotatingChips
     };
   }
 }).mount('#app');
