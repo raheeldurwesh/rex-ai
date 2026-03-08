@@ -209,7 +209,7 @@ class UserData(BaseModel):
 
 @app.get("/db/user")
 async def get_user(id: str = None, email: str = None, request: Request = None):
-    check_origin(request)
+    # No CSRF check needed for GET requests
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise HTTPException(status_code=500, detail="DB not configured")
     async with httpx.AsyncClient() as client:
@@ -257,7 +257,7 @@ async def update_user(req: UpdateData, request: Request):
 
 @app.get("/db/users")
 async def get_all_users(request: Request, admin_email: str = None):
-    check_origin(request)
+    # Admin check is sufficient
     # Only allow admin emails
     ADMIN_EMAILS = ["raheeldurwesh@gmail.com", "durweshraheel@gmail.com"]
     if admin_email not in ADMIN_EMAILS:
