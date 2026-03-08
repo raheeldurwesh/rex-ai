@@ -21,8 +21,8 @@ html{overflow-x:hidden;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height:100vh;height:100dvh;overflow:hidden;display:flex;}
 
 /* AUTH */
-.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
-.auth-card{background:var(--sur);border:1px solid var(--bdr);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:0 30px;}
+.auth-card{background:var(--sur);border:1px solid var(--bdr);border-radius:20px;padding:20px 20px 16px;width:100%;max-width:340px;box-sizing:border-box;box-shadow:0 24px 64px rgba(0,0,0,.6);}
 .auth-logo{font-family:'Playfair Display',serif;font-weight:700;font-size:2rem;color:var(--acc);text-align:center;margin-bottom:4px;}
 .auth-sub{text-align:center;color:var(--mut);font-size:.82rem;margin-bottom:28px;}
 .auth-tabs{display:flex;background:var(--sur2);border-radius:10px;padding:4px;margin-bottom:22px;gap:4px;}
@@ -40,9 +40,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 .auth-btn:disabled{background:var(--sur2);color:var(--mut);cursor:not-allowed;}
 .auth-div{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--mut);font-size:.75rem;}
 .auth-div::before,.auth-div::after{content:'';flex:1;height:1px;background:var(--bdr);}
-.google-btn{width:100%;padding:11px;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.google-btn{width:100%;padding:8px;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
 .google-btn:hover{border-color:var(--acc);color:var(--acc);}
-.guest-btn{width:100%;padding:11px;background:none;border:1.5px dashed var(--bdr);border-radius:10px;color:var(--mut);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s;}
+.guest-btn{width:100%;padding:7px;background:none;border:1.5px dashed var(--bdr);border-radius:10px;color:var(--mut);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;margin-top:5px;transition:all .2s;}
 .guest-btn:hover{border-color:var(--acc);color:var(--acc);}
 .auth-err{background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.3);color:#e74c3c;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;line-height:1.5;}
 .auth-ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#27ae60;font-size:.78rem;padding:9px 12px;border-radius:8px;margin-bottom:12px;line-height:1.5;}
@@ -278,8 +278,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
   <!-- AUTH SCREEN -->
   <div class="auth-wrap" v-if="!user">
     <div class="auth-card">
-      <div class="auth-logo">Rex AI</div>
-      <div class="auth-sub">Your intelligent AI assistant</div>
+      <div style="text-align:center;margin-bottom:8px;">
+        <div class="auth-logo">Rex AI</div>
+        <div class="auth-sub">Your intelligent AI assistant</div>
+      </div>
 
       <!-- OTP verify step (signup only) -->
       <template v-if="authStep==='otp'">
@@ -355,8 +357,8 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
           Continue with Google
         </button>
         <button class="guest-btn" v-on:click="continueAsGuest">👤 Continue as Guest</button>
-        <div style="text-align:center;margin-top:8px;">
-          <span style="font-size:.72rem;color:var(--mut);">Guest: 5 free messages · No history · No memory</span>
+        <div style="text-align:center;margin-top:4px;">
+          <span style="font-size:.64rem;color:var(--mut);">Guest: 5 free messages · No history · No memory</span>
         </div>
       </template>
     </div>
@@ -405,7 +407,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
     <div class="ov" :class="{show: sbOpen && isMobile}" v-on:click="sbOpen=false" style="z-index:190;"></div>
 
     <!-- Sidebar -->
-    <div class="sb" :class="{hide: !sbOpen}">
+    <div class="sb" :class="{hide: !sbOpen}" v-if="user && !user.isGuest">
       <div class="sb-top">
         <span class="logo">Rex AI</span>
       </div>
@@ -421,7 +423,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
     </div>
 
     <!-- Main chat area -->
-    <div class="main">
+    <div class="main" v-if="user">
       <header>
         <button class="hbg" v-on:click="sbOpen=!sbOpen"><span></span><span></span><span></span></button>
         <span class="h-title">{{ chatTitle }}</span>
@@ -1162,6 +1164,8 @@ Vue.createApp({
 
     async function send() {
       var text = inp.value.trim(); if (!text || streaming.value) return;
+      // Haptic feedback on mobile
+      if (navigator.vibrate) navigator.vibrate(30);
       // Guest limit check
       if (isGuest.value) {
         if (guestMsgCount.value >= 5) { guestPrompt.value = true; return; }
