@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Rex AI</title>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -512,6 +512,9 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 
 </div>
 <script>
+// EmailJS init - must be called once at startup
+(function(){emailjs.init('Es8sAb4lA609nvHeo');})();
+
 var SUPABASE_URL='https://kclkksuuybcmfegjdlap.supabase.co';
 var SUPABASE_KEY='sb_publishable_UVdeHPzuRuOkGksxaAziwA_yUYJk8m2';
 var ADMIN_EMAIL='raheeldurwesh@gmail.com';
@@ -680,12 +683,11 @@ Vue.createApp({
         var otp=Math.floor(100000+Math.random()*900000).toString();
         pendingOtp.value=otp;
         // Send real email via EmailJS
-        emailjs.init('Es8sAb4lA609nvHeo');
-        var result=await emailjs.send('service_3l8grsw','template_nchzuef',{
-          to_email:authEmail.value,
-          otp:otp,
-          app_name:'Rex AI'
-        });
+        var result=await emailjs.send(
+          'service_3l8grsw',
+          'template_nchzuef',
+          {to_email:authEmail.value, otp:otp, app_name:'Rex AI'}
+        );
         if(result.status===200){
           authStep.value='otp';
           Vue.nextTick(function(){if(otpEl.value)otpEl.value.focus();});
