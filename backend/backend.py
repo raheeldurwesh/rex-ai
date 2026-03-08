@@ -1,16 +1,9 @@
-import os
-import random
-import json
-import re
-import urllib.parse
-import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from groq import Groq
-from dotenv import load_dotenv
-
-load_dotenv()
+from fastapi.responses import StreamingResponse
+import json, os, httpx, re
 
 app = FastAPI()
 
@@ -21,13 +14,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEYS = [
+GROQ_KEYS = [
     os.getenv("GROQ_API_KEY"),
     os.getenv("GROQ_API_KEY_1"),
     os.getenv("GROQ_API_KEY_2"),
     os.getenv("GROQ_API_KEY_3"),
 ]
-API_KEYS = [k for k in API_KEYS if k]
+GROQ_KEYS = [k for k in GROQ_KEYS if k]
+if not GROQ_KEYS:
+    GROQ_KEYS = []  # Set GROQ_API_KEY in Render environment variables
 
 FALLBACK_MODELS = [
     "llama-3.3-70b-versatile",
@@ -37,102 +32,107 @@ FALLBACK_MODELS = [
     "moonshotai/kimi-k2-instruct-0905",
 ]
 
-def is_rate_limit(err):
-    return '429' in str(err) or 'rate_limit' in str(err).lower() or 'rate limit' in str(err).lower()
+class Message(BaseModel):
+    role: str
+    content: str
 
-def get_reset_time(err):
-    match = re.search(r'try again in ([\dm\s\.]+s)', str(err), re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return None
+class ChatRequest(BaseModel):
+    messages: list[Message]
+    model: str = "llama-3.3-70b-versatile"
 
-@app.get("/")
-def root():
-    return {"status": "Rex AI backend running ✅", "keys_loaded": len(API_KEYS)}
-
-@app.get("/search")
-async def search(q: str):
-    try:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            r = await client.get(
-                "https://html.duckduckgo.com/html/",
-                params={"q": q},
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "text/html,application/xhtml+xml",
-                    "Accept-Language": "en-US,en;q=0.9",
-                },
-                timeout=10
-            )
-            html = r.text
-            results = []
-            result_blocks = re.split(r'<div class="result ', html)
-            for block in result_blocks[1:]:
-                url_match = re.search(r'uddg=(https?[^&">\s]+)', block)
-                title_match = re.search(r'class="result__a"[^>]*>([^<]+)<', block)
-                snippet_match = re.search(r'class="result__snippet"[^>]*>([^<]+)<', block)
-                if url_match and title_match:
-                    real_url = urllib.parse.unquote(url_match.group(1))
-                    if 'duckduckgo.com' in real_url:
-                        continue
-                    results.append({
-                        "title": title_match.group(1).strip(),
-                        "url": real_url,
-                        "snippet": snippet_match.group(1).strip() if snippet_match else ""
-                    })
-                if len(results) >= 5:
-                    break
-            return {"results": results}
-    except Exception as e:
-        return {"results": [], "error": str(e)}
+@app.get("/ping")
+async def ping():
+    return {"status": "ok"}
 
 @app.post("/chat")
-async def chat(request: dict):
-    async def generate():
-        if not API_KEYS:
-            yield f"data: {json.dumps({'text': '⚠️ Service unavailable. Please try again later.'})}\n\n"
-            yield "data: [DONE]\n\n"
-            return
+async def chat(req: ChatRequest):
+    models = [req.model] if req.model not in FALLBACK_MODELS else FALLBACK_MODELS
+    if req.model not in models:
+        models = [req.model] + FALLBACK_MODELS
 
-        requested_model = request.get("model", "llama-3.3-70b-versatile")
-        messages = request.get("messages", [])
-        models_to_try = [requested_model] + [m for m in FALLBACK_MODELS if m != requested_model]
-        keys_to_try = API_KEYS.copy()
-        random.shuffle(keys_to_try)
-        last_reset_time = None
-
-        for model in models_to_try:
-            for key in keys_to_try:
+    def generate():
+        for key in GROQ_KEYS:
+            for model in models:
                 try:
                     client = Groq(api_key=key)
                     stream = client.chat.completions.create(
                         model=model,
-                        messages=messages,
+                        messages=[m.dict() for m in req.messages],
                         stream=True,
                         max_tokens=4096,
                     )
+                    yield f"data: {json.dumps({'model': model})}\n\n"
                     for chunk in stream:
-                        text = chunk.choices[0].delta.content or ""
-                        if text:
-                            yield f"data: {json.dumps({'text': text})}\n\n"
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            yield f"data: {json.dumps({'text': delta})}\n\n"
                     yield "data: [DONE]\n\n"
                     return
                 except Exception as e:
-                    if is_rate_limit(e):
-                        t = get_reset_time(e)
-                        if t:
-                            last_reset_time = t
+                    err = str(e)
+                    if "rate_limit" in err or "429" in err or "model" in err.lower():
                         continue
-                    else:
-                        continue
-
-        # All exhausted - show clean message
-        if last_reset_time:
-            msg = f"⏳ I'm currently at capacity. Please try again in **{last_reset_time}**."
-        else:
-            msg = "⏳ I'm currently at capacity. Please try again in a few minutes."
-
-        yield f"data: {json.dumps({'text': msg})}\n\n"
+                    continue
+        yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@app.get("/search")
+async def search(q: str):
+    try:
+        results = []
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+            # DuckDuckGo HTML search
+            resp = await client.get(
+                "https://html.duckduckgo.com/html/",
+                params={"q": q},
+                headers=headers
+            )
+            html = resp.text
+
+            # Parse result titles, urls, snippets
+            result_blocks = re.findall(
+                r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</span>',
+                html, re.DOTALL
+            )
+
+            for url, title, snippet in result_blocks[:5]:
+                title = re.sub(r'<[^>]+>', '', title).strip()
+                snippet = re.sub(r'<[^>]+>', '', snippet).strip()
+                for ent, ch in [('&amp;','&'),('&lt;','<'),('&gt;','>'),('&#x27;',"'"),('&quot;','"')]:
+                    title = title.replace(ent, ch)
+                    snippet = snippet.replace(ent, ch)
+                if title and snippet:
+                    results.append({"title": title, "snippet": snippet, "url": url})
+
+            # Fallback to DDG instant answer API
+            if not results:
+                ia = await client.get(
+                    "https://api.duckduckgo.com/",
+                    params={"q": q, "format": "json", "no_redirect": "1", "no_html": "1"}
+                )
+                data = ia.json()
+                if data.get("AbstractText"):
+                    results.append({
+                        "title": data.get("Heading", q),
+                        "snippet": data["AbstractText"],
+                        "url": data.get("AbstractURL", "")
+                    })
+                for rt in data.get("RelatedTopics", [])[:4]:
+                    if isinstance(rt, dict) and rt.get("Text"):
+                        results.append({
+                            "title": rt.get("Text", "")[:60],
+                            "snippet": rt.get("Text", ""),
+                            "url": rt.get("FirstURL", "")
+                        })
+
+        return {"results": results[:5], "query": q}
+
+    except Exception as e:
+        return {"results": [], "query": q, "error": str(e)}
