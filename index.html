@@ -427,14 +427,16 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         <span class="h-title">{{ chatTitle }}</span>
         <div class="h-right">
           <button class="hbtn" v-on:click="toggleTheme">{{ isDark ? '☀️' : '🌙' }}</button>
-          <button class="hbtn" :class="{on: webSearch}" v-on:click="isGuest ? guestPrompt=true : webSearch=!webSearch" title="Web Search" :style="isGuest ? 'opacity:.4' : ''">
+          <button class="hbtn" :class="{on: webSearch, 'hide-mobile': isGuest}" v-on:click="isGuest ? guestPrompt=true : webSearch=!webSearch" title="Web Search" :style="isGuest ? 'opacity:.4' : ''">
             Web<span v-if="webSearch" class="mdot" style="margin-left:2px;"></span>
           </button>
-          <button class="hbtn" v-on:click="isGuest ? guestPrompt=true : shareChat()" :style="isGuest ? 'opacity:.4' : ''">Share</button>
-          <button class="hbtn" v-on:click="isGuest ? guestPrompt=true : exportAllPDF()" :style="isGuest ? 'opacity:.4' : ''">PDF</button>
-          <button class="hbtn" :class="{on: memOpen}" v-on:click="isGuest ? guestPrompt=true : (memOpen=!memOpen)" :style="isGuest ? 'opacity:.4' : ''">
-            Mem<span v-if="mems.length>0" class="mbadge">{{ mems.length }}</span>
-          </button>
+          <template v-if="!isGuest">
+            <button class="hbtn" v-on:click="shareChat()">Share</button>
+            <button class="hbtn" v-on:click="exportAllPDF()">PDF</button>
+            <button class="hbtn" :class="{on: memOpen}" v-on:click="memOpen=!memOpen">
+              Mem<span v-if="mems.length>0" class="mbadge">{{ mems.length }}</span>
+            </button>
+          </template>
           <div class="msel">
             <button class="mbtn" :class="{open: mdOpen}" v-on:click="mdOpen=!mdOpen">
               {{ selModel.short }}<span class="arr">&#9660;</span>
@@ -446,9 +448,9 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
               </div>
             </div>
           </div>
-          <div v-if="isGuest" style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:.68rem;color:var(--acc);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);padding:3px 8px;border-radius:12px;font-weight:600;">{{ 5 - guestMsgCount }}/5 left</span>
-            <button class="hbtn" style="background:var(--acc);color:#1a1a1a;border-color:var(--acc);font-weight:700;" v-on:click="guestSignup">Sign Up</button>
+          <div v-if="isGuest" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <span style="font-size:.65rem;color:var(--acc);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);padding:2px 7px;border-radius:12px;font-weight:700;white-space:nowrap;">{{ 5 - guestMsgCount }}/5</span>
+            <button class="hbtn" style="background:var(--acc);color:#1a1a1a;border-color:var(--acc);font-weight:700;padding:4px 10px;font-size:.7rem;white-space:nowrap;" v-on:click="guestSignup">Sign Up</button>
           </div>
           <div class="msel" v-if="!isGuest">
             <div class="upill" v-on:click="umOpen=!umOpen">
@@ -523,7 +525,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
                 </div>
                 <div class="macts">
                   <button class="abt" :class="{done: cpIdx===i}" v-on:click="copyMsg(msg.content, i)">{{ cpIdx===i ? 'Copied' : 'Copy' }}</button>
-                  <button class="abt" v-on:click="exportPDF(msg.content)">PDF</button>
+                  <button class="abt" v-if="!isGuest" v-on:click="exportPDF(msg.content)">PDF</button>
                 </div>
               </div>
             </div>
