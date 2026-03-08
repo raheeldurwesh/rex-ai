@@ -870,11 +870,27 @@ Vue.createApp({
       if (otpVal.value.trim() !== pendingOtp.value) { authErr.value = 'Wrong OTP. Please try again.'; return; }
       authLoading.value = true;
       try {
+        var uid = null;
         var res = await sbSignup(authEmail.value, authPassword.value);
-        var uid = res.user && res.user.id;
-        if (!uid) { authErr.value = (res.error && res.error.message) || 'Signup failed.'; authLoading.value = false; return; }
+        if (res.user && res.user.id) {
+          uid = res.user.id;
+        } else if (res.error && res.error.message === 'User already registered') {
+          // Already in Supabase Auth - just sign in to get uid
+          var sinRes = await sbSignin(authEmail.value, authPassword.value);
+          uid = sinRes.user && sinRes.user.id;
+          if (!uid) { authErr.value = 'This email is already registered. Please use Login instead.'; authLoading.value = false; return; }
+        } else {
+          authErr.value = (res.error && res.error.message) || 'Signup failed. Try again.';
+          authLoading.value = false; return;
+        }
         var pwHash = await hashPwd(authPassword.value);
-        await sbPost('users', { id: uid, email: authEmail.value, username: authUsername.value, password_hash: pwHash, created_at: new Date().toISOString(), last_seen: new Date().toISOString(), message_count: 0, searches: [] }).catch(function() {});
+        // Upsert user row (insert or update if exists)
+        var existing = await sbGet('users', 'id=eq.' + uid + '&select=id');
+        if (Array.isArray(existing) && existing.length > 0) {
+          await sbPatch('users', 'id=eq.' + uid, { username: authUsername.value, password_hash: pwHash, last_seen: new Date().toISOString() }).catch(function() {});
+        } else {
+          await sbPost('users', { id: uid, email: authEmail.value, username: authUsername.value, password_hash: pwHash, created_at: new Date().toISOString(), last_seen: new Date().toISOString(), message_count: 0, searches: [] }).catch(function() {});
+        }
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
         localStorage.setItem('rex-user', JSON.stringify(user.value));
         authStep.value = 'form'; otpVal.value = '';
