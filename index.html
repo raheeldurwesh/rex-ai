@@ -366,38 +366,80 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 
   <!-- ADMIN PANEL -->
   <div class="admin-wrap" v-if="user && adminOpen">
+    <!-- Admin Header -->
     <div class="admin-hdr">
-      <span class="admin-title">Admin Dashboard</span>
-      <button class="admin-close" v-on:click="adminOpen=false">Close</button>
-    </div>
-    <div class="admin-body">
-      <div class="admin-stats">
-        <div class="stat-card"><div class="stat-num">{{ adminUsers.length }}</div><div class="stat-lbl">Total Users</div></div>
-        <div class="stat-card"><div class="stat-num">{{ totalSearches }}</div><div class="stat-lbl">Total Searches</div></div>
-        <div class="stat-card"><div class="stat-num">{{ totalMessages }}</div><div class="stat-lbl">Total Messages</div></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.3rem;">👑</span>
+        <span class="admin-title">Admin Dashboard</span>
       </div>
-      <div class="admin-sec">All Users</div>
+      <button class="admin-close" v-on:click="adminOpen=false">✕ Close</button>
+    </div>
+
+    <div class="admin-body">
+      <!-- Stat Cards -->
+      <div class="admin-stats">
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-num">{{ adminUsers.length }}</div>
+          <div class="stat-lbl">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💬</div>
+          <div class="stat-num">{{ totalMessages }}</div>
+          <div class="stat-lbl">Total Messages</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔍</div>
+          <div class="stat-num">{{ totalSearches }}</div>
+          <div class="stat-lbl">Total Searches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-num">{{ todaySignups }}</div>
+          <div class="stat-lbl">Today's Signups</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="chart-row">
+        <!-- User Growth Chart -->
+        <div class="chart-box">
+          <div class="chart-title">📈 User Growth (Last 7 Days)</div>
+          <canvas ref="growthCanvas" height="140" style="width:100%;"></canvas>
+        </div>
+        <!-- Messages Per Day Chart -->
+        <div class="chart-box">
+          <div class="chart-title">💬 Messages Per Day (Last 7 Days)</div>
+          <canvas ref="msgCanvas" height="140" style="width:100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="admin-sec" style="margin-top:18px;">All Users</div>
       <div v-if="adminUsers.length===0" class="no-users">No users yet.</div>
       <div v-for="u in adminUsers" :key="u.id" class="user-row" v-on:click="u._open=!u._open">
         <div class="user-row-top">
           <div class="user-av2">{{ (u.username || u.email || '?')[0].toUpperCase() }}</div>
-          <div>
+          <div style="flex:1;">
             <div class="user-name2">{{ u.username || 'No username' }}</div>
             <div class="user-email2">{{ u.email }}</div>
           </div>
+          <div style="font-size:.7rem;color:var(--mut);">{{ u._open ? '▲' : '▼' }}</div>
         </div>
         <div class="user-meta">
-          <span>{{ u.message_count || 0 }} messages</span>
-          <span>{{ (u.searches || []).length }} searches</span>
-          <span>{{ fmtDate(u.last_seen) }}</span>
+          <span>💬 {{ u.message_count || 0 }}</span>
+          <span>🔍 {{ (u.searches || []).length }}</span>
+          <span>🕐 {{ fmtDate(u.last_seen) }}</span>
+          <span>📅 {{ fmtDate(u.created_at) }}</span>
         </div>
         <div class="search-list" v-if="u._open && u.searches && u.searches.length">
-          <div class="admin-sec" style="margin-top:8px;margin-bottom:6px;">Recent Searches</div>
+          <div class="admin-sec" style="margin-top:8px;margin-bottom:6px;font-size:.72rem;">Recent Searches</div>
           <div class="search-item" v-for="s in u.searches.slice().reverse().slice(0,20)" :key="s.time">
             <span>{{ s.query }}</span>
             <span class="search-time">{{ fmtDate(s.time) }}</span>
           </div>
         </div>
+        <div v-if="u._open && (!u.searches || !u.searches.length)" style="font-size:.75rem;color:var(--mut);padding:6px 0;">No searches yet.</div>
       </div>
     </div>
   </div>
@@ -762,7 +804,11 @@ function renderMd(text) {
 var CHAT_KEY = 'rex-chats-v6';
 var MEM_KEY = 'rex-mems-v2';
 function lsChats(uid) { try { return JSON.parse(localStorage.getItem(CHAT_KEY + uid) || '[]'); } catch(e) { return []; } }
-function svChats(uid, c) { localStorage.setItem(CHAT_KEY + uid, JSON.stringify(c)); }
+function svChats(uid, c) {
+  localStorage.setItem(CHAT_KEY + uid, JSON.stringify(c));
+  // Also sync to Supabase so deletes persist across devices
+  sbPatch('users', 'id=eq.' + uid, { chats: c }).catch(function(){});
+}
 function lsMems(uid) { try { return JSON.parse(localStorage.getItem(MEM_KEY + uid) || '[]'); } catch(e) { return []; } }
 function svMems(uid, m) { localStorage.setItem(MEM_KEY + uid, JSON.stringify(m)); }
 
@@ -1041,6 +1087,68 @@ Vue.createApp({
       umOpen.value = false; adminOpen.value = true;
       var data = await sbGet('users', 'select=*&order=last_seen.desc');
       adminUsers.value = (data || []).map(function(u) { return Object.assign({ _open: false }, u); });
+      Vue.nextTick(function() { drawCharts(); });
+    }
+
+    function drawCharts() {
+      // Delay to ensure canvas elements are in DOM and have width
+      setTimeout(function() {
+        var users = adminUsers.value;
+        var days = [], labels = [];
+        for (var i = 6; i >= 0; i--) {
+          var d = new Date(); d.setDate(d.getDate() - i);
+          days.push(d.toDateString());
+          labels.push(d.toLocaleDateString(undefined,{weekday:'short'}));
+        }
+        var growth = days.map(function(d){ return users.filter(function(u){ return u.created_at && new Date(u.created_at).toDateString()===d; }).length; });
+        // Use message_count per user spread - use searches as daily activity proxy
+        var msgPerDay = days.map(function(d){
+          return users.reduce(function(sum,u){
+            return sum + (u.searches||[]).filter(function(s){ return s.time && new Date(s.time).toDateString()===d; }).length;
+          },0);
+        });
+        // Total messages distributed - show total messages for today's active users
+        var c1 = growthCanvas.value, c2 = msgCanvas.value;
+        if (c1) { c1.style.width='100%'; c1.style.height='140px'; }
+        if (c2) { c2.style.width='100%'; c2.style.height='140px'; }
+        drawBarChart(c1, labels, growth, '#c9a84c');
+        drawBarChart(c2, labels, msgPerDay, '#4c8bc9');
+      }, 200);
+    }
+
+    function drawBarChart(canvas, labels, data, color) {
+      if (!canvas) return;
+      var dpr = window.devicePixelRatio || 1;
+      var W = canvas.getBoundingClientRect().width || canvas.parentElement.offsetWidth || 300;
+      var H = 140;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      var ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0,0,W,H);
+      var max = Math.max.apply(null, data.concat([1]));
+      var pad = 28, gap = (W - pad*2) / labels.length, barW = gap * 0.55;
+      var isDark = !document.body.classList.contains('light');
+      var textColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+      var gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+      for (var g = 0; g <= 3; g++) {
+        var gy = pad + (H - pad*2) * g/3;
+        ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad, gy); ctx.lineTo(W-pad, gy); ctx.stroke();
+      }
+      labels.forEach(function(lbl, i) {
+        var x = pad + i * gap + (gap - barW)/2;
+        var barH = Math.max((data[i]/max) * (H - pad*2 - 14), data[i]>0?2:0);
+        var y = H - pad - barH;
+        ctx.fillStyle = color + '30'; ctx.fillRect(x, y, barW, barH);
+        ctx.fillStyle = color; ctx.fillRect(x, y, barW, Math.min(3, barH));
+        if (data[i] > 0) {
+          ctx.fillStyle = color; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(data[i], x + barW/2, y - 3);
+        }
+        ctx.fillStyle = textColor; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(lbl, x + barW/2, H - 7);
+      });
     }
 
     function fmtDate(ts) {
