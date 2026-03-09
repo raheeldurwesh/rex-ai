@@ -593,7 +593,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         <div class="sb-udrop-sep"></div>
         <div class="sb-udrop-item danger" v-on:click="doLogout">🚪 Logout</div>
       </div>
-      <button class="new-btn" v-on:click="newChat">+ New Chat</button>
+      <button class="new-btn" v-on:click="newChat" :disabled="streaming" :style="streaming ? 'opacity:0.4;cursor:not-allowed' : ''">+ New Chat</button>
       <div class="sec-lbl">History</div>
       <div class="chat-list">
         <div v-if="chats.length===0" class="sb-empty">No chats yet.<br>Start a conversation.</div>
@@ -1084,6 +1084,7 @@ Vue.createApp({
     var sbOpen = Vue.ref(window.innerWidth > 640);
     var isMobile = Vue.ref(window.innerWidth <= 640);
     var userScrolled = false;
+    var autoScrolling = false;
     var scrollTimer = null;
 
     var chatTitle = Vue.computed(function() {
@@ -1120,11 +1121,24 @@ Vue.createApp({
       });
       Vue.nextTick(function() {
         if (msgsEl.value) {
+          var lastScrollTop = 0;
+          var autoScrolling = false; // flag to ignore scroll events caused by our own scrolling
           msgsEl.value.addEventListener('scroll', function() {
             var el = msgsEl.value;
             var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
-            showBottom.value = dist > 120;
-            if (dist > 120) userScrolled = true;
+            showBottom.value = dist > 80;
+            if (!autoScrolling) {
+              // Real user scroll
+              if (el.scrollTop < lastScrollTop) {
+                // User scrolled UP — stop auto scroll immediately
+                userScrolled = true;
+              }
+              if (dist < 30) {
+                // User scrolled back to bottom — resume auto scroll
+                userScrolled = false;
+              }
+            }
+            lastScrollTop = el.scrollTop;
           });
         }
       });
@@ -1163,6 +1177,10 @@ Vue.createApp({
       }
       function ping() { fetch(BACKEND + '/ping').catch(function() {}); }
       ping(); setInterval(ping, 14 * 60 * 1000);
+      // Page visibility — warn if user minimizes during streaming
+      document.addEventListener('visibilitychange', function() {
+        // When page becomes visible again after minimize — nothing needed, typeLoop handles it
+      });
 
 
     });
@@ -1490,26 +1508,14 @@ Vue.createApp({
 
     // CHAT
     function startAutoScroll() {
-      if (scrollTimer) return;
-      var rafId = null;
-      function doScroll() {
-        if (!userScrolled && msgsEl.value) {
-          var el = msgsEl.value;
-          var target = el.scrollHeight;
-          var current = el.scrollTop + el.clientHeight;
-          // Only scroll if not already near bottom (prevents fluctuation)
-          if (target - current > 10) {
-            el.scrollTop = el.scrollHeight;
-          }
-        }
-        if (streaming.value) {
-          rafId = requestAnimationFrame(doScroll);
-        } else {
-          scrollTimer = null;
-        }
-      }
-      scrollTimer = true;
-      rafId = requestAnimationFrame(doScroll);
+      // No-op — scrolling is now handled by stxt watcher
+    }
+    function doAutoScroll() {
+      if (userScrolled || !msgsEl.value) return;
+      var el = msgsEl.value;
+      autoScrolling = true;
+      el.scrollTop = el.scrollHeight;
+      setTimeout(function() { autoScrolling = false; }, 50);
     }
     function scrollBottom(force) {
       if (!force && userScrolled) return;
@@ -1531,7 +1537,12 @@ Vue.createApp({
       if (closeSb !== false && isMobile.value) sbOpen.value = false;
       userScrolled = false; scrollBottom(true);
     }
-    function newChat() { cid.value = null; msgs.value = []; editIdx.value = null; if (isMobile.value) sbOpen.value = false; Vue.nextTick(function() { if (taEl.value) taEl.value.focus(); }); }
+    function newChat() {
+      if (streaming.value) return; // Block new chat during streaming
+      cid.value = null; msgs.value = []; editIdx.value = null;
+      if (isMobile.value) sbOpen.value = false;
+      Vue.nextTick(function() { if (taEl.value) taEl.value.focus(); });
+    }
     async function saveChat(m) {
       if (!cid.value) {
         var id = Date.now().toString();
@@ -1714,6 +1725,8 @@ Vue.createApp({
 
     async function callAPI(msgList, userText, searchCtx) {
       streaming.value = true; stxt.value = '';
+      var lockedCid = cid.value; // Lock chat ID at start — response always goes to this chat
+      var lockedMsgs = msgs.value; // Lock msgs reference
       var rId, rLabel;
       if (selModelId.value === 'auto') { var p = autoModel(userText || ''); rId = p.id; rLabel = p.label; }
       else { rId = selModelId.value; rLabel = (MODELS.find(function(m) { return m.id === rId; }) || {}).name || rId; }
@@ -1769,15 +1782,34 @@ Vue.createApp({
         };
         var typeLoop = async function() {
           while ((!done || buf.length) && !stopped.value) {
-            if (buf.length) {
+            // If page is hidden (minimized), flush all buffered text instantly
+            if (document.hidden) {
+              if (buf.length) { stxt.value += buf; buf = ''; }
+              await new Promise(function(r) { setTimeout(r, 50); });
+            } else if (buf.length) {
               var n = Math.floor(Math.random() * 3) + 1; stxt.value += buf.slice(0, n); buf = buf.slice(n);
               await new Promise(function(r) { setTimeout(r, Math.random() * 14 + 8); });
-            } else { await new Promise(function(r) { setTimeout(r, 10); }); }
+            } else {
+              await new Promise(function(r) { setTimeout(r, 10); });
+            }
           }
         };
         await Promise.all([readLoop(), typeLoop()]);
-        msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: activeModel.value });
-        if (!isGuest.value) saveChat(msgs.value);
+        // Always write response to the chat that initiated the request
+        if (cid.value === lockedCid) {
+          // User is still on same chat — update normally
+          msgs.value.push({ role: 'assistant', content: stxt.value, usedModel: activeModel.value });
+          if (!isGuest.value) saveChat(msgs.value);
+        } else {
+          // User switched to another chat — save silently to original chat
+          lockedMsgs.push({ role: 'assistant', content: stxt.value, usedModel: activeModel.value });
+          if (!isGuest.value) {
+            var prevCid = cid.value;
+            cid.value = lockedCid;
+            saveChat(lockedMsgs);
+            cid.value = prevCid;
+          }
+        }
       } catch(err) { msgs.value.push({ role: 'assistant', content: 'Cannot reach backend. Please try again.', usedModel: '' }); }
       finally { streaming.value = false; stxt.value = ''; activeModel.value = ''; userScrolled = false; scrollBottom(true); }
     }
@@ -1919,6 +1951,11 @@ Vue.createApp({
       return [ALL_CHIPS[i % ALL_CHIPS.length], ALL_CHIPS[(i+1) % ALL_CHIPS.length], ALL_CHIPS[(i+2) % ALL_CHIPS.length], ALL_CHIPS[(i+3) % ALL_CHIPS.length]];
     });
     setInterval(function() { chipOffset.value += 1; }, 4000);
+
+      // Auto-scroll watcher — fires every time streaming text updates
+      Vue.watch(stxt, function() {
+        if (streaming.value) doAutoScroll();
+      });
 
     return {
       MODELS, user, authStep, authMode, authEmail, authPassword, authUsername,
