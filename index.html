@@ -639,7 +639,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
                 </div>
               </div>
               <div class="macts" v-if="editIdx!==i">
-                <button class="abt" v-if="i === lastUserMsgIdx" v-on:click="startEdit(i, msg.content)">Edit</button>
+                <button class="abt" v-if="i === lastUserMsgIdx && !isGuest" v-on:click="startEdit(i, msg.content)">Edit</button>
                 <button class="abt" :class="{done: cpIdx===i}" v-on:click="copyMsg(msg.content, i)">{{ cpIdx===i ? 'Copied' : 'Copy' }}</button>
               </div>
             </div>
