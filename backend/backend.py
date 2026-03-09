@@ -24,6 +24,8 @@ async def supabase_keepalive():
 
 @asynccontextmanager
 async def lifespan(app):
+    global _semaphore
+    _semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     asyncio.create_task(supabase_keepalive())
     yield
 
@@ -41,7 +43,24 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_1"),
     os.getenv("GROQ_API_KEY_2"),
     os.getenv("GROQ_API_KEY_3"),
+    os.getenv("GROQ_API_KEY_4"),
+    os.getenv("GROQ_API_KEY_5"),
+    os.getenv("GROQ_API_KEY_6"),
+    os.getenv("GROQ_API_KEY_7"),
+    os.getenv("GROQ_API_KEY_8"),
+    os.getenv("GROQ_API_KEY_9"),
 ] if k]
+
+# Concurrency queue — max 20 simultaneous AI requests
+MAX_CONCURRENT = 20
+MAX_QUEUE      = 50
+_semaphore     = None
+
+def get_semaphore():
+    global _semaphore
+    if _semaphore is None:
+        _semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+    return _semaphore
 
 # Round-robin counter — spreads load evenly across all keys
 KEY_INDEX = 0
@@ -178,6 +197,10 @@ async def chat(req: ChatRequest, request: Request):
         if len(m.content) > 32000:
             raise HTTPException(status_code=400, detail="Message too long")
 
+    sem = get_semaphore()
+    if sem._value == 0 and len(getattr(sem, '_waiters', [])) >= MAX_QUEUE:
+        raise HTTPException(status_code=503, detail="Rex is a bit busy right now. Please try again in a moment!")
+
     models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
     def generate():
@@ -205,7 +228,12 @@ async def chat(req: ChatRequest, request: Request):
         yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    async def guarded_generate():
+        async with get_semaphore():
+            for chunk in generate():
+                yield chunk
+
+    return StreamingResponse(guarded_generate(), media_type="text/event-stream")
 
 @app.get("/search")
 async def search(q: str, request: Request):
