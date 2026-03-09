@@ -206,6 +206,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .ws-suggest-txt{flex:1;line-height:1.5;}
 .ws-on-btn{background:var(--acc);border:none;color:#1a1a1a;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:700;padding:5px 11px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .ws-on-btn:hover{background:var(--acc2);}
+.ws-suggest{display:flex;align-items:center;gap:9px;padding:10px 13px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.3);border-radius:10px;font-size:.8rem;color:var(--txt);align-self:flex-start;max-width:88%;}
+.ws-suggest-txt{flex:1;line-height:1.5;}
+.ws-on-btn{background:var(--acc);border:none;color:#1a1a1a;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:700;padding:5px 11px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.ws-on-btn:hover{background:var(--acc2);}
 .sspin{width:13px;height:13px;border:2px solid rgba(201,168,76,.3);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0;}
 .search-box{background:var(--sur2);border:1px solid var(--acc);border-radius:10px;padding:11px 13px;margin-bottom:5px;}
 .search-box-title{color:var(--acc);font-weight:600;font-size:.76rem;margin-bottom:7px;}
@@ -253,6 +257,13 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .mem-empty{text-align:center;color:var(--mut);font-size:.8rem;padding:30px 16px;line-height:1.9;}
 .mem-ftr{padding:10px;border-top:1px solid var(--bdr);}
 .mem-clr{width:100%;padding:8px;background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.25);border-radius:7px;color:var(--red);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;}
+.style-sec{padding:10px;border-top:1px solid var(--bdr);flex-shrink:0;}
+.style-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;}
+.style-ta{width:100%;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:8px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.8rem;padding:9px 11px;resize:none;outline:none;line-height:1.5;box-sizing:border-box;transition:border-color .2s;}
+.style-ta:focus{border-color:var(--acc);}
+.style-ta::placeholder{color:var(--mut);}
+.style-hint{font-size:.67rem;color:var(--mut);margin-top:5px;line-height:1.5;}
+.style-saved{font-size:.7rem;color:var(--grn);margin-top:4px;}
 .style-sec{padding:10px;border-top:1px solid var(--bdr);flex-shrink:0;}
 .style-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;}
 .style-ta{width:100%;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:8px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.8rem;padding:9px 11px;resize:none;outline:none;line-height:1.5;box-sizing:border-box;transition:border-color .2s;}
@@ -719,6 +730,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
             <span class="ws-suggest-txt">&#x1F310; This might need latest info. Turn on <b>Web Search</b> for real-time results!</span>
             <button class="ws-on-btn" v-on:click="enableWsAndResend">Turn On</button>
           </div>
+          <div v-if="showWsSuggest" class="ws-suggest">
+            <span class="ws-suggest-txt">&#x1F310; This might need latest info. Turn on <b>Web Search</b> for real-time results!</span>
+            <button class="ws-on-btn" v-on:click="enableWsAndResend">Turn On</button>
+          </div>
 
           <div v-if="streaming" class="mw asst">
             <div v-if="activeModel" class="model-tag">via {{ activeModel }}</div>
@@ -1053,6 +1068,11 @@ Vue.createApp({
     var mems = Vue.ref([]);
     var activeModel = Vue.ref('');
     var showBottom = Vue.ref(false);
+    var responseStyle = Vue.ref('');
+    var styleSaved = Vue.ref(false);
+    var styleSaveTimer = null;
+    var showWsSuggest = Vue.ref(false);
+    var serverBusy = Vue.ref(false);
     var responseStyle = Vue.ref(localStorage.getItem('rex-style') || '');
     var styleSaved = Vue.ref(false);
     var styleSaveTimer = null;
@@ -1169,6 +1189,7 @@ Vue.createApp({
         chats.value = lsChats(user.value.uid);
       }
       mems.value = lsMems(user.value.uid);
+      responseStyle.value = localStorage.getItem('rex-style-' + user.value.uid) || '';
       if (chats.value.length > 0) loadChat(chats.value[0].id, false);
       sbPatch('users', 'id=eq.' + user.value.uid, { last_seen: new Date().toISOString() }).catch(function() {});
     }
@@ -1320,6 +1341,8 @@ Vue.createApp({
     }
 
     function doLogout() {
+      responseStyle.value = '';
+      serverBusy.value = false;
       user.value = null; localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
     }
@@ -1563,6 +1586,27 @@ Vue.createApp({
     function delMem(i) { mems.value.splice(i, 1); svMems(user.value.uid, mems.value); }
     function clearMems() { mems.value = []; svMems(user.value.uid, mems.value); }
     function saveStyle() {
+      if (user.value) localStorage.setItem('rex-style-' + user.value.uid, responseStyle.value);
+      styleSaved.value = true;
+      if (styleSaveTimer) clearTimeout(styleSaveTimer);
+      styleSaveTimer = setTimeout(function() { styleSaved.value = false; }, 1500);
+    }
+    function isCurrentQuery(text) {
+      var tl = text.toLowerCase();
+      return /\b(latest|current|recent|today|now|2024|2025|2026|this year|this month|last month|news|price|score|result|update|release|launched|just|trending|live|stock|weather)\b/.test(tl);
+    }
+    function enableWsAndResend() {
+      webSearch.value = true;
+      showWsSuggest.value = false;
+      var lastUserIdx = msgs.value.map(function(m){ return m.role; }).lastIndexOf('user');
+      if (lastUserIdx !== -1) {
+        var lastText = msgs.value[lastUserIdx].content;
+        msgs.value = msgs.value.slice(0, lastUserIdx);
+        inp.value = lastText;
+        Vue.nextTick(send);
+      }
+    }
+    function saveStyle() {
       localStorage.setItem('rex-style', responseStyle.value);
       styleSaved.value = true;
       if (styleSaveTimer) clearTimeout(styleSaveTimer);
@@ -1704,6 +1748,8 @@ Vue.createApp({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: rId, messages: [{ role: 'system', content: sys }].concat(chatMsgs) })
         });
+        if (res.status === 503) { var ed = {}; try { ed = await res.json(); } catch(e){} msgs.value.push({ role: 'assistant', content: ed.detail || 'Rex is a bit busy right now. Please try again in a moment!' }); streaming.value = false; serverBusy.value = true; return; }
+        if (!res.ok) { streaming.value = false; return; }
         var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', done = false;
         var readLoop = async function() {
           while (true) {
@@ -1891,6 +1937,8 @@ Vue.createApp({
       openAdmin, fmtDate, rotatingChips,
       isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
       sharedView, sessionExpiry, shareExpiry,
+      responseStyle, styleSaved, saveStyle,
+      showWsSuggest, enableWsAndResend, serverBusy,
       responseStyle, styleSaved, saveStyle,
       showWsSuggest, enableWsAndResend
     };
