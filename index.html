@@ -374,7 +374,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
     </div>
     <div class="shared-title">{{ sharedView.title }}</div>
     <div class="shared-msgs">
-      <div v-for="(msg, i) in sharedView.messages" :key="i" class="shared-msg" :class="msg.role">
+      <div v-for="(msg, i) in sharedView.messages.filter(function(m){ return !m.isSearch && !String(m.content||'').startsWith('__SEARCH__'); })" :key="i" class="shared-msg" :class="msg.role">
         <div class="shared-msg-label">{{ msg.role === 'user' ? '👤 User' : '🤖 Rex AI' }}</div>
         <div class="shared-msg-content" v-html="renderMd(msg.content || '')"></div>
       </div>
