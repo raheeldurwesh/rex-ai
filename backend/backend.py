@@ -43,6 +43,17 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_3"),
 ] if k]
 
+# Round-robin counter — spreads load evenly across all keys
+KEY_INDEX = 0
+
+def get_keys_rotated():
+    global KEY_INDEX
+    if not GROQ_KEYS:
+        return []
+    start = KEY_INDEX % len(GROQ_KEYS)
+    KEY_INDEX = (KEY_INDEX + 1) % len(GROQ_KEYS)
+    return GROQ_KEYS[start:] + GROQ_KEYS[:start]
+
 FALLBACK_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
@@ -170,7 +181,7 @@ async def chat(req: ChatRequest, request: Request):
     models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
     def generate():
-        for key in GROQ_KEYS:
+        for key in get_keys_rotated():
             for model in models:
                 try:
                     client = Groq(api_key=key)
