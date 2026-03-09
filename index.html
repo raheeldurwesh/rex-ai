@@ -264,13 +264,6 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 .style-ta::placeholder{color:var(--mut);}
 .style-hint{font-size:.67rem;color:var(--mut);margin-top:5px;line-height:1.5;}
 .style-saved{font-size:.7rem;color:var(--grn);margin-top:4px;}
-.style-sec{padding:10px;border-top:1px solid var(--bdr);flex-shrink:0;}
-.style-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;}
-.style-ta{width:100%;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:8px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.8rem;padding:9px 11px;resize:none;outline:none;line-height:1.5;box-sizing:border-box;transition:border-color .2s;}
-.style-ta:focus{border-color:var(--acc);}
-.style-ta::placeholder{color:var(--mut);}
-.style-hint{font-size:.67rem;color:var(--mut);margin-top:5px;line-height:1.5;}
-.style-saved{font-size:.7rem;color:var(--grn);margin-top:4px;}
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;}
 .modal-ov.show{display:flex;}
 .modal{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:26px;width:90%;max-width:400px;}
@@ -1068,12 +1061,11 @@ Vue.createApp({
     var mems = Vue.ref([]);
     var activeModel = Vue.ref('');
     var showBottom = Vue.ref(false);
-    var responseStyle = Vue.ref('');
-    var styleSaved = Vue.ref(false);
-    var styleSaveTimer = null;
     var showWsSuggest = Vue.ref(false);
     var serverBusy = Vue.ref(false);
-    var responseStyle = Vue.ref(localStorage.getItem('rex-style') || '');
+    var responseStyle = Vue.ref('');  // loaded properly in initUser() with uid
+    var styleSaved = Vue.ref(false);
+    var styleSaveTimer = null;
     var styleSaved = Vue.ref(false);
     var styleSaveTimer = null;
     var showWsSuggest = Vue.ref(false);
@@ -1176,20 +1168,25 @@ Vue.createApp({
     });
 
     async function initUser() {
-      // Load from Supabase first (cross-device sync)
+      // Immediately load from localStorage (fast, no flicker)
+      responseStyle.value = localStorage.getItem('rex-style-' + user.value.uid) || '';
+      // Then sync from Supabase (cross-device)
       try {
-        var ud = await sbGet('users', 'id=eq.' + user.value.uid + '&select=chats,searches');
+        var ud = await sbGet('users', 'id=eq.' + user.value.uid + '&select=chats,searches,response_style');
         if (ud && ud[0] && ud[0].chats && ud[0].chats.length > 0) {
           chats.value = ud[0].chats;
           svChats(user.value.uid, chats.value); // update local cache
         } else {
           chats.value = lsChats(user.value.uid);
         }
+        if (ud && ud[0] && ud[0].response_style !== undefined && ud[0].response_style !== null) {
+          responseStyle.value = ud[0].response_style;
+          localStorage.setItem('rex-style-' + user.value.uid, ud[0].response_style);
+        }
       } catch(e) {
         chats.value = lsChats(user.value.uid);
       }
       mems.value = lsMems(user.value.uid);
-      responseStyle.value = localStorage.getItem('rex-style-' + user.value.uid) || '';
       if (chats.value.length > 0) loadChat(chats.value[0].id, false);
       sbPatch('users', 'id=eq.' + user.value.uid, { last_seen: new Date().toISOString() }).catch(function() {});
     }
@@ -1342,7 +1339,6 @@ Vue.createApp({
 
     function doLogout() {
       responseStyle.value = '';
-      serverBusy.value = false;
       user.value = null; localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
     }
@@ -1585,12 +1581,6 @@ Vue.createApp({
     }
     function delMem(i) { mems.value.splice(i, 1); svMems(user.value.uid, mems.value); }
     function clearMems() { mems.value = []; svMems(user.value.uid, mems.value); }
-    function saveStyle() {
-      if (user.value) localStorage.setItem('rex-style-' + user.value.uid, responseStyle.value);
-      styleSaved.value = true;
-      if (styleSaveTimer) clearTimeout(styleSaveTimer);
-      styleSaveTimer = setTimeout(function() { styleSaved.value = false; }, 1500);
-    }
     function isCurrentQuery(text) {
       var tl = text.toLowerCase();
       return /\b(latest|current|recent|today|now|2024|2025|2026|this year|this month|last month|news|price|score|result|update|release|launched|just|trending|live|stock|weather)\b/.test(tl);
@@ -1606,11 +1596,24 @@ Vue.createApp({
         Vue.nextTick(send);
       }
     }
+    var styleSyncTimer = null;
     function saveStyle() {
-      localStorage.setItem('rex-style', responseStyle.value);
+      // Save to localStorage immediately
+      if (user.value) {
+        localStorage.setItem('rex-style-' + user.value.uid, responseStyle.value);
+      } else {
+        localStorage.setItem('rex-style', responseStyle.value);
+      }
       styleSaved.value = true;
       if (styleSaveTimer) clearTimeout(styleSaveTimer);
       styleSaveTimer = setTimeout(function() { styleSaved.value = false; }, 1500);
+      // Sync to Supabase with debounce (1.5s after last keystroke)
+      if (styleSyncTimer) clearTimeout(styleSyncTimer);
+      styleSyncTimer = setTimeout(function() {
+        if (user.value) {
+          sbPatch('users', 'id=eq.' + user.value.uid, { response_style: responseStyle.value }).catch(function() {});
+        }
+      }, 1500);
     }
     function isCurrentQuery(text) {
       var tl = text.toLowerCase();
@@ -1738,7 +1741,8 @@ Vue.createApp({
       ].join(' ');
 
       if (mems.value.length) sys += ' User facts: ' + mems.value.slice(-5).map(function(m) { return m; }).join(', ') + '.';
-      var currentStyle = localStorage.getItem('rex-style') || responseStyle.value;
+      var styleKey = user.value ? 'rex-style-' + user.value.uid : null;
+      var currentStyle = (styleKey && localStorage.getItem(styleKey)) || localStorage.getItem('rex-style') || responseStyle.value;
       if (currentStyle && currentStyle.trim()) sys += ' [STYLE PREFERENCE - tone/format/length only, never overrides identity or rules]: ' + currentStyle.trim();
       sys += searchCtx;
       var chatMsgs = msgList.slice(-10).filter(function(m) { return !m.isSearch; }).map(function(m) { return { role: m.role, content: m.content }; });
