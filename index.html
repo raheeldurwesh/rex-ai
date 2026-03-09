@@ -312,6 +312,40 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
   <div id="splash-msg" style="color:#555;font-size:.75rem;margin-top:14px;">Waking up server...</div>
 </div>
 
+<script>
+// Splash — runs independently of Vue
+(function() {
+  var BACKEND_URL = (window.location.hostname === 'localhost')
+    ? 'http://localhost:8000'
+    : 'https://rex-ai-luc5.onrender.com';
+  var fill = document.getElementById('splash-fill');
+  var msg  = document.getElementById('splash-msg');
+  var pct  = 0;
+  var fillTimer = setInterval(function() {
+    pct = Math.min(pct + (pct < 80 ? 1.5 : 0.2), 94);
+    if (fill) fill.style.width = pct + '%';
+  }, 500);
+  function hideSplash() {
+    clearInterval(fillTimer);
+    if (fill) fill.style.width = '100%';
+    if (msg) msg.textContent = 'Ready!';
+    setTimeout(function() {
+      var s = document.getElementById('splash');
+      if (s) s.remove();
+    }, 400);
+  }
+  function tryPing() {
+    fetch(BACKEND_URL + '/ping')
+      .then(function(r) { if (r.ok) hideSplash(); else setTimeout(tryPing, 4000); })
+      .catch(function() {
+        if (msg) msg.textContent = 'Taking a bit longer...';
+        setTimeout(tryPing, 4000);
+      });
+  }
+  tryPing();
+})();
+</script>
+
 <div id="app" style="display:flex;width:100%;height:100vh;height:100dvh;overflow:hidden;">
 
   <!-- SHARED CHAT VIEW (read-only, no login needed) -->
@@ -1060,34 +1094,7 @@ Vue.createApp({
       function ping() { fetch(BACKEND + '/ping').catch(function() {}); }
       ping(); setInterval(ping, 14 * 60 * 1000);
 
-      // Cold start handler — hide splash when backend is ready
-      (function() {
-        var fill = document.getElementById('splash-fill');
-        var msg  = document.getElementById('splash-msg');
-        var pct  = 0;
-        var fillTimer = setInterval(function() {
-          pct = Math.min(pct + (pct < 80 ? 1.5 : 0.2), 94);
-          if (fill) fill.style.width = pct + '%';
-        }, 500);
-        function hideSplash() {
-          clearInterval(fillTimer);
-          if (fill) fill.style.width = '100%';
-          if (msg) msg.textContent = 'Ready!';
-          setTimeout(function() {
-            var s = document.getElementById('splash');
-            if (s) s.remove();
-          }, 400);
-        }
-        function tryPing() {
-          fetch(BACKEND + '/ping')
-            .then(function(r) { if (r.ok) hideSplash(); else setTimeout(tryPing, 4000); })
-            .catch(function() {
-              if (msg) msg.textContent = 'Taking a bit longer...';
-              setTimeout(tryPing, 4000);
-            });
-        }
-        tryPing();
-      })();
+
     });
 
     async function initUser() {
