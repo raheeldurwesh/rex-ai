@@ -51,7 +51,7 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_9"),
 ] if k]
 
-# Concurrency queue — max 20 simultaneous AI requests
+# Concurrency queue
 MAX_CONCURRENT = 20
 MAX_QUEUE      = 50
 _semaphore     = None
@@ -274,7 +274,7 @@ async def get_user(id: str = None, email: str = None, request: Request = None):
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise HTTPException(status_code=500, detail="DB not configured")
     async with httpx.AsyncClient(timeout=10) as client:
-        q = f"id=eq.{id}&select=id,email,username,chats,searches,message_count,last_seen,created_at" if id else \
+        q = f"id=eq.{id}&select=id,email,username,chats,searches,message_count,last_seen,created_at,response_style" if id else \
             f"email=eq.{email}&select=id,email,username,password_hash,last_seen,created_at"
         r = await client.get(f"{SUPABASE_URL}/rest/v1/users?{q}",
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"})
