@@ -91,17 +91,7 @@ def check_origin(request: Request):
     if origin and not any(origin.startswith(o) for o in ALLOWED_ORIGINS):
         raise HTTPException(status_code=403, detail="Forbidden origin")
 
-# ── Share links (hard capped at 200) ──────────────────────
-SHARED_CHATS: dict = {}
-MAX_SHARES = 200
-
-def cleanup_shares():
-    now = time.time()
-    for k in [k for k, v in SHARED_CHATS.items() if v["expires"] < now]:
-        del SHARED_CHATS[k]
-    if len(SHARED_CHATS) > MAX_SHARES:
-        for k in sorted(SHARED_CHATS, key=lambda k: SHARED_CHATS[k]["created"])[:50]:
-            del SHARED_CHATS[k]
+# ── Share links stored in Supabase (survives restarts) ────
 
 # ── Pydantic models ────────────────────────────────────────
 class Message(BaseModel):
@@ -290,22 +280,43 @@ async def get_all_users(request: Request, admin_email: str = None):
 @app.post("/share")
 async def create_share(data: ShareData, request: Request):
     check_origin(request)
-    cleanup_shares()
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
     token = secrets.token_urlsafe(16)
-    SHARED_CHATS[token] = {
-        "title": data.title,
-        "messages": data.messages,
-        "expires": time.time() + data.expires_hours * 3600,
-        "created": time.time()
-    }
+    from datetime import datetime, timezone, timedelta
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=data.expires_hours)).isoformat()
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            f"{SUPABASE_URL}/rest/v1/shares",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                     "Content-Type": "application/json", "Prefer": "return=minimal"},
+            json={"token": token, "title": data.title, "messages": data.messages, "expires_at": expires_at}
+        )
+        if r.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail="Failed to save share")
     return {"token": token, "expires_hours": data.expires_hours}
 
 @app.get("/share/{token}")
 async def get_share(token: str):
-    share = SHARED_CHATS.get(token)
-    if not share:
-        raise HTTPException(status_code=404, detail="Share link not found or expired")
-    if share["expires"] < time.time():
-        del SHARED_CHATS[token]
-        raise HTTPException(status_code=410, detail="Share link has expired")
-    return share
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    from datetime import datetime, timezone
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            f"{SUPABASE_URL}/rest/v1/shares?token=eq.{token}&select=token,title,messages,expires_at",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+        rows = r.json()
+        if not rows:
+            raise HTTPException(status_code=404, detail="Share link not found or expired")
+        share = rows[0]
+        # Check expiry
+        expires_at = datetime.fromisoformat(share["expires_at"].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expires_at:
+            # Delete expired share
+            await client.delete(
+                f"{SUPABASE_URL}/rest/v1/shares?token=eq.{token}",
+                headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+            )
+            raise HTTPException(status_code=410, detail="Share link has expired")
+        return share
