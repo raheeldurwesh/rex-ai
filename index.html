@@ -73,6 +73,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 .sb-udrop-item.danger:hover{background:rgba(229,115,115,.07);}
 .sb-udrop-sep{height:1px;background:var(--bdr);margin:2px 0;}
 .sb-udrop-info{padding:7px 16px;font-size:.69rem;color:var(--mut);}
+.fb-sep{color:var(--bdr);margin:0 2px;font-size:.8rem;}
+.fb-thumb{font-size:.85rem;transition:transform .15s;}
+.fb-thumb:hover{transform:scale(1.2);}
+.fb-thumb.active{background:rgba(201,168,76,.2);}
+.fb-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.fb-modal{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:24px;width:90%;max-width:420px;}
+.fb-modal-title{font-size:1rem;font-weight:700;color:var(--txt);margin-bottom:4px;}
+.fb-modal-sub{font-size:.78rem;color:var(--mut);margin-bottom:14px;}
+.fb-textarea{width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:10px;color:var(--txt);font-size:.88rem;resize:none;outline:none;box-sizing:border-box;}
+.fb-textarea:focus{border-color:var(--acc);}
+.fb-modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;}
+.fb-cancel{background:var(--sur2);border:1px solid var(--bdr);color:var(--txt);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;}
+.fb-send{background:var(--acc);border:none;color:#1a1a1a;padding:7px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:700;}
+.fb-send:disabled{opacity:.6;cursor:not-allowed;}
+.fb-done{text-align:center;margin-top:10px;font-size:.82rem;color:var(--acc);}
 .logo{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--acc);}
 .new-btn{margin:10px;padding:12px;background:var(--acc);border:none;border-radius:8px;color:#1a1a1a;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;width:calc(100% - 20px);transition:background .2s;}
 .new-btn:hover{background:var(--acc2);}
@@ -663,10 +678,28 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
                 <div class="macts">
                   <button class="abt" :class="{done: cpIdx===i}" v-on:click="copyMsg(msg.content, i)">{{ cpIdx===i ? 'Copied' : 'Copy' }}</button>
                   <button class="abt" v-if="!isGuest" v-on:click="exportPDF(msg.content)">PDF</button>
+                  <span class="fb-sep" v-if="i === lastAsstMsgIdx">|</span>
+                  <button class="abt fb-thumb" v-if="i === lastAsstMsgIdx" :class="{active: fbIdx===i && fbVal===1}" v-on:click="sendFeedback(i, 1, msg.content)">👍</button>
+                  <button class="abt fb-thumb" :class="{active: fbIdx===i && fbVal===-1}" v-on:click="sendFeedback(i, -1, msg.content)">👎</button>
+                  <button class="abt" v-if="i === lastAsstMsgIdx" v-on:click="openFeedback(i, msg.content)">💬</button>
                 </div>
               </div>
             </div>
           </template>
+
+          <!-- Feedback Modal -->
+          <div v-if="fbOpen" class="fb-modal-overlay" v-on:click.self="fbOpen=false">
+            <div class="fb-modal">
+              <div class="fb-modal-title">💬 Send Feedback</div>
+              <div class="fb-modal-sub">Tell us what you think about this response</div>
+              <textarea class="fb-textarea" v-model="fbText" placeholder="Your feedback..." rows="4"></textarea>
+              <div class="fb-modal-btns">
+                <button class="fb-cancel" v-on:click="fbOpen=false">Cancel</button>
+                <button class="fb-send" v-on:click="submitFeedback" :disabled="fbSending">{{ fbSending ? 'Sending...' : 'Send' }}</button>
+              </div>
+              <div v-if="fbDone" class="fb-done">✅ Feedback sent! Thank you.</div>
+            </div>
+          </div>
 
           <div v-if="searching" class="searching">
             <div class="sspin"></div>Searching: {{ searchQuery }}
@@ -1340,6 +1373,14 @@ Vue.createApp({
       return exp.toLocaleDateString();
     });
 
+    var lastAsstMsgIdx = Vue.computed(function() {
+      var last = -1;
+      for (var i = 0; i < msgs.value.length; i++) {
+        if (msgs.value[i].role === 'assistant') last = i;
+      }
+      return last;
+    });
+
     var lastUserMsgIdx = Vue.computed(function() {
       var last = -1;
       for (var i = 0; i < msgs.value.length; i++) {
@@ -1347,6 +1388,55 @@ Vue.createApp({
       }
       return last;
     });
+
+    // Feedback
+    var fbIdx  = Vue.ref(null);
+    var fbVal  = Vue.ref(0);
+    var fbOpen = Vue.ref(false);
+    var fbText = Vue.ref('');
+    var fbSending = Vue.ref(false);
+    var fbDone = Vue.ref(false);
+    var fbMsgContent = Vue.ref('');
+
+    var TGTOKEN = '8583586159:AAFIuQNyJEG8E2z2wj6zVapSnzD7mPd930U';
+    var TGCHAT  = '850910238';
+
+    function tgSend(text) {
+      fetch('https://api.telegram.org/bot' + TGTOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TGCHAT, text: text, parse_mode: 'HTML' })
+      }).catch(function() {});
+    }
+
+    function sendFeedback(i, val, content) {
+      fbIdx.value = i;
+      fbVal.value = val;
+      var emoji = val === 1 ? '👍' : '👎';
+      var preview = content.substring(0, 120).replace(/</g,'&lt;');
+      var uname = user.value ? (user.value.username || user.value.email) : 'Guest';
+      tgSend('<b>Rex AI Feedback</b> ' + emoji + '\n<b>User:</b> ' + uname + '\n<b>Response:</b> ' + preview + (content.length > 120 ? '...' : ''));
+    }
+
+    function openFeedback(i, content) {
+      fbMsgContent.value = content;
+      fbText.value = '';
+      fbDone.value = false;
+      fbOpen.value = true;
+    }
+
+    function submitFeedback() {
+      if (!fbText.value.trim()) return;
+      fbSending.value = true;
+      var uname = user.value ? (user.value.username || user.value.email) : 'Guest';
+      var preview = fbMsgContent.value.substring(0, 100).replace(/</g,'&lt;');
+      tgSend('<b>Rex AI Feedback 💬</b>\n<b>User:</b> ' + uname + '\n<b>Message:</b> ' + fbText.value + '\n<b>Response:</b> ' + preview + '...');
+      setTimeout(function() {
+        fbSending.value = false;
+        fbDone.value = true;
+        setTimeout(function() { fbOpen.value = false; fbDone.value = false; }, 2000);
+      }, 800);
+    }
 
     function fmtDate(ts) {
       if (!ts) return 'never';
@@ -1702,7 +1792,8 @@ Vue.createApp({
       msgsEl, taEl, editEl, sbOpen, isMobile,
       editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen,
       memOpen, mems, chatTitle, renderMd, parseSearch,
-      newChat, loadChat, delChat, send, lastUserMsgIdx, qs, onKey, resizeTa,
+      newChat, loadChat, delChat, send, lastUserMsgIdx, lastAsstMsgIdx,
+      fbIdx, fbVal, fbOpen, fbText, fbSending, fbDone, sendFeedback, openFeedback, submitFeedback, qs, onKey, resizeTa,
       exportPDF, exportAllPDF, showBottom, goBottom,
       webSearch, searching, searchQuery,
       shareOpen, shareUrl, shareCopied, shareChat, copyShareUrl,
