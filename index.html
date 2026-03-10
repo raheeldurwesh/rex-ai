@@ -1291,7 +1291,7 @@ Vue.createApp({
         }
         authOk.value = 'Password reset! Please login.';
         authStep.value = 'form'; authMode.value = 'login'; otpVal.value = ''; newPassword.value = '';
-      } catch(e) { authErr.value = 'Reset failed. Try again.'; }
+      } catch(e) { authErr.value = 'Reset failed: ' + (e.message || JSON.stringify(e)); }
       authLoading.value = false;
     }
 
