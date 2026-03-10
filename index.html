@@ -1150,12 +1150,20 @@ Vue.createApp({
           var parsed = JSON.parse(saved);
           var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
           if (parsed.login_time && (Date.now() - parsed.login_time) > THIRTY_DAYS) {
-            // Session expired - auto logout
             localStorage.removeItem('rex-user');
-            console.log('Session expired, please login again.');
           } else {
-            user.value = parsed;
-            initUser();
+            // Verify user still exists in Supabase
+            var check = await fetch(BACKEND + '/db/user?id=' + encodeURIComponent(parsed.uid)).then(function(r){return r.json();}).catch(function(){return [];});
+            if (Array.isArray(check) && check.length > 0) {
+              user.value = parsed;
+              initUser();
+            } else {
+              // User deleted from Supabase — clear everything
+              localStorage.removeItem('rex-user');
+              localStorage.removeItem('rex-chats-' + parsed.uid);
+              localStorage.removeItem('rex-style-' + parsed.uid);
+              localStorage.removeItem('rex-mems-' + parsed.uid);
+            }
           }
         } catch(e) {}
       }
@@ -1222,6 +1230,10 @@ Vue.createApp({
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ email: authEmail.value, username: authUsername.value })
         }).catch(function() {});
+        // Clear any stale local data for this uid
+        localStorage.removeItem('rex-chats-' + uid);
+        localStorage.removeItem('rex-style-' + uid);
+        localStorage.removeItem('rex-mems-' + uid);
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
         user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
         initUser();
