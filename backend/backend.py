@@ -136,7 +136,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 ADMIN_EMAILS = ["raheeldurwesh@gmail.com", "durweshraheel@gmail.com"]
-ALLOWED_ORIGINS = ["https://rex-ai-raheel.vercel.app", "http://localhost:3000"]
+ALLOWED_ORIGINS = ["https://rex-ai-raheel.vercel.app", "https://rex-ai-coral.vercel.app", "https://rex-ai", "http://localhost:3000"]
 
 def check_origin(request: Request):
     origin = request.headers.get("origin", "")
@@ -482,3 +482,55 @@ async def get_share(token: str):
             )
             raise HTTPException(status_code=410, detail="Share link has expired")
         return share
+
+# ── DOC QUESTIONS ──────────────────────────────────────────────
+class DocQuestion(BaseModel):
+    user_id: str
+    doc_name: str
+    question: str
+    answer: str
+
+class DocQuestionsLoad(BaseModel):
+    user_id: str
+
+@app.post("/doc/question")
+async def save_doc_question(req: DocQuestion, request: Request):
+    check_rate(request.client.host)
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            f"{SUPABASE_URL}/rest/v1/doc_questions",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                     "Content-Type": "application/json", "Prefer": "return=representation"},
+            json={"user_id": req.user_id, "doc_name": req.doc_name,
+                  "question": req.question, "answer": req.answer,
+                  "created_at": __import__('datetime').datetime.utcnow().isoformat()}
+        )
+        if r.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail="Failed to save question")
+    return {"ok": True}
+
+@app.get("/doc/questions")
+async def get_doc_questions(user_id: str, request: Request):
+    check_rate(request.client.host)
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            f"{SUPABASE_URL}/rest/v1/doc_questions?user_id=eq.{user_id}&order=created_at.desc&limit=100",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+        return r.json()
+
+@app.delete("/doc/questions")
+async def delete_doc_questions(user_id: str, doc_name: str, request: Request):
+    check_rate(request.client.host)
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        await client.delete(
+            f"{SUPABASE_URL}/rest/v1/doc_questions?user_id=eq.{user_id}&doc_name=eq.{doc_name}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+    return {"ok": True}
