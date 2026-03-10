@@ -408,24 +408,8 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         <div class="auth-sub">Your intelligent AI assistant</div>
       </div>
 
-      <!-- OTP verify step (signup only) -->
-      <template v-if="authStep==='otp'">
-        <div class="auth-ok">OTP sent to {{ authEmail }} — check your inbox!</div>
-        <div class="auth-lbl">Enter 6-digit OTP</div>
-        <input class="otp-inp" v-model="otpVal" type="tel" maxlength="6" placeholder="● ● ● ● ● ●" ref="otpEl" v-on:keydown.enter="verifyOtp">
-        <div v-if="authErr" class="auth-err">{{ authErr }}</div>
-        <button class="auth-btn" v-on:click="verifyOtp" :disabled="authLoading">
-          <span v-if="authLoading" class="spin"></span>{{ authLoading ? 'Verifying...' : 'Verify and Create Account' }}
-        </button>
-        <button class="auth-back" v-on:click="authStep='form';authErr=''">Back</button>
-        <div style="text-align:center;margin-top:8px;">
-          <span style="font-size:.76rem;color:var(--mut);">Didn't receive? </span>
-          <button class="auth-link" style="display:inline;margin:0;padding:0;" v-on:click="resendOtp">Resend OTP</button>
-        </div>
-      </template>
-
       <!-- Forgot password step -->
-      <template v-else-if="authStep==='forgot'">
+      <template v-if="authStep==='forgot'">
         <div class="auth-lbl">Enter your registered email</div>
         <input class="auth-inp" v-model="authEmail" type="email" placeholder="you@email.com" v-on:keydown.enter="sendResetOtp">
         <div v-if="authErr" class="auth-err">{{ authErr }}</div>
@@ -461,19 +445,19 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         </div>
         <div v-if="authErr" class="auth-err">{{ authErr }}</div>
         <div class="auth-lbl">Email</div>
-        <input class="auth-inp" v-model="authEmail" type="email" placeholder="you@email.com" v-on:keydown.enter="authMode==='signup' ? sendOtp() : doLogin()">
+        <input class="auth-inp" v-model="authEmail" type="email" placeholder="you@email.com" v-on:keydown.enter="authMode==='signup' ? doSignup() : doLogin()">
         <template v-if="authMode==='signup'">
           <div class="auth-lbl">Username</div>
-          <input class="auth-inp" v-model="authUsername" placeholder="e.g. raheel123" maxlength="20" v-on:keydown.enter="sendOtp">
+          <input class="auth-inp" v-model="authUsername" placeholder="e.g. raheel123" maxlength="20" v-on:keydown.enter="doSignup">
         </template>
         <div class="auth-lbl">Password</div>
         <div class="pwd-wrap">
-          <input class="auth-inp" v-model="authPassword" :type="showPwd ? 'text' : 'password'" placeholder="Min 6 characters" v-on:keydown.enter="authMode==='signup' ? sendOtp() : doLogin()">
+          <input class="auth-inp" v-model="authPassword" :type="showPwd ? 'text' : 'password'" placeholder="Min 6 characters" v-on:keydown.enter="authMode==='signup' ? doSignup() : doLogin()">
           <button class="pwd-eye" v-on:click="showPwd=!showPwd">{{ showPwd ? '🙈' : '👁️' }}</button>
         </div>
-        <button class="auth-btn" v-on:click="authMode==='signup' ? sendOtp() : doLogin()" :disabled="authLoading">
+        <button class="auth-btn" v-on:click="authMode==='signup' ? doSignup() : doLogin()" :disabled="authLoading">
           <span v-if="authLoading" class="spin"></span>
-          {{ authLoading ? (authMode==='signup' ? 'Sending OTP...' : 'Logging in...') : (authMode==='signup' ? 'Send OTP' : 'Login') }}
+          {{ authLoading ? (authMode==='signup' ? 'Creating account...' : 'Logging in...') : (authMode==='signup' ? 'Sign Up' : 'Login') }}
         </button>
         <button v-if="authMode==='login'" class="auth-link" v-on:click="authStep='forgot';authErr=''">Forgot password?</button>
         <div class="auth-div">or</div>
@@ -1216,7 +1200,7 @@ Vue.createApp({
     }
 
     // AUTH
-    async function sendOtp() {
+    async function doSignup() {
       authErr.value = '';
       if (!authEmail.value || !authPassword.value || !authUsername.value) { authErr.value = 'Please fill all fields.'; return; }
       if (authPassword.value.length < 6) { authErr.value = 'Password must be at least 6 characters.'; return; }
@@ -1224,60 +1208,28 @@ Vue.createApp({
       try {
         var existing = await sbGet('users', 'email=eq.' + encodeURIComponent(authEmail.value) + '&select=id');
         if (Array.isArray(existing) && existing.length > 0) { authErr.value = 'Email already registered. Please login.'; authLoading.value = false; return; }
-        var otp = Math.floor(100000 + Math.random() * 900000).toString();
-        pendingOtp.value = otp;
-        otpExpiry.value = Date.now() + 10 * 60 * 1000; // 10 minutes
-        var result = await emailjs.send(EJS_SVC, EJS_TPL, { to_email: authEmail.value, otp: otp, app_name: 'Rex AI' });
-        if (result.status === 200) {
-          authStep.value = 'otp';
-          Vue.nextTick(function() { if (otpEl.value) otpEl.value.focus(); });
-        } else {
-          authErr.value = 'Failed to send OTP. Try again.';
-        }
-      } catch(e) { authErr.value = 'Error: ' + (e.text || e.message || 'Try again.'); }
-      authLoading.value = false;
-    }
-
-    async function verifyOtp() {
-      authErr.value = '';
-      if (otpVal.value.trim() !== pendingOtp.value) { authErr.value = 'Wrong OTP. Please try again.'; return; }
-      // Check OTP hasn't expired (10 minutes)
-      if (otpExpiry.value && Date.now() > otpExpiry.value) { authErr.value = 'OTP expired. Please request a new one.'; authStep.value = 'form'; return; }
-      authLoading.value = true;
-      try {
         var pwHash = await hashPwd(authPassword.value);
-        // Generate a unique uid based on email (no Supabase auth needed)
         var uid = await hashPwd(authEmail.value.toLowerCase());
-        uid = uid.slice(0, 32); // use first 32 chars as uid
-        // Check if user row already exists
-        var existing = await sbGet('users', 'email=eq.' + encodeURIComponent(authEmail.value) + '&select=id');
-        if (Array.isArray(existing) && existing.length > 0) {
-          // Update existing row
-          await sbPatch('users', 'id=eq.' + existing[0].id, {
-            username: authUsername.value, password_hash: pwHash, last_seen: new Date().toISOString()
-          });
-          uid = existing[0].id;
-        } else {
-          // Create new user row
-          var inserted = await sbPost('users', {
-            id: uid, email: authEmail.value, username: authUsername.value,
-            password_hash: pwHash, created_at: new Date().toISOString(),
-            last_seen: new Date().toISOString(), message_count: 0, searches: []
-          });
-          if (inserted && inserted.error) {
-            authErr.value = inserted.error.message || 'Signup failed.';
-            authLoading.value = false; return;
-          }
-        }
+        uid = uid.slice(0, 32);
+        var inserted = await sbPost('users', {
+          id: uid, email: authEmail.value, username: authUsername.value,
+          password_hash: pwHash, created_at: new Date().toISOString(),
+          last_seen: new Date().toISOString(), message_count: 0, searches: []
+        });
+        if (inserted && inserted.error) { authErr.value = inserted.error.message || 'Signup failed.'; authLoading.value = false; return; }
+        // Send welcome email via Brevo
+        fetch(BACKEND + '/email/welcome', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email: authEmail.value, username: authUsername.value })
+        }).catch(function() {});
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
         user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
-        authStep.value = 'form'; otpVal.value = '';
         initUser();
       } catch(e) { authErr.value = 'Error: ' + (e.message || JSON.stringify(e)); }
       authLoading.value = false;
     }
 
-    function resendOtp() { otpVal.value = ''; authErr.value = ''; authStep.value = 'form'; Vue.nextTick(sendOtp); }
+    function resendOtp() {}
 
     async function doLogin() {
       authErr.value = '';
@@ -1313,22 +1265,25 @@ Vue.createApp({
       try {
         var existing = await sbGet('users', 'email=eq.' + encodeURIComponent(authEmail.value) + '&select=id');
         if (!Array.isArray(existing) || existing.length === 0) { authErr.value = 'No account with this email.'; authLoading.value = false; return; }
-        var otp = Math.floor(100000 + Math.random() * 900000).toString();
-        pendingOtp.value = otp;
-        otpExpiry.value = Date.now() + 10 * 60 * 1000; // 10 minutes
-        var result = await emailjs.send(EJS_SVC, EJS_TPL, { to_email: authEmail.value, otp: otp, app_name: 'Rex AI' });
-        if (result.status === 200) { authOk.value = 'OTP sent! Check your inbox.'; authStep.value = 'reset'; }
-        else { authErr.value = 'Failed to send OTP.'; }
-      } catch(e) { authErr.value = 'Error: ' + (e.text || e.message || 'Try again.'); }
+        var r = await fetch(BACKEND + '/email/otp', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email: authEmail.value })
+        });
+        if (r.ok) { authOk.value = 'OTP sent! Check your inbox.'; authStep.value = 'reset'; }
+        else { authErr.value = 'Failed to send OTP. Try again.'; }
+      } catch(e) { authErr.value = 'Error: ' + (e.message || 'Try again.'); }
       authLoading.value = false;
     }
 
     async function doResetPassword() {
       authErr.value = '';
-      if (otpVal.value.trim() !== pendingOtp.value) { authErr.value = 'Wrong OTP.'; return; }
+      if (!otpVal.value.trim()) { authErr.value = 'Please enter OTP.'; return; }
       if (!newPassword.value || newPassword.value.length < 6) { authErr.value = 'Password must be at least 6 characters.'; return; }
       authLoading.value = true;
       try {
+        // Verify OTP via backend
+        var vr = await fetch(BACKEND + '/email/verify-otp?email=' + encodeURIComponent(authEmail.value) + '&otp=' + otpVal.value.trim(), { method: 'POST' });
+        if (!vr.ok) { var ed = await vr.json().catch(function(){return {};}); authErr.value = ed.detail || 'Wrong OTP.'; authLoading.value = false; return; }
         var pwHash = await hashPwd(newPassword.value);
         var existing = await sbGet('users', 'email=eq.' + encodeURIComponent(authEmail.value) + '&select=id');
         if (Array.isArray(existing) && existing.length > 0) {
@@ -1973,7 +1928,7 @@ Vue.createApp({
       stopped, pickModel, delMem, clearMems,
       startEdit, cancelEdit, saveEdit, copyMsg,
       userInitial, userName, isAdmin, toggleTheme, isDark,
-      sendOtp, verifyOtp, resendOtp, doLogin,
+      doSignup, doLogin,
       sendResetOtp, doResetPassword, googleMsg, doLogout,
       openAdmin, fmtDate, rotatingChips,
       isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
