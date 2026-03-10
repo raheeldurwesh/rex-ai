@@ -8,7 +8,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "raheeldurwesh@gmail.com")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "support.rexai@gmail.com")
 BREVO_SENDER_NAME = "Rex AI"
 
 async def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: str):
