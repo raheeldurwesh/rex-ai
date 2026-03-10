@@ -7,6 +7,28 @@ import json, os, httpx, re, hashlib, hmac, time, secrets
 import asyncio
 from contextlib import asynccontextmanager
 
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "raheeldurwesh@gmail.com")
+BREVO_SENDER_NAME = "Rex AI"
+
+async def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: str):
+    if not BREVO_API_KEY:
+        raise Exception("Brevo API key not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                "to": [{"email": to_email, "name": to_name}],
+                "subject": subject,
+                "htmlContent": html_content
+            }
+        )
+        if r.status_code not in (200, 201):
+            raise Exception(f"Brevo error: {r.text}")
+        return r.json()
+
 async def supabase_keepalive():
     """Ping Supabase every 4 days to prevent inactivity pause"""
     while True:
@@ -158,6 +180,13 @@ class ShareData(BaseModel):
     title: str
     messages: list
     expires_hours: int = 72
+
+class OtpRequest(BaseModel):
+    email: str
+
+class WelcomeRequest(BaseModel):
+    email: str
+    username: str
 
 # ── Endpoints ──────────────────────────────────────────────
 @app.get("/ping")
@@ -314,6 +343,85 @@ async def get_all_users(request: Request, admin_email: str = None):
         r = await client.get(f"{SUPABASE_URL}/rest/v1/users?select=*&order=last_seen.desc",
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"})
         return r.json()
+
+
+# ── Brevo Email Endpoints ─────────────────────────────────
+@app.post("/email/otp")
+async def send_otp_email(req: OtpRequest, request: Request):
+    check_rate(request.client.host)
+    if not req.email or "@" not in req.email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    import random
+    from datetime import datetime, timezone, timedelta
+    otp = str(random.randint(100000, 999999))
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    async with httpx.AsyncClient(timeout=10) as client:
+        await client.delete(
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{req.email}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+        await client.post(
+            f"{SUPABASE_URL}/rest/v1/otps",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                     "Content-Type": "application/json", "Prefer": "return=minimal"},
+            json={"email": req.email, "otp": otp, "expires_at": expires_at}
+        )
+    otp_html = (
+        "<div style='font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#111;padding:32px;border-radius:12px;'>"
+        "<div style='font-size:24px;font-weight:800;color:#c9a84c;margin-bottom:8px;'>Rex AI</div>"
+        "<p style='color:rgba(255,255,255,0.7);font-size:15px;margin:16px 0;'>Your password reset OTP is:</p>"
+        f"<div style='font-size:36px;font-weight:900;letter-spacing:8px;color:#c9a84c;text-align:center;padding:20px;background:#1a1a1a;border-radius:10px;margin:20px 0;'>{otp}</div>"
+        "<p style='color:rgba(255,255,255,0.4);font-size:12px;'>This OTP expires in 10 minutes.</p>"
+        "<p style='color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;'>— Raheel Durwesh, Rex AI</p>"
+        "</div>"
+    )
+    await send_brevo_email(req.email, req.email.split("@")[0], "Your Rex AI OTP Code", otp_html)
+    return {"ok": True}
+
+@app.post("/email/verify-otp")
+async def verify_otp_endpoint(email: str, otp: str, request: Request):
+    check_rate(request.client.host)
+    from datetime import datetime, timezone
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}&select=otp,expires_at",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+        rows = r.json()
+        if not rows:
+            raise HTTPException(status_code=400, detail="OTP not found or expired")
+        row = rows[0]
+        expires_at = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="OTP expired")
+        if row["otp"] != otp:
+            raise HTTPException(status_code=400, detail="Wrong OTP")
+        await client.delete(
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+    return {"ok": True}
+
+@app.post("/email/welcome")
+async def send_welcome_email(req: WelcomeRequest, request: Request):
+    check_rate(request.client.host)
+    if not req.email or "@" not in req.email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    welcome_html = (
+        "<div style='font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#111;padding:32px;border-radius:12px;'>"
+        "<div style='font-size:28px;font-weight:800;color:#c9a84c;margin-bottom:4px;'>Rex AI</div>"
+        f"<p style='color:rgba(255,255,255,0.8);font-size:16px;margin:20px 0 8px;'>Hey {req.username}! 👋</p>"
+        "<p style='color:rgba(255,255,255,0.6);font-size:14px;line-height:1.7;'>Welcome to Rex AI! I am Raheel, the developer behind Rex AI. I built this from scratch and I am thrilled to have you on board.</p>"
+        "<p style='color:rgba(255,255,255,0.6);font-size:14px;line-height:1.7;margin-top:12px;'>Rex AI is your personal AI assistant — ask anything, search the web, and customize your experience.</p>"
+        "<div style='text-align:center;margin:28px 0;'>"
+        "<a href='https://rex-ai-raheel.vercel.app' style='background:linear-gradient(135deg,#c9a84c,#f0d97a);color:#111;font-weight:800;padding:14px 32px;border-radius:10px;text-decoration:none;font-size:14px;'>Open Rex AI</a>"
+        "</div>"
+        "<p style='color:rgba(255,255,255,0.3);font-size:12px;'>Follow updates: <a href='https://instagram.com/raheeldurwesh' style='color:#c9a84c;'>@raheeldurwesh</a></p>"
+        "<p style='color:rgba(255,255,255,0.2);font-size:11px;margin-top:8px;'>— Raheel Durwesh, Rex AI</p>"
+        "</div>"
+    )
+    await send_brevo_email(req.email, req.username, "Welcome to Rex AI! 🚀", welcome_html)
+    return {"ok": True}
 
 # ── Share ──────────────────────────────────────────────────
 @app.post("/share")
