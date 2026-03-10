@@ -181,6 +181,12 @@ class ShareData(BaseModel):
     messages: list
     expires_hours: int = 72
 
+class SendEmailRequest(BaseModel):
+    to_email: str
+    to_name: str
+    subject: str
+    html_content: str
+
 class OtpRequest(BaseModel):
     email: str
 
@@ -346,6 +352,15 @@ async def get_all_users(request: Request, admin_email: str = None):
 
 
 # ── Brevo Email Endpoints ─────────────────────────────────
+@app.post("/email/send")
+async def send_email(req: SendEmailRequest, request: Request):
+    check_rate(request.client.host)
+    if not req.to_email or "@" not in req.to_email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    await send_brevo_email(req.to_email, req.to_name, req.subject, req.html_content)
+    return {"ok": True}
+
+
 @app.post("/email/otp")
 async def send_otp_email(req: OtpRequest, request: Request):
     check_rate(request.client.host)
