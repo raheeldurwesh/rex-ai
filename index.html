@@ -1183,9 +1183,15 @@ Vue.createApp({
       // Then sync from Supabase (cross-device)
       try {
         var ud = await sbGet('users', 'id=eq.' + user.value.uid + '&select=chats,searches,response_style');
-        if (ud && ud[0] && ud[0].chats && ud[0].chats.length > 0) {
-          chats.value = ud[0].chats;
-          svChats(user.value.uid, chats.value); // update local cache
+        if (ud && ud[0]) {
+          if (ud[0].chats && ud[0].chats.length > 0) {
+            chats.value = ud[0].chats;
+            svChats(user.value.uid, chats.value);
+          } else {
+            // User exists in Supabase with no chats — fresh account, don't load stale localStorage
+            chats.value = [];
+            svChats(user.value.uid, []);
+          }
         } else {
           chats.value = lsChats(user.value.uid);
         }
@@ -1230,12 +1236,16 @@ Vue.createApp({
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ email: authEmail.value, username: authUsername.value })
         }).catch(function() {});
-        // Clear any stale local data for this uid
+        // Clear ALL stale local data for this uid
         localStorage.removeItem('rex-chats-v6' + uid);
         localStorage.removeItem('rex-style-' + uid);
         localStorage.removeItem('rex-mems-v2' + uid);
+        // Reset chats in memory too
+        chats.value = []; msgs.value = []; cid.value = null;
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
         user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
+        // Save empty chats to Supabase explicitly
+        sbPatch('users', 'id=eq.' + uid, { chats: [] }).catch(function(){});
         initUser();
       } catch(e) { authErr.value = 'Error: ' + (e.message || JSON.stringify(e)); }
       authLoading.value = false;
