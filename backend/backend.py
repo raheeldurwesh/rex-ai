@@ -384,7 +384,7 @@ async def verify_otp_endpoint(email: str, otp: str, request: Request):
     from datetime import datetime, timezone
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.get(
-            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}&select=otp,expires_at",
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}&select=otp,expires",
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
         )
         rows = r.json()
