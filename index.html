@@ -461,7 +461,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         </button>
         <button v-if="authMode==='login'" class="auth-link" v-on:click="authStep='forgot';authErr=''">Forgot password?</button>
         <div class="auth-div">or</div>
-        <div id="google-signin-btn" style="display:flex;justify-content:center;margin:8px 0 4px;min-height:48px;"></div>
+        <div id="google-signin-btn" style="display:flex;justify-content:center;margin:4px 0 2px;min-height:44px;"></div>
         <button class="guest-btn" v-on:click="continueAsGuest">👤 Continue as Guest</button>
         <div style="text-align:center;margin-top:4px;">
           <span style="font-size:.64rem;color:var(--mut);">Guest: 10 free messages · No history · No memory</span>
@@ -1424,6 +1424,7 @@ Vue.createApp({
       responseStyle.value = '';
       user.value = null; localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
+      Vue.nextTick(function() { setTimeout(initGoogleBtn, 200); });
     }
 
     async function openAdmin() {
