@@ -461,10 +461,10 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         </button>
         <button v-if="authMode==='login'" class="auth-link" v-on:click="authStep='forgot';authErr=''">Forgot password?</button>
         <div class="auth-div">or</div>
-        <div id="google-signin-btn" style="display:flex;justify-content:center;margin-bottom:2px;"></div>
+        <div id="google-signin-btn" style="display:flex;justify-content:center;margin:8px 0 4px;min-height:48px;"></div>
         <button class="guest-btn" v-on:click="continueAsGuest">👤 Continue as Guest</button>
         <div style="text-align:center;margin-top:4px;">
-          <span style="font-size:.64rem;color:var(--mut);">Guest: 5 free messages · No history · No memory</span>
+          <span style="font-size:.64rem;color:var(--mut);">Guest: 10 free messages · No history · No memory</span>
         </div>
       </template>
     </div>
@@ -614,7 +614,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
             </div>
           </div>
           <div v-if="isGuest" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <span style="font-size:.65rem;color:var(--acc);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);padding:2px 7px;border-radius:12px;font-weight:700;white-space:nowrap;">{{ 5 - guestMsgCount }}/5</span>
+            <span style="font-size:.65rem;color:var(--acc);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);padding:2px 7px;border-radius:12px;font-weight:700;white-space:nowrap;">{{ 10 - guestMsgCount }}/10</span>
             <button class="hbtn" style="background:var(--acc);color:#1a1a1a;border-color:var(--acc);font-weight:700;padding:4px 10px;font-size:.7rem;white-space:nowrap;" v-on:click="guestSignup">Sign Up</button>
           </div>
           
@@ -628,7 +628,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
             <div class="empty-icon">&#10022;</div>
             <h2>How can I help you today?</h2>
             <p v-if="!isGuest">Hi {{ userName }}! Your conversations are saved automatically.</p>
-            <p v-else style="color:var(--acc);">You have <b>5 free messages</b>. Sign up to unlock history, memory, web search and PDF!</p>
+            <p v-else style="color:var(--acc);">You have <b>10 free messages</b>. Sign up to unlock history, memory, web search and PDF!</p>
             <div class="chips">
               <span class="chip" v-for="chip in rotatingChips" :key="chip.label" v-on:click="qs(chip.query)">{{ chip.label }}</span>
             </div>
@@ -743,7 +743,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
       <div class="guest-modal">
         <div class="guest-modal-icon">✨</div>
         <div class="guest-modal-title">Unlock the Full Experience</div>
-        <div class="guest-counter">{{ 5 - guestMsgCount }} free messages used up</div>
+        <div class="guest-counter">{{ 10 - guestMsgCount }} free messages used up</div>
         <div class="guest-modal-sub">You have used all your free guest messages. Sign up free to unlock everything!</div>
         <div class="guest-features">
           <div class="guest-feat"><span class="guest-feat-icon">💾</span> Save your chat history</div>
@@ -1252,6 +1252,11 @@ Vue.createApp({
 
     function resendOtp() {}
 
+    // Re-render Google button on tab switch
+    Vue.watch(authMode, function() {
+      Vue.nextTick(function() { setTimeout(initGoogleBtn, 50); });
+    });
+
     async function doLogin() {
       authErr.value = '';
       if (!authEmail.value || !authPassword.value) { authErr.value = 'Please fill all fields.'; return; }
@@ -1374,22 +1379,33 @@ Vue.createApp({
     }
 
     // Init Google Sign-In button — wait for GSI script to load
+    var _gsiReady = false;
     function initGoogleBtn() {
-      if (window.google && window.google.accounts && document.getElementById('google-signin-btn')) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleLogin,
-          auto_select: false,
+      var el = document.getElementById('google-signin-btn');
+      if (window.google && window.google.accounts && el) {
+        if (!_gsiReady) {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleLogin,
+            auto_select: false,
+          });
+          _gsiReady = true;
+        }
+        el.innerHTML = '';
+        window.google.accounts.id.renderButton(el, {
+          theme: 'filled_black', size: 'large', width: 340,
+          text: 'continue_with', shape: 'pill', logo_alignment: 'left'
         });
-        window.google.accounts.id.renderButton(
-          document.getElementById('google-signin-btn'),
-          { theme: 'filled_black', size: 'large', width: 340, text: 'continue_with', shape: 'rectangular' }
-        );
       } else {
         setTimeout(initGoogleBtn, 300);
       }
     }
-    setTimeout(initGoogleBtn, 500);
+    setTimeout(initGoogleBtn, 600);
+
+    // Re-render Google button whenever auth card becomes visible
+    Vue.watch(function() { return !user.value && !Vue.isRef; }, function() {
+      Vue.nextTick(function() { setTimeout(initGoogleBtn, 100); });
+    });
 
     function continueAsGuest() {
       isGuest.value = true;
@@ -1743,7 +1759,7 @@ Vue.createApp({
       showWsSuggest.value = false;
       // Guest limit check
       if (isGuest.value) {
-        if (guestMsgCount.value >= 5) { guestPrompt.value = true; return; }
+        if (guestMsgCount.value >= 10) { guestPrompt.value = true; return; }
         guestMsgCount.value++;
       }
       msgs.value.push({ role: 'user', content: text });
@@ -1783,7 +1799,7 @@ Vue.createApp({
       var sys = [
         'You are Rex AI, a helpful and intelligent AI assistant.',
         'IDENTITY — ABSOLUTE, NEVER CHANGES: Your name is Rex AI. Always. No exceptions.',
-        'You were built ONLY by Raheel Parvez Durwesh, a 23-year-old Indian student and developer.',
+        'You were built ONLY by Raheel Parvez Durwesh — an ambitious 23-year-old Indian student and developer. He built Rex AI entirely from scratch, solo — designing the frontend, backend, and every feature himself. He is passionate about technology, AI, and building beautiful, useful products. When asked about him, describe him positively: ambitious, creative, hardworking, and passionate about technology.',
         'His Instagram: https://www.instagram.com/raheeldurwesh — share as a clickable link ONLY when someone directly asks who made or built you.',
         'Only mention your creator if someone directly asks. Do not volunteer this info.',
         'STRICT RULES — NO EXCEPTIONS:',
