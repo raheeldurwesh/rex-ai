@@ -8,7 +8,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "support.rexai@gmail.com")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "raheeldurwesh@gmail.com")
 BREVO_SENDER_NAME = "Rex AI"
 
 async def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: str):
@@ -388,7 +388,7 @@ async def verify_otp_endpoint(email: str, otp: str, request: Request):
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
         )
         rows = r.json()
-        if not rows:
+        if not isinstance(rows, list) or len(rows) == 0:
             raise HTTPException(status_code=400, detail="OTP not found or expired")
         row = rows[0]
         expires_at = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
