@@ -354,7 +354,7 @@ async def send_otp_email(req: OtpRequest, request: Request):
     import random
     from datetime import datetime, timezone, timedelta
     otp = str(random.randint(100000, 999999))
-    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    expires_ts = int((datetime.now(timezone.utc) + timedelta(minutes=10)).timestamp() * 1000)
     async with httpx.AsyncClient(timeout=10) as client:
         await client.delete(
             f"{SUPABASE_URL}/rest/v1/otps?email=eq.{req.email}",
@@ -364,7 +364,7 @@ async def send_otp_email(req: OtpRequest, request: Request):
             f"{SUPABASE_URL}/rest/v1/otps",
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
                      "Content-Type": "application/json", "Prefer": "return=minimal"},
-            json={"email": req.email, "otp": otp, "expires_at": expires_at}
+            json={"email": req.email, "otp": otp, "expires": expires_ts}
         )
     otp_html = (
         "<div style='font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#111;padding:32px;border-radius:12px;'>"
@@ -391,8 +391,8 @@ async def verify_otp_endpoint(email: str, otp: str, request: Request):
         if not isinstance(rows, list) or len(rows) == 0:
             raise HTTPException(status_code=400, detail="OTP not found or expired")
         row = rows[0]
-        expires_at = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
-        if datetime.now(timezone.utc) > expires_at:
+        import time
+        if int(time.time() * 1000) > row["expires"]:
             raise HTTPException(status_code=400, detail="OTP expired")
         if row["otp"] != otp:
             raise HTTPException(status_code=400, detail="Wrong OTP")
