@@ -461,10 +461,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
         </button>
         <button v-if="authMode==='login'" class="auth-link" v-on:click="authStep='forgot';authErr=''">Forgot password?</button>
         <div class="auth-div">or</div>
-        <button class="google-btn" v-on:click="googleMsg">
-          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Continue with Google
-        </button>
+        <div id="google-signin-btn" style="display:flex;justify-content:center;margin-bottom:2px;"></div>
         <button class="guest-btn" v-on:click="continueAsGuest">👤 Continue as Guest</button>
         <div style="text-align:center;margin-top:4px;">
           <span style="font-size:.64rem;color:var(--mut);">Guest: 5 free messages · No history · No memory</span>
@@ -806,6 +803,7 @@ header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1p
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // Config
 var SB_URL = 'https://kclkksuuybcmfegjdlap.supabase.co';
@@ -815,6 +813,7 @@ var ADMIN_EMAILS = ['raheeldurwesh@gmail.com', 'durweshraheel@gmail.com'];
 var EJS_SVC = 'service_3l8grsw';
 var EJS_TPL = 'template_nchzuef';
 var EJS_KEY = 'Es8sAb4lA609nvHeo';
+var GOOGLE_CLIENT_ID = '825784485388-t9h4fh4m2mq3e3a8tj8pihkfq248uacj.apps.googleusercontent.com';
 
 // Init EmailJS once
 emailjs.init(EJS_KEY);
@@ -1317,7 +1316,80 @@ Vue.createApp({
       authLoading.value = false;
     }
 
-    function googleMsg() { authErr.value = 'Google login coming soon! Please use Email login.'; }
+    function googleMsg() {}
+
+    async function handleGoogleLogin(response) {
+      authErr.value = '';
+      authLoading.value = true;
+      try {
+        // Decode JWT token from Google
+        var parts = response.credential.split('.');
+        var payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        var email = payload.email;
+        var gname = payload.name || email.split('@')[0];
+        var picture = payload.picture || '';
+
+        // Check if user exists
+        var existing = await sbGet('users', 'email=eq.' + encodeURIComponent(email) + '&select=id,username,email');
+        var uid, username;
+
+        if (Array.isArray(existing) && existing.length > 0) {
+          // Existing user — login
+          uid = existing[0].id;
+          username = existing[0].username || gname;
+          await sbPatch('users', 'id=eq.' + uid, { last_seen: new Date().toISOString() }).catch(function(){});
+        } else {
+          // New user — auto signup
+          uid = await hashPwd(email.toLowerCase());
+          uid = uid.slice(0, 32);
+          username = gname.replace(/\s+/g, '').toLowerCase().slice(0, 20) || email.split('@')[0];
+          var inserted = await sbPost('users', {
+            id: uid, email: email, username: username,
+            password_hash: '', created_at: new Date().toISOString(),
+            last_seen: new Date().toISOString(), message_count: 0, searches: []
+          });
+          if (inserted && inserted.error) {
+            authErr.value = inserted.error.message || 'Google signup failed.';
+            authLoading.value = false; return;
+          }
+          // Clear stale local data
+          localStorage.removeItem('rex-chats-v6' + uid);
+          localStorage.removeItem('rex-style-' + uid);
+          localStorage.removeItem('rex-mems-v2' + uid);
+          // Send welcome email
+          fetch(BACKEND + '/email/welcome', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email: email, username: username })
+          }).catch(function(){});
+        }
+
+        user.value = { uid: uid, email: email, username: username, avatar: picture };
+        user.value.login_time = Date.now();
+        localStorage.setItem('rex-user', JSON.stringify(user.value));
+        initUser();
+      } catch(e) {
+        authErr.value = 'Google login failed: ' + (e.message || 'Try again.');
+      }
+      authLoading.value = false;
+    }
+
+    // Init Google Sign-In button — wait for GSI script to load
+    function initGoogleBtn() {
+      if (window.google && window.google.accounts && document.getElementById('google-signin-btn')) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleLogin,
+          auto_select: false,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn'),
+          { theme: 'filled_black', size: 'large', width: 340, text: 'continue_with', shape: 'rectangular' }
+        );
+      } else {
+        setTimeout(initGoogleBtn, 300);
+      }
+    }
+    setTimeout(initGoogleBtn, 500);
 
     function continueAsGuest() {
       isGuest.value = true;
@@ -1951,7 +2023,7 @@ Vue.createApp({
       startEdit, cancelEdit, saveEdit, copyMsg,
       userInitial, userName, isAdmin, toggleTheme, isDark,
       doSignup, doLogin,
-      sendResetOtp, doResetPassword, googleMsg, doLogout,
+      sendResetOtp, doResetPassword, googleMsg, handleGoogleLogin, doLogout,
       openAdmin, fmtDate, rotatingChips,
       isGuest, guestMsgCount, guestPrompt, continueAsGuest, guestSignup,
       sharedView, sessionExpiry, shareExpiry,
