@@ -1160,9 +1160,9 @@ Vue.createApp({
             } else {
               // User deleted from Supabase — clear everything
               localStorage.removeItem('rex-user');
-              localStorage.removeItem('rex-chats-' + parsed.uid);
+              localStorage.removeItem('rex-chats-v6' + parsed.uid);
               localStorage.removeItem('rex-style-' + parsed.uid);
-              localStorage.removeItem('rex-mems-' + parsed.uid);
+              localStorage.removeItem('rex-mems-v2' + parsed.uid);
             }
           }
         } catch(e) {}
@@ -1231,9 +1231,9 @@ Vue.createApp({
           body: JSON.stringify({ email: authEmail.value, username: authUsername.value })
         }).catch(function() {});
         // Clear any stale local data for this uid
-        localStorage.removeItem('rex-chats-' + uid);
+        localStorage.removeItem('rex-chats-v6' + uid);
         localStorage.removeItem('rex-style-' + uid);
-        localStorage.removeItem('rex-mems-' + uid);
+        localStorage.removeItem('rex-mems-v2' + uid);
         user.value = { uid: uid, email: authEmail.value, username: authUsername.value };
         user.value.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(user.value));
         initUser();
