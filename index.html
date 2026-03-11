@@ -198,11 +198,6 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .key-badge.rate_limited{color:#ffb74d;}
 .key-badge.error{color:#e57373;}
 .key-error{font-size:.7rem;color:#e57373;margin-top:6px;opacity:.7;word-break:break-all;}
-.key-provider{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.05em;}
-.prov-groq{background:rgba(251,146,60,.15);color:#fb923c;}
-.prov-openrouter{background:rgba(139,92,246,.15);color:#a78bfa;}
-.prov-gemini{background:rgba(59,130,246,.15);color:#60a5fa;}
-.prov-cloudflare{background:rgba(249,115,22,.15);color:#fb923c;}
 .light header{background:#fff!important;border-bottom:1px solid #d8d0c4!important;}
 .light .msgs{background:#f7f3ec!important;}
 .light .inp-wrap{background:#f7f3ec!important;border-top:1px solid #d8d0c4!important;}
@@ -714,12 +709,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
         </div>
         <div v-for="k in keysData.keys" :key="k.name" class="key-row" :class="k.status">
           <div class="key-row-top">
-            <span class="key-provider" :class="'prov-' + (k.provider||'').toLowerCase()">{{ k.provider }}</span>
+            <span class="key-status-dot" :class="k.status"></span>
             <span class="key-name">{{ k.name }}</span>
             <span class="key-masked">{{ k.key }}</span>
             <span class="key-badge" :class="k.status">{{ k.status === 'ok' ? '✅ Active' : k.status === 'rate_limited' ? '⚡ Rate Limited' : '❌ Error' }}</span>
           </div>
-          <div v-if="k.model" style="font-size:.68rem;color:var(--mut);margin-top:3px;">Model: {{ k.model }}</div>
           <div v-if="k.error" class="key-error">{{ k.error }}</div>
         </div>
       </div>
@@ -1093,22 +1087,18 @@ async function verifyPwd(password, hash) {
 
 // Models
 var MODELS = [
-  { id: 'auto', name: 'Auto', short: 'Auto', desc: 'Picks best model automatically', provider: '' },
-  // Groq
-  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', short: 'Llama 3.3', desc: 'Best general model', provider: 'groq' },
-  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', short: 'Llama 8B', desc: 'Fastest responses', provider: 'groq' },
-  { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', short: 'GPT-OSS', desc: 'Strong reasoning', provider: 'groq' },
-  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout', short: 'Llama 4', desc: 'Long context', provider: 'groq' },
-  { id: 'moonshotai/kimi-k2-instruct-0905', name: 'Kimi K2', short: 'Kimi K2', desc: 'Best for coding', provider: 'groq' },
-  // OpenRouter
-  { id: 'or:meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 (OR)', short: 'Llama 3.3 OR', desc: 'Via OpenRouter', provider: 'openrouter' },
-  { id: 'or:google/gemini-flash-1.5', name: 'Gemini Flash 1.5 (OR)', short: 'Gemini 1.5 OR', desc: 'Fast & smart via OpenRouter', provider: 'openrouter' },
-  { id: 'or:mistralai/mistral-7b-instruct', name: 'Mistral 7B (OR)', short: 'Mistral OR', desc: 'Lightweight via OpenRouter', provider: 'openrouter' },
-  // Gemini
-  { id: 'gem:gemini-2.0-flash', name: 'Gemini 2.0 Flash', short: 'Gemini 2.0', desc: 'Google latest — fast & smart', provider: 'gemini' },
-  { id: 'gem:gemini-1.5-flash', name: 'Gemini 1.5 Flash', short: 'Gemini 1.5', desc: 'Google reliable model', provider: 'gemini' },
-  // Cloudflare
-  { id: 'cf:@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Llama 3.3 (CF)', short: 'Llama CF', desc: 'Cloudflare edge inference', provider: 'cloudflare' },
+  { id: 'auto',                                         provider: 'groq',        name: 'Auto',         short: 'Auto',       desc: 'Picks best model automatically' },
+  { id: 'llama-3.3-70b-versatile',                      provider: 'groq',        name: 'Llama 3.3 70B',short: 'Llama 3.3',  desc: 'Best general model' },
+  { id: 'llama-3.1-8b-instant',                         provider: 'groq',        name: 'Llama 3.1 8B', short: 'Llama 8B',   desc: 'Fastest responses' },
+  { id: 'openai/gpt-oss-120b',                          provider: 'groq',        name: 'GPT-OSS 120B', short: 'GPT-OSS',    desc: 'Strong reasoning' },
+  { id: 'meta-llama/llama-4-scout-17b-16e-instruct',    provider: 'groq',        name: 'Llama 4 Scout',short: 'Llama 4',    desc: 'Long context' },
+  { id: 'moonshotai/kimi-k2-instruct-0905',             provider: 'groq',        name: 'Kimi K2',      short: 'Kimi K2',    desc: 'Best for coding' },
+  { id: 'meta-llama/llama-3.3-70b-instruct',            provider: 'openrouter',  name: 'Mistral OR',   short: 'Llama OR',   desc: 'OpenRouter Llama 3.3' },
+  { id: 'google/gemini-flash-1.5',                      provider: 'openrouter',  name: 'Gemini Flash', short: 'Gemini OR',  desc: 'Gemini via OpenRouter' },
+  { id: 'mistralai/mistral-7b-instruct',                provider: 'openrouter',  name: 'Mistral 7B',   short: 'Mistral',    desc: 'Fast Mistral' },
+  { id: 'gemini-2.0-flash',                             provider: 'gemini',      name: 'Gemini 2.0',   short: 'Gemini 2.0', desc: 'Google Gemini 2.0 Flash' },
+  { id: 'gemini-1.5-flash',                             provider: 'gemini',      name: 'Gemini 1.5',   short: 'Gemini 1.5', desc: 'Google Gemini 1.5 Flash' },
+  { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',     provider: 'cloudflare',  name: 'Llama 3.3 CF', short: 'Llama CF',   desc: 'Cloudflare Llama 3.3' },
 ];
 
 function autoModel(t) {
@@ -1118,14 +1108,6 @@ function autoModel(t) {
   if (/\b(summarize|document|long|translate|essay|report)\b/.test(tl)) return { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4' };
   if (t.length < 60 && /\b(what is|who is|when|where|define|quick)\b/.test(tl)) return { id: 'llama-3.1-8b-instant', label: 'Llama 8B' };
   return { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3' };
-}
-
-// Parse model id — returns {provider, model}
-function parseModelId(id) {
-  if (id.startsWith('or:')) return { provider: 'openrouter', model: id.slice(3) };
-  if (id.startsWith('gem:')) return { provider: 'gemini', model: id.slice(4) };
-  if (id.startsWith('cf:')) return { provider: 'cloudflare', model: id.slice(3) };
-  return { provider: 'groq', model: id };
 }
 
 window.copyCode = function(btn) {
@@ -2160,7 +2142,6 @@ Vue.createApp({
       var rId, rLabel;
       if (selModelId.value === 'auto') { var p = autoModel(userText || ''); rId = p.id; rLabel = p.label; }
       else { rId = selModelId.value; rLabel = (MODELS.find(function(m) { return m.id === rId; }) || {}).name || rId; }
-      var parsed = parseModelId(rId);
       activeModel.value = rLabel;
       var sys = [
         'You are Rex AI, a helpful and intelligent AI assistant.',
@@ -2194,7 +2175,7 @@ Vue.createApp({
         var res = await fetch(BACKEND + '/chat', {
           method: 'POST', mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: parsed.model, provider: parsed.provider, messages: [{ role: 'system', content: sys }].concat(chatMsgs) })
+          body: JSON.stringify({ model: rId, provider: (MODELS.find(function(m){return m.id===rId;})||{}).provider||'groq', messages: [{ role: 'system', content: sys }].concat(chatMsgs) })
         });
         allBusy.value = false; if (res.status === 503) { var ed = {}; try { ed = await res.json(); } catch(e){} msgs.value.push({ role: 'assistant', content: ed.detail || 'Rex is a bit busy right now. Please try again in a moment!' }); streaming.value = false; serverBusy.value = true; return; }
         if (!res.ok) { streaming.value = false; return; }
