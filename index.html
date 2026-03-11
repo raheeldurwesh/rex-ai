@@ -2194,7 +2194,7 @@ Vue.createApp({
         var res = await fetch(BACKEND + '/chat', {
           method: 'POST', mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: rId, messages: [{ role: 'system', content: sys }].concat(chatMsgs) })
+          body: JSON.stringify({ model: parsed.model, provider: parsed.provider, messages: [{ role: 'system', content: sys }].concat(chatMsgs) })
         });
         allBusy.value = false; if (res.status === 503) { var ed = {}; try { ed = await res.json(); } catch(e){} msgs.value.push({ role: 'assistant', content: ed.detail || 'Rex is a bit busy right now. Please try again in a moment!' }); streaming.value = false; serverBusy.value = true; return; }
         if (!res.ok) { streaming.value = false; return; }
