@@ -303,8 +303,9 @@ async def chat(req: ChatRequest, request: Request):
             except Exception as e:
                 if any(x in str(e) for x in ["rate_limit","429","503","model_not_found","404"]):
                     continue
-                raise
-        raise Exception("Groq: all keys rate limited")
+                print(f"Groq {model} unexpected error: {e}")
+                continue
+        raise Exception("Groq: all keys/models failed")
 
     async def call_openrouter(model: str) -> str:
         for key in get_or_keys_rotated():
@@ -318,14 +319,15 @@ async def chat(req: ChatRequest, request: Request):
                                  "X-Title": "Rex AI"},
                         json={"model": model, "messages": msgs_list, "max_tokens": 4096},
                     )
-                if r.status_code == 429: continue
-                if r.status_code != 200: raise Exception(f"OR {r.status_code}: {r.text[:120]}")
+                if r.status_code != 200:
+                    print(f"OR {model} status {r.status_code}: {r.text[:120]}")
+                    continue
                 text = r.json()["choices"][0]["message"].get("content","")
                 if text: return text
             except Exception as e:
-                if "429" in str(e): continue
-                raise
-        raise Exception("OpenRouter: all keys rate limited")
+                print(f"OR {model} error: {e}")
+                continue
+        raise Exception("OpenRouter: all keys/models failed")
 
     async def call_gemini(model: str) -> str:
         gem_msgs = []
@@ -349,9 +351,9 @@ async def chat(req: ChatRequest, request: Request):
                 text = "".join(p.get("text","") for p in parts)
                 if text: return text
             except Exception as e:
-                if "429" in str(e): continue
-                raise
-        raise Exception("Gemini: all keys rate limited")
+                print(f"Gemini {model} error: {e}")
+                continue
+        raise Exception("Gemini: all keys/models failed")
 
     async def call_cloudflare(model: str) -> str:
         if not CLOUDFLARE_TOKENS or not CLOUDFLARE_ACCOUNT_ID:
@@ -367,9 +369,9 @@ async def chat(req: ChatRequest, request: Request):
                 text = r.json().get("result",{}).get("response","")
                 if text: return text
             except Exception as e:
-                if "429" in str(e): continue
-                raise
-        raise Exception("Cloudflare: failed")
+                print(f"CF {model} error: {e}")
+                continue
+        raise Exception("Cloudflare: all failed")
 
     PROVIDER_CFG = {
         "groq":       (call_groq,       FALLBACK_MODELS),
