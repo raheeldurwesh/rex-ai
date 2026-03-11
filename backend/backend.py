@@ -298,8 +298,7 @@ async def chat(req: ChatRequest, request: Request):
             for model in ordered:
                 try:
                     async with httpx.AsyncClient(timeout=60) as hc:
-                        async with hc.stream(
-                            "POST",
+                        r = await hc.post(
                             "https://openrouter.ai/api/v1/chat/completions",
                             headers={
                                 "Authorization": f"Bearer {key}",
@@ -309,33 +308,33 @@ async def chat(req: ChatRequest, request: Request):
                             },
                             json={"model": model, "messages": msgs,
                                   "max_tokens": 4096, "stream": True},
-                        ) as resp:
-                            if resp.status_code in (429, 402):
+                            timeout=60,
+                        )
+                        if r.status_code in (429, 402, 400):
+                            continue
+                        if r.status_code != 200:
+                            continue
+                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        for line in r.text.splitlines():
+                            if not line.startswith("data: "):
                                 continue
-                            if resp.status_code != 200:
-                                continue
-                            yield f"data: {json.dumps({'model': model})}\n\n"
-                            async for line in resp.aiter_lines():
-                                if not line.startswith("data: "):
-                                    continue
-                                raw = line[6:].strip()
-                                if raw == "[DONE]":
-                                    break
-                                try:
-                                    d = json.loads(raw)
-                                    delta = d["choices"][0]["delta"].get("content", "")
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except:
-                                    pass
-                            yield "data: [DONE]\n\n"
-                            return
+                            raw = line[6:].strip()
+                            if raw == "[DONE]":
+                                break
+                            try:
+                                d = json.loads(raw)
+                                delta = d["choices"][0]["delta"].get("content", "")
+                                if delta:
+                                    yield f"data: {json.dumps({'text': delta})}\n\n"
+                            except:
+                                pass
+                        yield "data: [DONE]\n\n"
+                        return
                 except Exception:
                     continue
 
     async def stream_gemini():
         ordered = [model_req] + [m for m in GEMINI_MODELS if m != model_req]
-        # Convert messages to Gemini format
         gem_msgs = []
         for m in msgs:
             role = "user" if m["role"] == "user" else "model"
@@ -346,32 +345,33 @@ async def chat(req: ChatRequest, request: Request):
                     url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
                            f"{model}:streamGenerateContent?alt=sse&key={key}")
                     async with httpx.AsyncClient(timeout=60) as hc:
-                        async with hc.stream(
-                            "POST", url,
+                        r = await hc.post(
+                            url,
                             headers={"Content-Type": "application/json"},
                             json={"contents": gem_msgs,
                                   "generationConfig": {"maxOutputTokens": 4096}},
-                        ) as resp:
-                            if resp.status_code == 429:
+                            timeout=60,
+                        )
+                        if r.status_code in (429, 400):
+                            continue
+                        if r.status_code != 200:
+                            continue
+                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        for line in r.text.splitlines():
+                            if not line.startswith("data: "):
                                 continue
-                            if resp.status_code != 200:
-                                continue
-                            yield f"data: {json.dumps({'model': model})}\n\n"
-                            async for line in resp.aiter_lines():
-                                if not line.startswith("data: "):
-                                    continue
-                                raw = line[6:].strip()
-                                try:
-                                    d = json.loads(raw)
-                                    parts = d.get("candidates", [{}])[0].get(
-                                        "content", {}).get("parts", [{}])
-                                    delta = parts[0].get("text", "") if parts else ""
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except:
-                                    pass
-                            yield "data: [DONE]\n\n"
-                            return
+                            raw = line[6:].strip()
+                            try:
+                                d = json.loads(raw)
+                                parts = d.get("candidates", [{}])[0].get(
+                                    "content", {}).get("parts", [{}])
+                                delta = parts[0].get("text", "") if parts else ""
+                                if delta:
+                                    yield f"data: {json.dumps({'text': delta})}\n\n"
+                            except:
+                                pass
+                        yield "data: [DONE]\n\n"
+                        return
                 except Exception:
                     continue
 
@@ -385,67 +385,48 @@ async def chat(req: ChatRequest, request: Request):
                     url = (f"https://api.cloudflare.com/client/v4/accounts/"
                            f"{CLOUDFLARE_ACCOUNT_ID}/ai/run/{model}")
                     async with httpx.AsyncClient(timeout=60) as hc:
-                        async with hc.stream(
-                            "POST", url,
+                        r = await hc.post(
+                            url,
                             headers={"Authorization": f"Bearer {token}",
                                      "Content-Type": "application/json"},
-                            json={"messages": msgs, "stream": True, "max_tokens": 4096},
-                        ) as resp:
-                            if resp.status_code != 200:
-                                continue
-                            yield f"data: {json.dumps({'model': model})}\n\n"
-                            async for line in resp.aiter_lines():
-                                if not line.startswith("data: "):
-                                    continue
-                                raw = line[6:].strip()
-                                if raw == "[DONE]":
-                                    break
-                                try:
-                                    d = json.loads(raw)
-                                    delta = d.get("response", "")
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except:
-                                    pass
-                            yield "data: [DONE]\n\n"
-                            return
+                            json={"messages": msgs, "stream": False, "max_tokens": 4096},
+                            timeout=60,
+                        )
+                        if r.status_code != 200:
+                            continue
+                        result = r.json()
+                        text = result.get("result", {}).get("response", "")
+                        if not text:
+                            continue
+                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        yield f"data: {json.dumps({'text': text})}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
                 except Exception:
                     continue
 
     async def generate():
-        # Route to requested provider first, then fallback chain
-        done = False
+        # Build provider order: requested provider first, then fallback chain
+        all_providers = ["groq", "openrouter", "gemini", "cloudflare"]
+        if provider in all_providers:
+            order = [provider] + [p for p in all_providers if p != provider]
+        else:
+            order = all_providers
 
-        if provider == "groq" or not done:
-            async for chunk in stream_groq():
+        streams = {
+            "groq":        stream_groq,
+            "openrouter":  stream_openrouter,
+            "gemini":      stream_gemini,
+            "cloudflare":  stream_cloudflare,
+        }
+
+        for prov in order:
+            got_done = False
+            async for chunk in streams[prov]():
                 yield chunk
                 if chunk == "data: [DONE]\n\n":
-                    done = True
-            if done:
-                return
-
-        if provider == "openrouter" or not done:
-            async for chunk in stream_openrouter():
-                yield chunk
-                if chunk == "data: [DONE]\n\n":
-                    done = True
-            if done:
-                return
-
-        if provider == "gemini" or not done:
-            async for chunk in stream_gemini():
-                yield chunk
-                if chunk == "data: [DONE]\n\n":
-                    done = True
-            if done:
-                return
-
-        if provider == "cloudflare" or not done:
-            async for chunk in stream_cloudflare():
-                yield chunk
-                if chunk == "data: [DONE]\n\n":
-                    done = True
-            if done:
+                    got_done = True
+            if got_done:
                 return
 
         yield f"data: {json.dumps({'text': 'All providers are busy. Please try again in a moment.'})}\n\n"
