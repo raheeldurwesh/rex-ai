@@ -292,10 +292,13 @@ async def chat(req: ChatRequest, request: Request):
 
     def generate():
         msgs_list = [m.dict() for m in req.messages]
+        provider = req.provider or "groq"
 
+        # If specific provider requested, try it first then fallback
         # ── 1. Groq (primary) ──────────────────────────────
+        groq_models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model] if provider == "groq" else FALLBACK_MODELS
         for key in get_keys_rotated():
-            for model in models:
+            for model in groq_models:
                 try:
                     client = Groq(api_key=key)
                     stream = client.chat.completions.create(
@@ -315,8 +318,9 @@ async def chat(req: ChatRequest, request: Request):
                     continue
 
         # ── 2. OpenRouter (fallback) ───────────────────────
+        or_models = [req.model] + [m for m in OPENROUTER_MODELS if m != req.model] if provider == "openrouter" else OPENROUTER_MODELS
         for key in get_openrouter_keys_rotated():
-            for model in OPENROUTER_MODELS:
+            for model in or_models:
                 try:
                     import httpx as _httpx
                     with _httpx.Client(timeout=60) as hc:
@@ -350,8 +354,9 @@ async def chat(req: ChatRequest, request: Request):
                     continue
 
         # ── 3. Gemini (fallback) ───────────────────────────
+        gem_models = [req.model] + [m for m in GEMINI_MODELS if m != req.model] if provider == "gemini" else GEMINI_MODELS
         for key in get_gemini_keys_rotated():
-            for model in GEMINI_MODELS:
+            for model in gem_models:
                 try:
                     import httpx as _httpx
                     # Convert messages to Gemini format
