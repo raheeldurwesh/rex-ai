@@ -290,11 +290,10 @@ async def chat(req: ChatRequest, request: Request):
 
     models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
-    def generate():
+    async def generate():
         msgs_list = [m.dict() for m in req.messages]
         provider = req.provider or "groq"
 
-        # If specific provider requested, try it first then fallback
         # ── 1. Groq (primary) ──────────────────────────────
         groq_models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model] if provider == "groq" else FALLBACK_MODELS
         for key in get_keys_rotated():
@@ -322,9 +321,9 @@ async def chat(req: ChatRequest, request: Request):
         for key in get_openrouter_keys_rotated():
             for model in or_models:
                 try:
-                    import httpx as _httpx
-                    with _httpx.Client(timeout=60) as hc:
-                        resp = hc.post(
+                    async with httpx.AsyncClient(timeout=60) as hc:
+                        async with hc.stream(
+                            "POST",
                             "https://openrouter.ai/api/v1/chat/completions",
                             headers={
                                 "Authorization": f"Bearer {key}",
@@ -333,23 +332,22 @@ async def chat(req: ChatRequest, request: Request):
                                 "X-Title": "Rex AI",
                             },
                             json={"model": model, "messages": msgs_list, "max_tokens": 4096, "stream": True},
-                            stream=True,
-                        )
-                        if resp.status_code == 429: continue
-                        if resp.status_code != 200: continue
-                        yield f"data: {json.dumps({'model': 'or/' + model.split('/')[-1]})}\n\n"
-                        for line in resp.iter_lines():
-                            if line.startswith("data: "):
-                                raw = line[6:]
-                                if raw.strip() == "[DONE]": break
-                                try:
-                                    d = json.loads(raw)
-                                    delta = d["choices"][0]["delta"].get("content", "")
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except: pass
-                        yield "data: [DONE]\n\n"
-                        return
+                        ) as resp:
+                            if resp.status_code == 429: continue
+                            if resp.status_code != 200: continue
+                            yield f"data: {json.dumps({'model': 'or/' + model.split('/')[-1]})}\n\n"
+                            async for line in resp.aiter_lines():
+                                if line.startswith("data: "):
+                                    raw = line[6:]
+                                    if raw.strip() == "[DONE]": break
+                                    try:
+                                        d = json.loads(raw)
+                                        delta = d["choices"][0]["delta"].get("content", "")
+                                        if delta:
+                                            yield f"data: {json.dumps({'text': delta})}\n\n"
+                                    except: pass
+                            yield "data: [DONE]\n\n"
+                            return
                 except Exception:
                     continue
 
@@ -358,66 +356,63 @@ async def chat(req: ChatRequest, request: Request):
         for key in get_gemini_keys_rotated():
             for model in gem_models:
                 try:
-                    import httpx as _httpx
-                    # Convert messages to Gemini format
                     gem_contents = []
                     for msg in msgs_list:
                         role = "user" if msg["role"] == "user" else "model"
                         gem_contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-                    with _httpx.Client(timeout=60) as hc:
-                        resp = hc.post(
+                    async with httpx.AsyncClient(timeout=60) as hc:
+                        async with hc.stream(
+                            "POST",
                             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse&key={key}",
                             headers={"Content-Type": "application/json"},
                             json={"contents": gem_contents, "generationConfig": {"maxOutputTokens": 4096}},
-                            stream=True,
-                        )
-                        if resp.status_code == 429: continue
-                        if resp.status_code != 200: continue
-                        yield f"data: {json.dumps({'model': 'gemini/' + model})}\n\n"
-                        for line in resp.iter_lines():
-                            if line.startswith("data: "):
-                                raw = line[6:]
-                                try:
-                                    d = json.loads(raw)
-                                    delta = d["candidates"][0]["content"]["parts"][0].get("text", "")
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except: pass
-                        yield "data: [DONE]\n\n"
-                        return
+                        ) as resp:
+                            if resp.status_code == 429: continue
+                            if resp.status_code != 200: continue
+                            yield f"data: {json.dumps({'model': 'gemini/' + model})}\n\n"
+                            async for line in resp.aiter_lines():
+                                if line.startswith("data: "):
+                                    raw = line[6:]
+                                    try:
+                                        d = json.loads(raw)
+                                        delta = d["candidates"][0]["content"]["parts"][0].get("text", "")
+                                        if delta:
+                                            yield f"data: {json.dumps({'text': delta})}\n\n"
+                                    except: pass
+                            yield "data: [DONE]\n\n"
+                            return
                 except Exception:
                     continue
 
         # ── 4. Cloudflare (last resort) ────────────────────
         if CLOUDFLARE_TOKENS and CLOUDFLARE_ACCOUNT_ID:
             for token in CLOUDFLARE_TOKENS:
-                for model in CLOUDFLARE_MODELS:
+                cf_models = [req.model] + [m for m in CLOUDFLARE_MODELS if m != req.model] if provider == "cloudflare" else CLOUDFLARE_MODELS
+                for model in cf_models:
                     try:
-                        import httpx as _httpx
-                        with _httpx.Client(timeout=60) as hc:
-                            resp = hc.post(
+                        async with httpx.AsyncClient(timeout=60) as hc:
+                            async with hc.stream(
+                                "POST",
                                 f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{model}",
-                                headers={
-                                    "Authorization": f"Bearer {token}",
-                                    "Content-Type": "application/json",
-                                },
+                                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
                                 json={"messages": msgs_list, "stream": True, "max_tokens": 4096},
-                                stream=True,
-                            )
-                            if resp.status_code != 200: continue
-                            yield f"data: {json.dumps({'model': 'cf/' + model.split('/')[-1]})}\n\n"
-                            for line in resp.iter_lines():
-                                if line.startswith("data: "):
-                                    raw = line[6:]
-                                    if raw.strip() == "[DONE]": break
-                                    try:
-                                        d = json.loads(raw)
-                                        delta = d.get("response", "")
-                                        if delta:
-                                            yield f"data: {json.dumps({'text': delta})}\n\n"
-                                    except: pass
-                            yield "data: [DONE]\n\n"
-                            return
+                            ) as resp:
+                                if resp.status_code != 200: continue
+                                yield f"data: {json.dumps({'model': 'cf/' + model.split('/')[-1]})}\n\n"
+                                async for line in resp.aiter_lines():
+                                    if line.startswith("data: "):
+                                        raw = line[6:]
+                                        if raw.strip() == "[DONE]": break
+                                        try:
+                                            d = json.loads(raw)
+                                            delta = d.get("response", "")
+                                            if delta:
+                                                yield f"data: {json.dumps({'text': delta})}\n\n"
+                                        except: pass
+                                yield "data: [DONE]\n\n"
+                                return
+                    except Exception:
+                        continue
                     except Exception:
                         continue
 
@@ -426,7 +421,7 @@ async def chat(req: ChatRequest, request: Request):
 
     async def guarded_generate():
         async with get_semaphore():
-            for chunk in generate():
+            async for chunk in generate():
                 yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
