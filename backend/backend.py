@@ -119,13 +119,15 @@ FALLBACK_MODELS = [
 
 OPENROUTER_MODELS = [
     "meta-llama/llama-3.3-70b-instruct",
-    "google/gemini-flash-1.5",
-    "mistralai/mistral-7b-instruct",
+    "mistralai/mistral-small-3.1-24b-instruct",
+    "google/gemini-2.0-flash-001",
+    "meta-llama/llama-3.1-8b-instruct",
 ]
 
 GEMINI_MODELS = [
+    "gemini-2.0-flash-001",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
 ]
 
 CLOUDFLARE_MODELS = [
