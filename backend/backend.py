@@ -73,6 +73,39 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_9"),
 ] if k]
 
+OPENROUTER_KEYS = [k for k in [
+    os.getenv("OPENROUTER_API_KEY"),
+    os.getenv("OPENROUTER_API_KEY_1"),
+] if k]
+
+GEMINI_KEYS = [k for k in [
+    os.getenv("GEMINI_API_KEY"),
+    os.getenv("GEMINI_API_KEY_1"),
+] if k]
+
+CLOUDFLARE_TOKENS = [k for k in [
+    os.getenv("CLOUDFLARE_API_TOKEN"),
+] if k]
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
+
+# Round-robin indexes per provider
+OR_INDEX = 0
+GEM_INDEX = 0
+
+def get_openrouter_keys_rotated():
+    global OR_INDEX
+    if not OPENROUTER_KEYS: return []
+    start = OR_INDEX % len(OPENROUTER_KEYS)
+    OR_INDEX = (OR_INDEX + 1) % len(OPENROUTER_KEYS)
+    return OPENROUTER_KEYS[start:] + OPENROUTER_KEYS[:start]
+
+def get_gemini_keys_rotated():
+    global GEM_INDEX
+    if not GEMINI_KEYS: return []
+    start = GEM_INDEX % len(GEMINI_KEYS)
+    GEM_INDEX = (GEM_INDEX + 1) % len(GEMINI_KEYS)
+    return GEMINI_KEYS[start:] + GEMINI_KEYS[:start]
+
 # Concurrency queue
 MAX_CONCURRENT = 20
 MAX_QUEUE      = 50
@@ -101,6 +134,25 @@ FALLBACK_MODELS = [
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "openai/gpt-oss-120b",
     "moonshotai/kimi-k2-instruct-0905",
+]
+
+# OpenRouter models (fallback)
+OPENROUTER_MODELS = [
+    "meta-llama/llama-3.3-70b-instruct",
+    "google/gemini-flash-1.5",
+    "mistralai/mistral-7b-instruct",
+]
+
+# Gemini models
+GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+]
+
+# Cloudflare models
+CLOUDFLARE_MODELS = [
+    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "@cf/meta/llama-3.1-8b-instruct",
 ]
 
 # ── Rate limiting (capped to prevent memory growth) ────────
@@ -239,17 +291,18 @@ async def chat(req: ChatRequest, request: Request):
     models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
     def generate():
+        msgs_list = [m.dict() for m in req.messages]
+
+        # ── 1. Groq (primary) ──────────────────────────────
         for key in get_keys_rotated():
             for model in models:
                 try:
                     client = Groq(api_key=key)
                     stream = client.chat.completions.create(
-                        model=model,
-                        messages=[m.dict() for m in req.messages],
-                        stream=True,
-                        max_tokens=4096,
+                        model=model, messages=msgs_list,
+                        stream=True, max_tokens=4096,
                     )
-                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    yield f"data: {json.dumps({'model': 'groq/' + model})}\n\n"
                     for chunk in stream:
                         delta = chunk.choices[0].delta.content
                         if delta:
@@ -257,10 +310,113 @@ async def chat(req: ChatRequest, request: Request):
                     yield "data: [DONE]\n\n"
                     return
                 except Exception as e:
-                    if "rate_limit" in str(e) or "429" in str(e):
+                    if "rate_limit" in str(e) or "429" in str(e) or "503" in str(e):
                         continue
                     continue
-        yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
+
+        # ── 2. OpenRouter (fallback) ───────────────────────
+        for key in get_openrouter_keys_rotated():
+            for model in OPENROUTER_MODELS:
+                try:
+                    import httpx as _httpx
+                    with _httpx.Client(timeout=60) as hc:
+                        resp = hc.post(
+                            "https://openrouter.ai/api/v1/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {key}",
+                                "Content-Type": "application/json",
+                                "HTTP-Referer": "https://rex-ai-raheel.vercel.app",
+                                "X-Title": "Rex AI",
+                            },
+                            json={"model": model, "messages": msgs_list, "max_tokens": 4096, "stream": True},
+                            stream=True,
+                        )
+                        if resp.status_code == 429: continue
+                        if resp.status_code != 200: continue
+                        yield f"data: {json.dumps({'model': 'or/' + model.split('/')[-1]})}\n\n"
+                        for line in resp.iter_lines():
+                            if line.startswith("data: "):
+                                raw = line[6:]
+                                if raw.strip() == "[DONE]": break
+                                try:
+                                    d = json.loads(raw)
+                                    delta = d["choices"][0]["delta"].get("content", "")
+                                    if delta:
+                                        yield f"data: {json.dumps({'text': delta})}\n\n"
+                                except: pass
+                        yield "data: [DONE]\n\n"
+                        return
+                except Exception:
+                    continue
+
+        # ── 3. Gemini (fallback) ───────────────────────────
+        for key in get_gemini_keys_rotated():
+            for model in GEMINI_MODELS:
+                try:
+                    import httpx as _httpx
+                    # Convert messages to Gemini format
+                    gem_contents = []
+                    for msg in msgs_list:
+                        role = "user" if msg["role"] == "user" else "model"
+                        gem_contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+                    with _httpx.Client(timeout=60) as hc:
+                        resp = hc.post(
+                            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse&key={key}",
+                            headers={"Content-Type": "application/json"},
+                            json={"contents": gem_contents, "generationConfig": {"maxOutputTokens": 4096}},
+                            stream=True,
+                        )
+                        if resp.status_code == 429: continue
+                        if resp.status_code != 200: continue
+                        yield f"data: {json.dumps({'model': 'gemini/' + model})}\n\n"
+                        for line in resp.iter_lines():
+                            if line.startswith("data: "):
+                                raw = line[6:]
+                                try:
+                                    d = json.loads(raw)
+                                    delta = d["candidates"][0]["content"]["parts"][0].get("text", "")
+                                    if delta:
+                                        yield f"data: {json.dumps({'text': delta})}\n\n"
+                                except: pass
+                        yield "data: [DONE]\n\n"
+                        return
+                except Exception:
+                    continue
+
+        # ── 4. Cloudflare (last resort) ────────────────────
+        if CLOUDFLARE_TOKENS and CLOUDFLARE_ACCOUNT_ID:
+            for token in CLOUDFLARE_TOKENS:
+                for model in CLOUDFLARE_MODELS:
+                    try:
+                        import httpx as _httpx
+                        with _httpx.Client(timeout=60) as hc:
+                            resp = hc.post(
+                                f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{model}",
+                                headers={
+                                    "Authorization": f"Bearer {token}",
+                                    "Content-Type": "application/json",
+                                },
+                                json={"messages": msgs_list, "stream": True, "max_tokens": 4096},
+                                stream=True,
+                            )
+                            if resp.status_code != 200: continue
+                            yield f"data: {json.dumps({'model': 'cf/' + model.split('/')[-1]})}\n\n"
+                            for line in resp.iter_lines():
+                                if line.startswith("data: "):
+                                    raw = line[6:]
+                                    if raw.strip() == "[DONE]": break
+                                    try:
+                                        d = json.loads(raw)
+                                        delta = d.get("response", "")
+                                        if delta:
+                                            yield f"data: {json.dumps({'text': delta})}\n\n"
+                                    except: pass
+                            yield "data: [DONE]\n\n"
+                            return
+                    except Exception:
+                        continue
+
+        yield f"data: {json.dumps({'text': 'All providers are busy. Please try again in a moment.'})}\n\n"
         yield "data: [DONE]\n\n"
 
     async def guarded_generate():
@@ -380,33 +536,85 @@ async def keys_health(admin_email: str, request: Request):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     results = []
+
+    # Groq keys
     for i, key in enumerate(GROQ_KEYS):
-        key_name = f"GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
-        masked = key[:8] + "..." + key[-4:] if key else "missing"
+        key_name = "GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
         try:
             client = Groq(api_key=key)
             resp = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-                stream=False
+                max_tokens=5, stream=False
             )
-            results.append({
-                "name": key_name,
-                "key": masked,
-                "status": "ok",
-                "model": resp.model,
-            })
+            results.append({"name": key_name, "key": masked, "provider": "Groq", "status": "ok", "model": resp.model})
         except Exception as e:
             err = str(e)
             status = "rate_limited" if "429" in err or "rate_limit" in err else "error"
-            results.append({
-                "name": key_name,
-                "key": masked,
-                "status": status,
-                "error": err[:120]
-            })
-    
+            results.append({"name": key_name, "key": masked, "provider": "Groq", "status": status, "error": err[:120]})
+
+    # OpenRouter keys
+    for i, key in enumerate(OPENROUTER_KEYS):
+        key_name = "OPENROUTER_API_KEY" if i == 0 else f"OPENROUTER_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
+        try:
+            async with httpx.AsyncClient(timeout=10) as hc:
+                resp = await hc.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://rex-ai-raheel.vercel.app"},
+                    json={"model": "meta-llama/llama-3.3-70b-instruct", "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5}
+                )
+            if resp.status_code == 429:
+                results.append({"name": key_name, "key": masked, "provider": "OpenRouter", "status": "rate_limited"})
+            elif resp.status_code == 200:
+                results.append({"name": key_name, "key": masked, "provider": "OpenRouter", "status": "ok", "model": resp.json()["model"]})
+            else:
+                results.append({"name": key_name, "key": masked, "provider": "OpenRouter", "status": "error", "error": resp.text[:120]})
+        except Exception as e:
+            results.append({"name": key_name, "key": masked, "provider": "OpenRouter", "status": "error", "error": str(e)[:120]})
+
+    # Gemini keys
+    for i, key in enumerate(GEMINI_KEYS):
+        key_name = "GEMINI_API_KEY" if i == 0 else f"GEMINI_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
+        try:
+            async with httpx.AsyncClient(timeout=10) as hc:
+                resp = await hc.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}",
+                    headers={"Content-Type": "application/json"},
+                    json={"contents": [{"role": "user", "parts": [{"text": "Hi"}]}], "generationConfig": {"maxOutputTokens": 5}}
+                )
+            if resp.status_code == 429:
+                results.append({"name": key_name, "key": masked, "provider": "Gemini", "status": "rate_limited"})
+            elif resp.status_code == 200:
+                results.append({"name": key_name, "key": masked, "provider": "Gemini", "status": "ok", "model": "gemini-2.0-flash"})
+            else:
+                results.append({"name": key_name, "key": masked, "provider": "Gemini", "status": "error", "error": resp.text[:120]})
+        except Exception as e:
+            results.append({"name": key_name, "key": masked, "provider": "Gemini", "status": "error", "error": str(e)[:120]})
+
+    # Cloudflare
+    if CLOUDFLARE_TOKENS and CLOUDFLARE_ACCOUNT_ID:
+        for i, token in enumerate(CLOUDFLARE_TOKENS):
+            key_name = "CLOUDFLARE_API_TOKEN"
+            masked = token[:8] + "..." + token[-4:]
+            try:
+                async with httpx.AsyncClient(timeout=10) as hc:
+                    resp = await hc.post(
+                        f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct",
+                        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                        json={"messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5}
+                    )
+                if resp.status_code == 200:
+                    results.append({"name": key_name, "key": masked, "provider": "Cloudflare", "status": "ok", "model": "llama-3.1-8b"})
+                else:
+                    results.append({"name": key_name, "key": masked, "provider": "Cloudflare", "status": "error", "error": resp.text[:120]})
+            except Exception as e:
+                results.append({"name": key_name, "key": masked, "provider": "Cloudflare", "status": "error", "error": str(e)[:120]})
+    else:
+        results.append({"name": "CLOUDFLARE_API_TOKEN", "key": "not set", "provider": "Cloudflare", "status": "error", "error": "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set"})
+
     ok = sum(1 for r in results if r["status"] == "ok")
     rate_limited = sum(1 for r in results if r["status"] == "rate_limited")
     return {
