@@ -123,7 +123,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .mbtn:hover,.mbtn.open{border-color:var(--acc);color:var(--acc);}
 .mbtn .arr{font-size:.5rem;transition:transform .2s;}
 .mbtn.open .arr{transform:rotate(180deg);}
-.mdrop{position:absolute;top:calc(100% + 6px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:12px;min-width:220px;z-index:500;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);}
+.mdrop{position:absolute;top:calc(100% + 6px);right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:12px;min-width:220px;z-index:500;overflow-y:auto;overflow-x:hidden;max-height:340px;box-shadow:0 8px 40px rgba(0,0,0,.7);}.mdrop::-webkit-scrollbar{width:4px;}.mdrop::-webkit-scrollbar-track{background:transparent;}.mdrop::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px;}
 .mopt{padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--bdr);}
 .mopt:last-child{border-bottom:none;}
 .mopt:hover{background:var(--sur2);}
@@ -802,10 +802,10 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           </template>
           <div class="msel">
             <button class="mbtn" :class="{open: mdOpen}" v-on:click="mdOpen=!mdOpen">
-              {{ selModel.short }}<span class="arr">&#9660;</span>
+              {{ selModel.name }}<span class="arr">&#9660;</span>
             </button>
             <div class="mdrop" v-if="mdOpen">
-              <div v-for="m in MODELS" :key="m.id" class="mopt" :class="{sel: selModelId===m.id}" v-on:click="pickModel(m.id)">
+              <div v-for="m in (isGuest ? MODELS.slice(0,4) : MODELS)" :key="m.id" class="mopt" :class="{sel: selModelId===m.id}" v-on:click="pickModel(m.id)">
                 <div class="mopt-name">{{ m.name }}<span v-if="m.id==='auto'" class="auto-badge">AUTO</span></div>
                 <div class="mopt-desc">{{ m.desc }}</div>
               </div>
@@ -946,21 +946,18 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
     <!-- Guest signup prompt modal -->
     <div class="modal-ov" :class="{show: guestPrompt}" v-on:click.self="guestPrompt=false">
       <div class="guest-modal">
-        <div class="guest-modal-icon">✨</div>
-        <div class="guest-modal-title">Unlock the Full Experience</div>
-        <div class="guest-counter">{{ 10 - guestMsgCount }} free messages used up</div>
-        <div class="guest-modal-sub">You have used all your free guest messages. Sign up free to unlock everything!</div>
+        <div style="font-size:2.2rem;margin-bottom:8px;">🔓</div>
+        <div class="guest-modal-title">You've used all 10 free messages</div>
+        <div class="guest-modal-sub">Create a free account to keep chatting — plus unlock all models, web search, memory, and chat history.</div>
         <div class="guest-features">
-          <div class="guest-feat"><span class="guest-feat-icon">💾</span> Save your chat history</div>
-          <div class="guest-feat"><span class="guest-feat-icon">🧠</span> Personalized memory</div>
           <div class="guest-feat"><span class="guest-feat-icon">🌐</span> Web search</div>
+          <div class="guest-feat"><span class="guest-feat-icon">🧠</span> Memory across chats</div>
+          <div class="guest-feat"><span class="guest-feat-icon">💾</span> Chat history saved</div>
+          <div class="guest-feat"><span class="guest-feat-icon">🤖</span> All AI models unlocked</div>
           <div class="guest-feat"><span class="guest-feat-icon">📄</span> Export to PDF</div>
-          <div class="guest-feat"><span class="guest-feat-icon">🔄</span> Cross-device sync</div>
         </div>
-        <div class="modal-btns" style="justify-content:center;">
-          <button class="mbtn2 p" style="flex:1;padding:12px;" v-on:click="guestSignup">🚀 Sign Up Free</button>
-          <button class="mbtn2 s" v-on:click="guestPrompt=false">Later</button>
-        </div>
+        <button class="mbtn2 p" style="width:100%;padding:13px;font-size:.92rem;margin-bottom:8px;" v-on:click="guestSignup">Create Free Account</button>
+        <button style="width:100%;padding:9px;background:none;border:none;color:var(--mut);font-size:.78rem;cursor:pointer;font-family:inherit;" v-on:click="guestPrompt=false">Maybe later</button>
       </div>
     </div>
 
@@ -1087,18 +1084,18 @@ async function verifyPwd(password, hash) {
 
 // Models
 var MODELS = [
-  { id: 'auto',                                         provider: 'groq',        name: 'Auto',         short: 'Auto',       desc: 'Picks best model automatically' },
-  { id: 'llama-3.3-70b-versatile',                      provider: 'groq',        name: 'Llama 3.3 70B',short: 'Llama 3.3',  desc: 'Best general model' },
-  { id: 'llama-3.1-8b-instant',                         provider: 'groq',        name: 'Llama 3.1 8B', short: 'Llama 8B',   desc: 'Fastest responses' },
-  { id: 'openai/gpt-oss-120b',                          provider: 'groq',        name: 'GPT-OSS 120B', short: 'GPT-OSS',    desc: 'Strong reasoning' },
-  { id: 'meta-llama/llama-4-scout-17b-16e-instruct',    provider: 'groq',        name: 'Llama 4 Scout',short: 'Llama 4',    desc: 'Long context' },
-  { id: 'moonshotai/kimi-k2-instruct-0905',             provider: 'groq',        name: 'Kimi K2',      short: 'Kimi K2',    desc: 'Best for coding' },
-  { id: 'meta-llama/llama-3.3-70b-instruct',            provider: 'openrouter',  name: 'Llama 3.3 OR', short: 'Llama OR',   desc: 'OpenRouter Llama 3.3' },
-  { id: 'mistralai/mistral-small-3.1-24b-instruct',     provider: 'openrouter',  name: 'Mistral Small',short: 'Mistral',    desc: 'Mistral Small 3.1' },
-  { id: 'google/gemini-2.0-flash-exp:free',             provider: 'openrouter',  name: 'Gemini OR',    short: 'Gemini OR',  desc: 'Gemini via OpenRouter (free)' },
-  { id: 'gemini-2.0-flash',                             provider: 'gemini',      name: 'Gemini 2.0',   short: 'Gemini 2.0', desc: 'Google Gemini 2.0 Flash' },
-  { id: 'gemini-2.5-flash-lite',                        provider: 'gemini',      name: 'Gemini 2.5',   short: 'Gemini 2.5', desc: 'Google Gemini 2.5 Flash Lite' },
-  { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',     provider: 'cloudflare',  name: 'Llama 3.3 CF', short: 'Llama CF',   desc: 'Cloudflare Llama 3.3' },
+  { id: 'auto',                                         provider: 'groq',       name: 'Auto',       desc: 'Picks best model automatically' },
+  { id: 'llama-3.3-70b-versatile',                      provider: 'groq',       name: 'Llama 3.3',  desc: 'Best for general use' },
+  { id: 'llama-3.1-8b-instant',                         provider: 'groq',       name: 'Llama 3.1',  desc: 'Fastest responses' },
+  { id: 'openai/gpt-oss-120b',                          provider: 'groq',       name: 'GPT-OSS',    desc: 'Best for reasoning' },
+  { id: 'meta-llama/llama-4-scout-17b-16e-instruct',    provider: 'groq',       name: 'Llama 4',    desc: 'Best for long context' },
+  { id: 'moonshotai/kimi-k2-instruct-0905',             provider: 'groq',       name: 'Kimi K2',    desc: 'Best for coding' },
+  { id: 'meta-llama/llama-3.3-70b-instruct',            provider: 'openrouter', name: 'Llama OR',   desc: 'Fast & reliable' },
+  { id: 'mistralai/mistral-small-3.1-24b-instruct',     provider: 'openrouter', name: 'Mistral',    desc: 'Best for summarizing' },
+  { id: 'google/gemini-2.0-flash-exp:free',             provider: 'openrouter', name: 'Gemini OR',  desc: 'Multimodal tasks' },
+  { id: 'gemini-2.0-flash',                             provider: 'gemini',     name: 'Gemini 2.0', desc: 'Best for analysis' },
+  { id: 'gemini-2.5-flash-lite',                        provider: 'gemini',     name: 'Gemini 2.5', desc: 'Latest & fastest' },
+  { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',     provider: 'cloudflare', name: 'Llama CF',   desc: 'Best for quick answers' },
 ];
 
 function autoModel(t) {
