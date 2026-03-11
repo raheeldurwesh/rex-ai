@@ -526,44 +526,105 @@ async def set_token_limit(user_id: str, limit: int, admin_email: str, request: R
 async def keys_health(admin_email: str, request: Request):
     if admin_email not in ADMIN_EMAILS:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     results = []
+
+    # ── Groq ──────────────────────────────────────────────
     for i, key in enumerate(GROQ_KEYS):
-        key_name = f"GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
-        masked = key[:8] + "..." + key[-4:] if key else "missing"
+        name   = "GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
         try:
             client = Groq(api_key=key)
             resp = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-                stream=False
-            )
-            results.append({
-                "name": key_name,
-                "key": masked,
-                "status": "ok",
-                "model": resp.model,
-            })
+                max_tokens=5, stream=False)
+            results.append({"name": name, "key": masked, "provider": "Groq",
+                            "status": "ok", "model": resp.model})
         except Exception as e:
             err = str(e)
-            status = "rate_limited" if "429" in err or "rate_limit" in err else "error"
-            results.append({
-                "name": key_name,
-                "key": masked,
-                "status": status,
-                "error": err[:120]
-            })
-    
+            st  = "rate_limited" if "429" in err or "rate_limit" in err else "error"
+            results.append({"name": name, "key": masked, "provider": "Groq",
+                            "status": st, "error": err[:120]})
+
+    # ── OpenRouter ────────────────────────────────────────
+    for i, key in enumerate(OPENROUTER_KEYS):
+        name   = "OPENROUTER_API_KEY" if i == 0 else f"OPENROUTER_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
+        try:
+            async with httpx.AsyncClient(timeout=10) as hc:
+                r = await hc.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}",
+                             "Content-Type": "application/json",
+                             "HTTP-Referer": "https://rex-ai-raheel.vercel.app"},
+                    json={"model": "meta-llama/llama-3.3-70b-instruct",
+                          "messages": [{"role": "user", "content": "Hi"}],
+                          "max_tokens": 5})
+            if r.status_code == 429:
+                results.append({"name": name, "key": masked, "provider": "OpenRouter", "status": "rate_limited"})
+            elif r.status_code == 200:
+                results.append({"name": name, "key": masked, "provider": "OpenRouter",
+                                "status": "ok", "model": r.json().get("model", "")})
+            else:
+                results.append({"name": name, "key": masked, "provider": "OpenRouter",
+                                "status": "error", "error": r.text[:120]})
+        except Exception as e:
+            results.append({"name": name, "key": masked, "provider": "OpenRouter",
+                            "status": "error", "error": str(e)[:120]})
+
+    # ── Gemini ────────────────────────────────────────────
+    for i, key in enumerate(GEMINI_KEYS):
+        name   = "GEMINI_API_KEY" if i == 0 else f"GEMINI_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:]
+        try:
+            async with httpx.AsyncClient(timeout=10) as hc:
+                r = await hc.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={key}",
+                    headers={"Content-Type": "application/json"},
+                    json={"contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
+                          "generationConfig": {"maxOutputTokens": 5}})
+            if r.status_code == 429:
+                results.append({"name": name, "key": masked, "provider": "Gemini", "status": "rate_limited"})
+            elif r.status_code == 200:
+                results.append({"name": name, "key": masked, "provider": "Gemini",
+                                "status": "ok", "model": "gemini-2.0-flash-001"})
+            else:
+                results.append({"name": name, "key": masked, "provider": "Gemini",
+                                "status": "error", "error": r.text[:120]})
+        except Exception as e:
+            results.append({"name": name, "key": masked, "provider": "Gemini",
+                            "status": "error", "error": str(e)[:120]})
+
+    # ── Cloudflare ────────────────────────────────────────
+    if CLOUDFLARE_TOKENS and CLOUDFLARE_ACCOUNT_ID:
+        for i, token in enumerate(CLOUDFLARE_TOKENS):
+            name   = "CLOUDFLARE_API_TOKEN" if i == 0 else f"CLOUDFLARE_API_TOKEN_{i}"
+            masked = token[:8] + "..." + token[-4:]
+            try:
+                async with httpx.AsyncClient(timeout=10) as hc:
+                    r = await hc.post(
+                        f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct",
+                        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                        json={"messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5})
+                if r.status_code == 200:
+                    results.append({"name": name, "key": masked, "provider": "Cloudflare",
+                                    "status": "ok", "model": "llama-3.1-8b-instruct"})
+                else:
+                    results.append({"name": name, "key": masked, "provider": "Cloudflare",
+                                    "status": "error", "error": r.text[:120]})
+            except Exception as e:
+                results.append({"name": name, "key": masked, "provider": "Cloudflare",
+                                "status": "error", "error": str(e)[:120]})
+    else:
+        results.append({"name": "CLOUDFLARE_API_TOKEN", "key": "not set",
+                        "provider": "Cloudflare", "status": "error",
+                        "error": "Not configured"})
+
     ok = sum(1 for r in results if r["status"] == "ok")
-    rate_limited = sum(1 for r in results if r["status"] == "rate_limited")
-    return {
-        "total": len(results),
-        "ok": ok,
-        "rate_limited": rate_limited,
-        "error": len(results) - ok - rate_limited,
-        "keys": results
-    }
+    rl = sum(1 for r in results if r["status"] == "rate_limited")
+    return {"total": len(results), "ok": ok, "rate_limited": rl,
+            "error": len(results) - ok - rl, "keys": results}
 
 # ── DB proxy ───────────────────────────────────────────────
 @app.get("/db/user")
