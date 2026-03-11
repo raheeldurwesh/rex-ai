@@ -136,6 +136,22 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .upill:hover{border-color:var(--acc);}
 .uav{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#1a1a1a;font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .uname{font-size:.7rem;color:var(--txt);font-weight:500;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.token-detail{margin-top:10px;padding:10px;background:#050505;border-radius:8px;border:1px solid #1a1a1a;}
+.token-bar-wrap{margin-bottom:10px;}
+.token-bar-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--mut);margin-bottom:5px;}
+.token-count{color:var(--acc);font-weight:600;}
+.token-bar-bg{height:6px;background:#1a1a1a;border-radius:99px;overflow:hidden;}
+.token-bar-fill{height:100%;border-radius:99px;transition:width .4s ease;background:var(--acc);}
+.model-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.model-chip{background:#0d0d0d;border:1px solid #222;border-radius:6px;padding:4px 8px;display:flex;gap:6px;align-items:center;}
+.model-chip-name{font-size:.68rem;color:var(--mut);}
+.model-chip-tokens{font-size:.7rem;color:var(--acc);font-weight:700;}
+.token-limit-row{display:flex;gap:6px;align-items:center;}
+.token-limit-inp{flex:1;background:#0d0d0d;border:1px solid #222;border-radius:7px;color:var(--txt);padding:6px 10px;font-size:.76rem;outline:none;font-family:'DM Sans',sans-serif;}
+.token-limit-inp:focus{border-color:var(--acc);}
+.token-limit-btn{background:var(--acc);border:none;color:#1a1a1a;padding:6px 12px;border-radius:7px;font-size:.74rem;font-weight:700;cursor:pointer;}
+.token-reset-btn{background:none;border:1px solid #333;color:var(--mut);padding:6px 10px;border-radius:7px;font-size:.74rem;cursor:pointer;}
+.token-reset-btn:hover{border-color:#e57373;color:#e57373;}
 .light header{background:#fff!important;border-bottom:1px solid #d8d0c4!important;}
 .light .msgs{background:#f7f3ec!important;}
 .light .inp-wrap{background:#f7f3ec!important;border-top:1px solid #d8d0c4!important;}
@@ -262,9 +278,9 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .inp-hint{font-size:.6rem;color:var(--mut);text-align:center;margin-top:6px;opacity:.5;}
 .inp-brand{font-size:.6rem;color:var(--mut);text-align:center;margin-bottom:2px;opacity:.5;}
 .brand-link{color:var(--acc);text-decoration:none;font-weight:500;}
-.go-btn{position:fixed;bottom:95px;right:14px;width:34px;height:34px;background:var(--sur);border:1px solid var(--bdr);border-radius:8px;color:var(--mut);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:all .25s;z-index:300;}
-.go-btn:hover{border-color:var(--acc);color:var(--acc);}
-.go-btn.hidden{opacity:0;pointer-events:none;transform:translateY(6px);}
+.go-btn{position:fixed;bottom:88px;right:18px;width:42px;height:42px;background:var(--acc);border:none;border-radius:50%;color:#1a1a1a;font-size:1.3rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(201,168,76,.55);transition:opacity .25s,transform .25s;z-index:600;}
+.go-btn:hover{background:var(--acc2);transform:scale(1.08);}
+.go-btn.hidden{opacity:0;pointer-events:none;transform:translateY(14px);}
 
 /* OVERLAYS */
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399;}
@@ -545,6 +561,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <div class="stat-icon">📅</div>
           <div class="stat-num">{{ todaySignups }}</div>
           <div class="stat-lbl">Today's Signups</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🪙</div>
+          <div class="stat-num">{{ fmtTokens(totalTokensAll) }}</div>
+          <div class="stat-lbl">Total Tokens Used</div>
         </div>
       </div>
 
@@ -1141,7 +1162,7 @@ Vue.createApp({
           msgsEl.value.addEventListener('scroll', function() {
             var el = msgsEl.value;
             var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
-            showBottom.value = dist > 80;
+            showBottom.value = dist > 50;
             if (!autoScrolling) {
               // Real user scroll
               if (el.scrollTop < lastScrollTop) {
@@ -1664,6 +1685,33 @@ Vue.createApp({
       }, 800);
     }
 
+    var totalTokensAll = Vue.computed(function() {
+      return adminUsers.value.reduce(function(a, u) { return a + (u.total_tokens || 0); }, 0);
+    });
+
+    function fmtTokens(n) {
+      if (!n) return '0';
+      if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+      return n.toString();
+    }
+
+    async function setTokenLimit(userId, limit) {
+      if (!limit && limit !== 0) return;
+      var lim = parseInt(limit) || 0;
+      await sbPatch('users', 'id=eq.' + userId, { token_limit: lim }).catch(function(){});
+      var u = adminUsers.value.find(function(x){ return x.id === userId; });
+      if (u) u.token_limit = lim;
+      alert('Token limit set to ' + (lim > 0 ? lim.toLocaleString() : 'Unlimited'));
+    }
+
+    async function resetTokens(userId) {
+      if (!confirm('Reset token count for this user?')) return;
+      await sbPatch('users', 'id=eq.' + userId, { total_tokens: 0, model_usage: {} }).catch(function(){});
+      var u = adminUsers.value.find(function(x){ return x.id === userId; });
+      if (u) { u.total_tokens = 0; u.model_usage = {}; }
+    }
+
     function fmtDate(ts) {
       if (!ts) return 'never';
       var d = new Date(ts);
@@ -2143,7 +2191,8 @@ Vue.createApp({
     return {
       MODELS, user, authStep, authMode, authEmail, authPassword, authUsername,
       authErr, authOk, authLoading, otpVal, otpEl, newPassword, showPwd,
-      adminOpen, adminUsers, umOpen, totalSearches, totalMessages, todaySignups, growthCanvas, msgCanvas,
+      adminOpen, adminUsers, umOpen, totalSearches, totalMessages, todaySignups, totalTokensAll, growthCanvas, msgCanvas,
+      fmtTokens, setTokenLimit, resetTokens,
       chats, cid, msgs, inp, streaming, stxt, activeModel,
       msgsEl, taEl, editEl, sbOpen, isMobile,
       editIdx, editTxt, cpIdx, selModelId, selModel, mdOpen,
