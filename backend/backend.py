@@ -275,12 +275,20 @@ async def chat(req: ChatRequest, request: Request):
         for key in rotate(GROQ_KEYS, "groq"):
             try:
                 client = Groq(api_key=key)
+                # Use streaming to collect full response (more compatible)
                 s = client.chat.completions.create(
-                    model=model, messages=msgs, stream=False, max_tokens=4096)
-                return s.choices[0].message.content or ""
+                    model=model, messages=msgs, stream=True, max_tokens=4096)
+                text = ""
+                for chunk in s:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        text += delta
+                if text:
+                    return text
+                continue
             except Exception as e:
                 err = str(e)
-                if any(x in err for x in ["rate_limit", "429", "503"]):
+                if any(x in err for x in ["rate_limit", "429", "503", "model_not_found", "404"]):
                     continue
                 raise
         raise Exception("Groq rate limit on all keys")
@@ -303,7 +311,11 @@ async def chat(req: ChatRequest, request: Request):
                         continue
                     if r.status_code != 200:
                         raise Exception(f"OpenRouter {r.status_code}: {r.text[:200]}")
-                    return r.json()["choices"][0]["message"]["content"] or ""
+                    data = r.json()
+                    text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if not text:
+                        raise Exception("Empty response from OpenRouter")
+                    return text
             except Exception as e:
                 if "429" in str(e):
                     continue
@@ -335,8 +347,15 @@ async def chat(req: ChatRequest, request: Request):
                         continue
                     if r.status_code != 200:
                         raise Exception(f"Gemini {r.status_code}: {r.text[:200]}")
-                    parts = r.json()["candidates"][0]["content"]["parts"]
-                    return "".join(p.get("text", "") for p in parts)
+                    data = r.json()
+                    candidates = data.get("candidates", [])
+                    if not candidates:
+                        raise Exception(f"Gemini no candidates: {data}")
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    text = "".join(p.get("text", "") for p in parts)
+                    if not text:
+                        raise Exception("Empty response from Gemini")
+                    return text
             except Exception as e:
                 if "429" in str(e):
                     continue
@@ -359,7 +378,11 @@ async def chat(req: ChatRequest, request: Request):
                     )
                     if r.status_code != 200:
                         raise Exception(f"Cloudflare {r.status_code}: {r.text[:200]}")
-                    return r.json().get("result", {}).get("response", "")
+                    data = r.json()
+                    text = data.get("result", {}).get("response", "")
+                    if not text:
+                        raise Exception(f"Cloudflare empty response: {data}")
+                    return text
             except Exception as e:
                 if "429" in str(e):
                     continue
