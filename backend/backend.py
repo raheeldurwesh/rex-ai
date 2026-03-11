@@ -303,6 +303,75 @@ async def search(q: str, request: Request):
     except Exception as e:
         return {"results": [], "query": q, "error": str(e)}
 
+
+# ── Token tracking ─────────────────────────────────────────
+class TokenUpdateRequest(BaseModel):
+    user_id: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+
+@app.post("/tokens/update")
+async def update_tokens(req: TokenUpdateRequest, request: Request):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    try:
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        # Get current user data
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"{SUPABASE_URL}/rest/v1/users?id=eq.{req.user_id}&select=total_tokens,model_usage,token_limit",
+                headers=headers
+            )
+            users = r.json()
+            if not users:
+                raise HTTPException(status_code=404, detail="User not found")
+            user = users[0]
+            
+            total = req.prompt_tokens + req.completion_tokens
+            new_total = (user.get("total_tokens") or 0) + total
+            
+            model_usage = user.get("model_usage") or {}
+            if req.model not in model_usage:
+                model_usage[req.model] = {"prompt": 0, "completion": 0, "total": 0}
+            model_usage[req.model]["prompt"] += req.prompt_tokens
+            model_usage[req.model]["completion"] += req.completion_tokens
+            model_usage[req.model]["total"] += total
+            
+            # Update
+            await client.patch(
+                f"{SUPABASE_URL}/rest/v1/users?id=eq.{req.user_id}",
+                headers=headers,
+                json={"total_tokens": new_total, "model_usage": model_usage}
+            )
+        return {"ok": True, "total_tokens": new_total}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/tokens/limit")
+async def set_token_limit(user_id: str, limit: int, admin_email: str, request: Request):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    ADMIN_EMAILS = ["raheeldurwesh@gmail.com", "durweshraheel@gmail.com"]
+    if admin_email not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+    async with httpx.AsyncClient(timeout=10) as client:
+        await client.patch(
+            f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
+            headers=headers,
+            json={"token_limit": limit}
+        )
+    return {"ok": True}
+
 # ── DB proxy ───────────────────────────────────────────────
 @app.get("/db/user")
 async def get_user(id: str = None, email: str = None, request: Request = None):
