@@ -110,24 +110,24 @@ def get_keys_rotated():
     return GROQ_KEYS[start:] + GROQ_KEYS[:start]
 
 FALLBACK_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-    "openai/gpt-oss-120b",
-    "moonshotai/kimi-k2-instruct-0905",
+    "llama-3.3-70b-versatile",           # confirmed working
+    "llama-3.1-8b-instant",              # confirmed working
+    "meta-llama/llama-4-scout-17b-16e-instruct",  # confirmed working
+    "openai/gpt-oss-120b",               # confirmed working
+    "moonshotai/kimi-k2-instruct-0905",  # confirmed working
 ]
 
 OPENROUTER_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct",
-    "mistralai/mistral-small-3.1-24b-instruct",
-    "google/gemini-2.0-flash-001",
-    "meta-llama/llama-3.1-8b-instruct",
+    "meta-llama/llama-3.3-70b-instruct",        # confirmed working
+    "mistralai/mistral-small-3.1-24b-instruct", # confirmed on openrouter
+    "google/gemini-2.0-flash-exp:free",          # free gemini on openrouter
+    "meta-llama/llama-3.1-8b-instruct",         # confirmed working
 ]
 
 GEMINI_MODELS = [
-    "gemini-2.0-flash-001",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash-latest",
+    "gemini-2.0-flash",       # stable alias, confirmed valid
+    "gemini-2.5-flash-lite",  # newer model
+    "gemini-2.0-flash-lite",  # lighter version
 ]
 
 CLOUDFLARE_MODELS = [
