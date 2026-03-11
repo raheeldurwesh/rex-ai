@@ -198,6 +198,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .key-badge.rate_limited{color:#ffb74d;}
 .key-badge.error{color:#e57373;}
 .key-error{font-size:.7rem;color:#e57373;margin-top:6px;opacity:.7;word-break:break-all;}
+.key-provider{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.05em;}
+.prov-groq{background:rgba(251,146,60,.15);color:#fb923c;}
+.prov-openrouter{background:rgba(139,92,246,.15);color:#a78bfa;}
+.prov-gemini{background:rgba(59,130,246,.15);color:#60a5fa;}
+.prov-cloudflare{background:rgba(249,115,22,.15);color:#fb923c;}
 .light header{background:#fff!important;border-bottom:1px solid #d8d0c4!important;}
 .light .msgs{background:#f7f3ec!important;}
 .light .inp-wrap{background:#f7f3ec!important;border-top:1px solid #d8d0c4!important;}
@@ -709,11 +714,12 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
         </div>
         <div v-for="k in keysData.keys" :key="k.name" class="key-row" :class="k.status">
           <div class="key-row-top">
-            <span class="key-status-dot" :class="k.status"></span>
+            <span class="key-provider" :class="'prov-' + (k.provider||'').toLowerCase()">{{ k.provider }}</span>
             <span class="key-name">{{ k.name }}</span>
             <span class="key-masked">{{ k.key }}</span>
             <span class="key-badge" :class="k.status">{{ k.status === 'ok' ? '✅ Active' : k.status === 'rate_limited' ? '⚡ Rate Limited' : '❌ Error' }}</span>
           </div>
+          <div v-if="k.model" style="font-size:.68rem;color:var(--mut);margin-top:3px;">Model: {{ k.model }}</div>
           <div v-if="k.error" class="key-error">{{ k.error }}</div>
         </div>
       </div>
