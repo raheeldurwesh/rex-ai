@@ -152,6 +152,52 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .token-limit-btn{background:var(--acc);border:none;color:#1a1a1a;padding:6px 12px;border-radius:7px;font-size:.74rem;font-weight:700;cursor:pointer;}
 .token-reset-btn{background:none;border:1px solid #333;color:var(--mut);padding:6px 10px;border-radius:7px;font-size:.74rem;cursor:pointer;}
 .token-reset-btn:hover{border-color:#e57373;color:#e57373;}
+.token-limit-banner{background:rgba(229,115,115,.1);border:1px solid rgba(229,115,115,.4);border-top:2px solid #e57373;border-radius:10px;padding:12px 16px;font-size:.8rem;color:#e57373;margin:0 12px 8px;display:flex;align-items:center;gap:12px;line-height:1.5;}
+
+/* Token limit popup */
+.tl-fade-enter-active,.tl-fade-leave-active{transition:opacity .3s ease;}
+.tl-fade-enter-from,.tl-fade-leave-to{opacity:0;}
+.tl-overlay{position:fixed;inset:0;background:rgba(0,0,0,.0);backdrop-filter:blur(0px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:none;}
+.tl-card{position:relative;background:#0d0d0d;border:1px solid #2a2a2a;border-top:2px solid #c9a84c;border-radius:20px;padding:36px 32px;max-width:380px;width:100%;text-align:center;overflow:hidden;animation:tl-in .4s cubic-bezier(.34,1.56,.64,1);pointer-events:all;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+@keyframes tl-in{from{transform:scale(.85) translateY(20px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+.tl-glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(201,168,76,.15) 0%,transparent 70%);pointer-events:none;}
+.tl-icon{font-size:2.8rem;margin-bottom:12px;display:block;}
+.tl-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-.02em;}
+.tl-sub{font-size:.85rem;color:var(--mut);margin-bottom:18px;}
+.tl-count{color:var(--acc);font-weight:700;}
+.tl-bar-wrap{height:4px;background:#1a1a1a;border-radius:99px;overflow:hidden;margin-bottom:18px;}
+.tl-bar-fill{height:100%;width:100%;background:linear-gradient(90deg,#c9a84c,#e57373);border-radius:99px;}
+.tl-msg{font-size:.82rem;color:var(--mut);line-height:1.6;margin-bottom:24px;}
+.tl-msg b{color:#e0c97a;}
+.tl-actions{display:flex;flex-direction:column;gap:10px;}
+.tl-btn-primary{display:block;background:linear-gradient(135deg,#c9a84c,#a07828);color:#1a1a1a;font-weight:700;font-size:.85rem;padding:12px 20px;border-radius:10px;text-decoration:none;transition:opacity .2s;}
+.tl-btn-primary:hover{opacity:.85;}
+.tl-btn-secondary{background:none;border:1px solid #2a2a2a;color:var(--mut);font-size:.82rem;padding:10px 20px;border-radius:10px;cursor:pointer;transition:border-color .2s,color .2s;font-family:'DM Sans',sans-serif;}
+.tl-btn-secondary:hover{border-color:#444;color:var(--txt);}
+
+.keys-health-btn{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--acc);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.keys-health-btn:hover{background:rgba(201,168,76,.2);}
+.keys-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.keys-modal{background:#0d0d0d;border:1px solid #2a2a2a;border-top:2px solid var(--acc);border-radius:16px;width:100%;max-width:460px;padding:24px;max-height:80vh;overflow-y:auto;}
+.keys-modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-weight:700;font-size:1rem;color:var(--txt);}
+.keys-modal-close{background:none;border:none;color:var(--mut);font-size:1rem;cursor:pointer;padding:4px;}
+.keys-loading{text-align:center;color:var(--mut);padding:20px;font-size:.85rem;}
+.keys-summary{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.keys-ok{color:#81c784;font-size:.82rem;font-weight:600;}
+.keys-rl{color:#ffb74d;font-size:.82rem;font-weight:600;}
+.keys-err{color:#e57373;font-size:.82rem;font-weight:600;}
+.key-row{background:#050505;border:1px solid #1a1a1a;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.key-row.ok{border-left:3px solid #81c784;}
+.key-row.rate_limited{border-left:3px solid #ffb74d;}
+.key-row.error{border-left:3px solid #e57373;}
+.key-row-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.key-name{font-size:.8rem;font-weight:700;color:var(--txt);}
+.key-masked{font-size:.72rem;color:var(--mut);font-family:monospace;}
+.key-badge{font-size:.7rem;font-weight:700;margin-left:auto;}
+.key-badge.ok{color:#81c784;}
+.key-badge.rate_limited{color:#ffb74d;}
+.key-badge.error{color:#e57373;}
+.key-error{font-size:.7rem;color:#e57373;margin-top:6px;opacity:.7;word-break:break-all;}
 .light header{background:#fff!important;border-bottom:1px solid #d8d0c4!important;}
 .light .msgs{background:#f7f3ec!important;}
 .light .inp-wrap{background:#f7f3ec!important;border-top:1px solid #d8d0c4!important;}
@@ -536,7 +582,10 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
         <span style="font-size:1.3rem;">👑</span>
         <span class="admin-title">Admin Dashboard</span>
       </div>
-      <button class="admin-close" v-on:click="adminOpen=false">✕ Close</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="keys-health-btn" v-on:click="checkKeysHealth">🔑 Keys</button>
+        <button class="admin-close" v-on:click="adminOpen=false">✕ Close</button>
+      </div>
     </div>
 
     <div class="admin-body">
@@ -596,22 +645,102 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <div style="font-size:.7rem;color:var(--mut);">{{ u._open ? '▲' : '▼' }}</div>
         </div>
         <div class="user-meta">
-          <span>💬 {{ u.message_count || 0 }}</span>
-          <span>🔍 {{ (u.searches || []).length }}</span>
+          <span>💬 {{ u.message_count || 0 }} msgs</span>
+          <span>🔍 {{ (u.searches || []).length }} searches</span>
+          <span>🪙 {{ fmtTokens(u.total_tokens || 0) }} tokens</span>
           <span>🕐 {{ fmtDate(u.last_seen) }}</span>
-          <span>📅 {{ fmtDate(u.created_at) }}</span>
         </div>
-        <div class="search-list" v-if="u._open && u.searches && u.searches.length">
-          <div class="admin-sec" style="margin-top:8px;margin-bottom:6px;font-size:.72rem;">Recent Searches</div>
-          <div class="search-item" v-for="s in u.searches.slice().reverse().slice(0,20)" :key="s.time">
-            <span>{{ s.query }}</span>
-            <span class="search-time">{{ fmtDate(s.time) }}</span>
+
+        <template v-if="u._open">
+          <!-- Token usage bar -->
+          <div class="token-detail">
+            <div class="token-bar-wrap">
+              <div class="token-bar-label">
+                <span>Token Usage</span>
+                <span class="token-count">{{ (u.total_tokens || 0).toLocaleString() }} / {{ u.token_limit > 0 ? u.token_limit.toLocaleString() : '∞ Unlimited' }}</span>
+              </div>
+              <div class="token-bar-bg">
+                <div class="token-bar-fill" :style="{width: u.token_limit > 0 ? Math.min((u.total_tokens||0)/u.token_limit*100,100)+'%' : '8%', background: u.token_limit > 0 && (u.total_tokens||0)/u.token_limit > 0.8 ? '#e57373' : 'var(--acc)'}"></div>
+              </div>
+            </div>
+            <!-- Model breakdown -->
+            <div v-if="u.model_usage && Object.keys(u.model_usage).length" class="model-chips">
+              <div v-for="(v, model) in u.model_usage" :key="model" class="model-chip">
+                <span class="model-chip-name">{{ model.split('-').slice(0,3).join('-') }}</span>
+                <span class="model-chip-tokens">{{ fmtTokens(v.total || 0) }}</span>
+              </div>
+            </div>
+            <div v-else style="font-size:.72rem;color:var(--mut);margin-bottom:8px;">No model usage data yet</div>
+            <!-- Set limit -->
+            <div class="token-limit-row">
+              <input class="token-limit-inp" type="number" v-model="u._newLimit" placeholder="Set token limit (0 = unlimited)" min="0" v-on:click.stop>
+              <button class="token-limit-btn" v-on:click.stop="setTokenLimit(u.id, u._newLimit)">Set</button>
+              <button class="token-reset-btn" v-on:click.stop="resetTokens(u.id)">Reset</button>
+            </div>
           </div>
-        </div>
-        <div v-if="u._open && (!u.searches || !u.searches.length)" style="font-size:.75rem;color:var(--mut);padding:6px 0;">No searches yet.</div>
+
+          <!-- Recent searches -->
+          <div class="search-list" v-if="u.searches && u.searches.length">
+            <div class="admin-sec" style="margin-top:0;margin-bottom:6px;font-size:.72rem;">Recent Searches</div>
+            <div class="search-item" v-for="s in u.searches.slice().reverse().slice(0,20)" :key="s.time">
+              <span>{{ s.query }}</span>
+              <span class="search-time">{{ fmtDate(s.time) }}</span>
+            </div>
+          </div>
+          <div v-else style="font-size:.75rem;color:var(--mut);padding:6px 0 0;">No searches yet.</div>
+        </template>
       </div>
     </div>
   </div>
+
+  <!-- KEYS HEALTH MODAL -->
+  <div class="keys-modal-overlay" v-if="keysModalOpen" v-on:click.self="keysModalOpen=false">
+    <div class="keys-modal">
+      <div class="keys-modal-hdr">
+        <span>🔑 API Keys Health</span>
+        <button class="keys-modal-close" v-on:click="keysModalOpen=false">✕</button>
+      </div>
+      <div v-if="keysLoading" class="keys-loading">Checking all keys...</div>
+      <div v-else>
+        <div class="keys-summary">
+          <span class="keys-ok">✅ {{ keysData.ok }} OK</span>
+          <span class="keys-rl">⚡ {{ keysData.rate_limited }} Rate Limited</span>
+          <span class="keys-err">❌ {{ keysData.error }} Error</span>
+        </div>
+        <div v-for="k in keysData.keys" :key="k.name" class="key-row" :class="k.status">
+          <div class="key-row-top">
+            <span class="key-status-dot" :class="k.status"></span>
+            <span class="key-name">{{ k.name }}</span>
+            <span class="key-masked">{{ k.key }}</span>
+            <span class="key-badge" :class="k.status">{{ k.status === 'ok' ? '✅ Active' : k.status === 'rate_limited' ? '⚡ Rate Limited' : '❌ Error' }}</span>
+          </div>
+          <div v-if="k.error" class="key-error">{{ k.error }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOKEN LIMIT POPUP -->
+  <transition name="tl-fade">
+    <div class="tl-overlay" v-if="tokenLimitReached && !isGuest" v-on:click.self="tlDismissed=true">
+      <div class="tl-card" v-if="!tlDismissed">
+        <div class="tl-glow"></div>
+        <div class="tl-icon">🚫</div>
+        <div class="tl-title">Token Limit Reached</div>
+        <div class="tl-sub">You've used all <span class="tl-count">{{ userTokenLimit.toLocaleString() }}</span> tokens</div>
+        <div class="tl-bar-wrap">
+          <div class="tl-bar-fill"></div>
+        </div>
+        <div class="tl-msg">Your account has reached its token limit. Contact <b>Raheel</b> to increase your limit and continue using Rex AI.</div>
+        <div class="tl-actions">
+          <button class="tl-btn-primary" v-on:click="openTokenLimitFeedback">
+            📧 Contact Admin
+          </button>
+          <button class="tl-btn-secondary" v-on:click="tlDismissed=true">Dismiss</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 
   <!-- MAIN APP -->
   <template v-if="user && !adminOpen && !sharedView">
@@ -1092,6 +1221,13 @@ Vue.createApp({
     var mems = Vue.ref([]);
     var activeModel = Vue.ref('');
     var showBottom = Vue.ref(false);
+    var userTokens = Vue.ref(0);
+    var userTokenLimit = Vue.ref(0);
+    var tokenLimitReached = Vue.ref(false);
+    var tlDismissed = Vue.ref(false);
+    var keysModalOpen = Vue.ref(false);
+    var keysLoading = Vue.ref(false);
+    var keysData = Vue.ref({ ok: 0, rate_limited: 0, error: 0, keys: [] });
     var showWsSuggest = Vue.ref(false);
     var serverBusy = Vue.ref(false);
     var allBusy = Vue.ref(false);
@@ -1204,6 +1340,8 @@ Vue.createApp({
           var TWO_HRS = 2 * 60 * 60 * 1000;
           var isAdminEmail = ['raheeldurwesh@gmail.com','durweshraheel@gmail.com'].indexOf(parsed.email) !== -1;
           var sessionLimit = isAdminEmail ? TWO_HRS : THIRTY_DAYS;
+          // Ensure login_time persists
+          if (!parsed.login_time) { parsed.login_time = Date.now(); localStorage.setItem('rex-user', JSON.stringify(parsed)); }
           if (parsed.login_time && (Date.now() - parsed.login_time) > sessionLimit) {
             localStorage.removeItem('rex-user');
           } else {
@@ -1260,6 +1398,14 @@ Vue.createApp({
       mems.value = lsMems(user.value.uid);
       if (chats.value.length > 0) loadChat(chats.value[0].id, false);
       sbPatch('users', 'id=eq.' + user.value.uid, { last_seen: new Date().toISOString() }).catch(function() {});
+      // Load token data
+      sbGet('users', 'id=eq.' + user.value.uid + '&select=total_tokens,token_limit').then(function(ud) {
+        if (ud && ud[0]) {
+          userTokens.value = ud[0].total_tokens || 0;
+          userTokenLimit.value = ud[0].token_limit || 0;
+          tokenLimitReached.value = userTokenLimit.value > 0 && userTokens.value >= userTokenLimit.value;
+        }
+      }).catch(function(){});
     }
 
     function toggleTheme() {
@@ -1656,6 +1802,29 @@ Vue.createApp({
       }).catch(function() {});
     }
 
+    async function checkKeysHealth() {
+      keysModalOpen.value = true;
+      keysLoading.value = true;
+      try {
+        var r = await fetch(BACKEND + '/admin/keys-health?admin_email=' + encodeURIComponent(user.value.email));
+        var d = await r.json();
+        keysData.value = d;
+      } catch(e) {
+        keysData.value = { ok: 0, rate_limited: 0, error: 0, keys: [], err: e.message };
+      } finally {
+        keysLoading.value = false;
+      }
+    }
+
+    function openTokenLimitFeedback() {
+      tlDismissed.value = true;
+      fbIdx.value = null;
+      fbVal.value = 0;
+      fbText.value = 'Hi Raheel, I have reached my token limit on Rex AI. Could you please increase my limit? My email is ' + (user.value ? user.value.email : '');
+      fbDone.value = false;
+      fbOpen.value = true;
+    }
+
     function sendFeedback(i, val, content) {
       fbIdx.value = i;
       fbVal.value = val;
@@ -1909,10 +2078,35 @@ Vue.createApp({
         if (guestMsgCount.value >= 10) { guestPrompt.value = true; return; }
         guestMsgCount.value++;
       }
+      // Token limit check — fetch fresh from Supabase
+      if (!isGuest.value && user.value) {
+        try {
+          var td = await sbGet('users', 'id=eq.' + user.value.uid + '&select=total_tokens,token_limit');
+          if (td && td[0]) {
+            userTokens.value = td[0].total_tokens || 0;
+            userTokenLimit.value = td[0].token_limit || 0;
+            if (userTokenLimit.value > 0 && userTokens.value >= userTokenLimit.value) {
+              tokenLimitReached.value = true;
+              tlDismissed.value = false;
+              inp.value = '';
+              Vue.nextTick(function() {
+                if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
+              });
+              return;
+            }
+          }
+        } catch(e) {}
+      }
       msgs.value.push({ role: 'user', content: text });
       inp.value = '';
       Vue.nextTick(function() { if (taEl.value) taEl.value.style.height = 'auto'; });
-      userScrolled = false; scrollBottom(true); if (!isGuest.value) extractMems(text);
+      userScrolled = false;
+      Vue.nextTick(function() {
+        if (msgsEl.value) {
+          msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
+        }
+      });
+      if (!isGuest.value) extractMems(text);
       stopped.value = false; startAutoScroll();
       if (!isGuest.value) logActivity(text);
       var searchCtx = '';
@@ -2023,7 +2217,40 @@ Vue.createApp({
           }
         }
       } catch(err) { msgs.value.push({ role: 'assistant', content: 'Cannot reach backend. Please try again.', usedModel: '' }); }
-      finally { streaming.value = false; stxt.value = ''; activeModel.value = ''; userScrolled = false; scrollBottom(true); }
+      finally {
+        // Track tokens — estimate: 4 chars ≈ 1 token
+        if (user.value && !user.value.isGuest && stxt.value && userText) {
+          var pTok = Math.ceil(userText.length / 4);
+          var cTok = Math.ceil(stxt.value.length / 4);
+          var total = pTok + cTok;
+          var modelUsed = activeModel.value || selModelId.value || 'llama-3.3-70b-versatile';
+          // Update Supabase directly
+          sbGet('users', 'id=eq.' + user.value.uid + '&select=total_tokens,model_usage,token_limit').then(function(ud) {
+            if (!ud || !ud[0]) return;
+            var newTotal = (ud[0].total_tokens || 0) + total;
+            var mu = ud[0].model_usage || {};
+            if (!mu[modelUsed]) mu[modelUsed] = {prompt:0, completion:0, total:0};
+            mu[modelUsed].prompt += pTok;
+            mu[modelUsed].completion += cTok;
+            mu[modelUsed].total += total;
+            sbPatch('users', 'id=eq.' + user.value.uid, {
+              total_tokens: newTotal,
+              model_usage: mu
+            }).catch(function(){});
+            // Update reactive refs
+            userTokens.value = newTotal;
+            userTokenLimit.value = ud[0].token_limit || 0;
+            if (userTokenLimit.value > 0 && newTotal >= userTokenLimit.value) {
+              tokenLimitReached.value = true;
+            }
+          }).catch(function(){});
+        }
+        streaming.value = false; stxt.value = ''; activeModel.value = '';
+        userScrolled = false;
+        Vue.nextTick(function() {
+          if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
+        });
+      }
     }
 
     function startEdit(i, c) { editIdx.value = i; editTxt.value = c; Vue.nextTick(function() { if (editEl.value) editEl.value.focus(); }); }
@@ -2200,7 +2427,7 @@ Vue.createApp({
       newChat, loadChat, delChat, send, lastUserMsgIdx, lastAsstMsgIdx,
       headingIdx, headingVisible, ALL_HEADINGS,
       fbIdx, fbVal, fbOpen, fbText, fbSending, fbDone, sendFeedback, openFeedback, submitFeedback, qs, onKey, resizeTa,
-      exportPDF, exportAllPDF, showBottom, goBottom,
+      exportPDF, exportAllPDF, showBottom, goBottom, userTokens, userTokenLimit, tokenLimitReached, tlDismissed, openTokenLimitFeedback, keysModalOpen, keysLoading, keysData, checkKeysHealth,
       webSearch, searching, searchQuery,
       shareOpen, shareUrl, shareCopied, shareChat, copyShareUrl,
       stopped, pickModel, delMem, clearMems,
