@@ -372,6 +372,51 @@ async def set_token_limit(user_id: str, limit: int, admin_email: str, request: R
         )
     return {"ok": True}
 
+
+# ── API Keys Health Check ──────────────────────────────────
+@app.get("/admin/keys-health")
+async def keys_health(admin_email: str, request: Request):
+    if admin_email not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    results = []
+    for i, key in enumerate(GROQ_KEYS):
+        key_name = f"GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
+        masked = key[:8] + "..." + key[-4:] if key else "missing"
+        try:
+            client = Groq(api_key=key)
+            resp = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=5,
+                stream=False
+            )
+            results.append({
+                "name": key_name,
+                "key": masked,
+                "status": "ok",
+                "model": resp.model,
+            })
+        except Exception as e:
+            err = str(e)
+            status = "rate_limited" if "429" in err or "rate_limit" in err else "error"
+            results.append({
+                "name": key_name,
+                "key": masked,
+                "status": status,
+                "error": err[:120]
+            })
+    
+    ok = sum(1 for r in results if r["status"] == "ok")
+    rate_limited = sum(1 for r in results if r["status"] == "rate_limited")
+    return {
+        "total": len(results),
+        "ok": ok,
+        "rate_limited": rate_limited,
+        "error": len(results) - ok - rate_limited,
+        "keys": results
+    }
+
 # ── DB proxy ───────────────────────────────────────────────
 @app.get("/db/user")
 async def get_user(id: str = None, email: str = None, request: Request = None):
