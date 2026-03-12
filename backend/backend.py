@@ -133,7 +133,6 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message]
     model: str = "llama-3.3-70b-versatile"
-    provider: str = "groq"  # groq | openrouter | gemini | cloudflare
 
 class HashRequest(BaseModel):
     password: str
@@ -317,183 +316,36 @@ async def chat(req: ChatRequest, request: Request):
     if sem._value == 0 and len(getattr(sem, '_waiters', [])) >= MAX_QUEUE:
         raise HTTPException(status_code=503, detail="Rex is a bit busy right now. Please try again in a moment!")
 
-    provider  = (req.provider or "groq").lower()
-    model_id  = req.model
-    msgs_data = [m.dict() for m in req.messages]
+    models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
-    async def generate():
-        # ── GROQ ────────────────────────────────────────────────────────────
-        if provider == "groq":
-            groq_models = [model_id] + [m for m in FALLBACK_MODELS if m != model_id]
-            for key in get_keys_rotated():
-                for mdl in groq_models:
-                    try:
-                        client = Groq(api_key=key)
-                        stream = await asyncio.to_thread(
-                            lambda k=key, md=mdl: Groq(api_key=k).chat.completions.create(
-                                model=md, messages=msgs_data, stream=True, max_tokens=4096
-                            )
-                        )
-                        yield f"data: {json.dumps({'model': mdl})}\n\n"
-                        for chunk in stream:
-                            delta = chunk.choices[0].delta.content
-                            if delta:
-                                yield f"data: {json.dumps({'text': delta})}\n\n"
-                        yield "data: [DONE]\n\n"
-                        return
-                    except Exception as e:
-                        if "rate_limit" in str(e) or "429" in str(e):
-                            continue
+    def generate():
+        for key in get_keys_rotated():
+            for model in models:
+                try:
+                    client = Groq(api_key=key)
+                    stream = client.chat.completions.create(
+                        model=model,
+                        messages=[m.dict() for m in req.messages],
+                        stream=True,
+                        max_tokens=4096,
+                    )
+                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    for chunk in stream:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            yield f"data: {json.dumps({'text': delta})}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+                except Exception as e:
+                    if "rate_limit" in str(e) or "429" in str(e):
                         continue
-
-        # ── OPENROUTER ──────────────────────────────────────────────────────
-        elif provider == "openrouter":
-            or_keys = [k for k in [
-                os.getenv("OPENROUTER_API_KEY"),
-                os.getenv("OPENROUTER_API_KEY_1"),
-            ] if k]
-            if not or_keys:
-                yield f"data: {json.dumps({'text': 'OpenRouter API key not configured.'})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            for key in or_keys:
-                try:
-                    async with httpx.AsyncClient(timeout=60) as client:
-                        async with client.stream(
-                            "POST",
-                            "https://openrouter.ai/api/v1/chat/completions",
-                            headers={
-                                "Authorization": f"Bearer {key}",
-                                "Content-Type": "application/json",
-                                "HTTP-Referer": "https://rex-ai-coral.vercel.app",
-                                "X-Title": "Rex AI",
-                            },
-                            json={"model": model_id, "messages": msgs_data, "stream": True, "max_tokens": 4096}
-                        ) as resp:
-                            if resp.status_code == 429:
-                                continue
-                            if resp.status_code != 200:
-                                continue
-                            yield f"data: {json.dumps({'model': model_id})}\n\n"
-                            async for line in resp.aiter_lines():
-                                if not line.startswith("data: "):
-                                    continue
-                                s = line[6:]
-                                if s == "[DONE]":
-                                    break
-                                try:
-                                    pp = json.loads(s)
-                                    delta = pp.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                                    if delta:
-                                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                                except Exception:
-                                    pass
-                            yield "data: [DONE]\n\n"
-                            return
-                except Exception:
                     continue
-
-        # ── GEMINI ──────────────────────────────────────────────────────────
-        elif provider == "gemini":
-            gemini_keys = [k for k in [
-                os.getenv("GEMINI_API_KEY"),
-                os.getenv("GEMINI_API_KEY_1"),
-            ] if k]
-            if not gemini_keys:
-                yield f"data: {json.dumps({'text': 'Gemini API key not configured.'})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            # Convert messages to Gemini format
-            system_txt = ""
-            gemini_msgs = []
-            for m in msgs_data:
-                if m["role"] == "system":
-                    system_txt = m["content"]
-                elif m["role"] == "user":
-                    gemini_msgs.append({"role": "user", "parts": [{"text": m["content"]}]})
-                elif m["role"] == "assistant":
-                    gemini_msgs.append({"role": "model", "parts": [{"text": m["content"]}]})
-            payload = {"contents": gemini_msgs, "generationConfig": {"maxOutputTokens": 4096}}
-            if system_txt:
-                payload["systemInstruction"] = {"parts": [{"text": system_txt}]}
-            for key in gemini_keys:
-                try:
-                    async with httpx.AsyncClient(timeout=60) as client:
-                        async with client.stream(
-                            "POST",
-                            f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:streamGenerateContent?alt=sse&key={key}",
-                            headers={"Content-Type": "application/json"},
-                            json=payload
-                        ) as resp:
-                            if resp.status_code == 429:
-                                continue
-                            if resp.status_code != 200:
-                                continue
-                            yield f"data: {json.dumps({'model': model_id})}\n\n"
-                            async for line in resp.aiter_lines():
-                                if not line.startswith("data: "):
-                                    continue
-                                s = line[6:]
-                                try:
-                                    pp = json.loads(s)
-                                    parts = pp.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-                                    for part in parts:
-                                        if part.get("text"):
-                                            yield f"data: {json.dumps({'text': part['text']})}\n\n"
-                                except Exception:
-                                    pass
-                            yield "data: [DONE]\n\n"
-                            return
-                except Exception:
-                    continue
-
-        # ── CLOUDFLARE ──────────────────────────────────────────────────────
-        elif provider == "cloudflare":
-            cf_token   = os.getenv("CLOUDFLARE_API_TOKEN", "")
-            cf_account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
-            if not cf_token or not cf_account:
-                yield f"data: {json.dumps({'text': 'Cloudflare not configured.'})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    async with client.stream(
-                        "POST",
-                        f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/{model_id}",
-                        headers={"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"},
-                        json={"messages": msgs_data, "stream": True, "max_tokens": 4096}
-                    ) as resp:
-                        if resp.status_code != 200:
-                            yield f"data: {json.dumps({'text': 'Cloudflare error: ' + str(resp.status_code)})}\n\n"
-                            yield "data: [DONE]\n\n"
-                            return
-                        yield f"data: {json.dumps({'model': model_id})}\n\n"
-                        async for line in resp.aiter_lines():
-                            if not line.startswith("data: "):
-                                continue
-                            s = line[6:]
-                            if s == "[DONE]":
-                                break
-                            try:
-                                pp = json.loads(s)
-                                if pp.get("response"):
-                                    yield f"data: {json.dumps({'text': pp['response']})}\n\n"
-                            except Exception:
-                                pass
-                        yield "data: [DONE]\n\n"
-                        return
-            except Exception as e:
-                yield f"data: {json.dumps({'text': 'Cloudflare error. Please try another model.'})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-
-        # ── Unknown provider fallback ────────────────────────────────────────
         yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
     async def guarded_generate():
         async with get_semaphore():
-            async for chunk in generate():
+            for chunk in generate():
                 yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
