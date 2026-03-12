@@ -397,9 +397,18 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .light .brand-link{color:var(--acc);}
 /* Admin light/dark handled via --admin-* CSS vars in :root and body.light */
 
-.go-btn{position:fixed;bottom:88px;right:18px;width:42px;height:42px;background:var(--acc);border:none;border-radius:50%;color:#1a1a1a;font-size:1.3rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(201,168,76,.55);transition:opacity .25s,transform .25s;z-index:600;}
-.go-btn:hover{background:var(--acc2);transform:scale(1.08);}
-.go-btn.hidden{opacity:0;pointer-events:none;transform:translateY(14px);}
+.go-btn{
+  position:fixed;bottom:96px;right:22px;
+  width:38px;height:38px;
+  background:var(--sur);border:1px solid var(--bdr);
+  border-radius:50%;color:var(--txt);font-size:1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  transition:opacity .2s,transform .2s,box-shadow .2s;
+  z-index:600;
+}
+.go-btn:hover{background:var(--sur2);box-shadow:0 4px 18px rgba(0,0,0,.35);transform:translateY(-2px);}
+.go-btn.hidden{opacity:0;pointer-events:none;transform:translateY(10px);}
 
 /* OVERLAYS */
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399;}
@@ -1210,7 +1219,9 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
       </div>
     </div>
 
-    <button class="go-btn" :class="{hidden: !showBottom}" v-on:click="goBottom">&#8595;</button>
+    <button class="go-btn" :class="{hidden: !showBottom}" v-on:click="goBottom" title="Scroll to bottom">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
 
     <!-- Guest signup prompt modal -->
     <div class="modal-ov" :class="{show: guestPrompt}" v-on:click.self="guestPrompt=false">
@@ -1559,12 +1570,12 @@ Vue.createApp({
       if (!msgsEl.value) return;
       autoScrolling = true;
       msgsEl.value.scrollTop = msgsEl.value.scrollHeight;
-      setTimeout(function() { autoScrolling = false; }, 80);
+      setTimeout(function() { autoScrolling = false; }, 120);
     }
     function doAutoScroll() {
-      if (!msgsEl.value) return;
+      if (userScrolled || !msgsEl.value) return;
       var dist = msgsEl.value.scrollHeight - msgsEl.value.scrollTop - msgsEl.value.clientHeight;
-      if (!userScrolled || dist < 80) forceScrollBottom();
+      if (dist < 200) forceScrollBottom();
     }
     function scrollBottom(force) {
       if (!force && userScrolled) return;
@@ -1747,19 +1758,28 @@ Vue.createApp({
       });
       Vue.nextTick(function() {
         if (msgsEl.value) {
-          var lastScrollTop = 0;
-          msgsEl.value.addEventListener('scroll', function() {
-            var el = msgsEl.value;
-            var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
-            showBottom.value = dist > 100;
-            if (!autoScrolling) {
-              // Only set userScrolled if user scrolled UP deliberately (not just layout reflow)
-              if (el.scrollTop < lastScrollTop - 10) userScrolled = true;
-              // Reset flag when user is back near bottom
-              if (dist < 40) { userScrolled = false; showBottom.value = false; }
+          var el = msgsEl.value;
+
+          // ── Detect real user scroll intent via wheel / touch (NOT position compare) ──
+          el.addEventListener('wheel', function(e) {
+            if (e.deltaY < 0) {
+              // User scrolled UP — stop auto-scroll
+              userScrolled = true;
             }
-            lastScrollTop = el.scrollTop;
-          });
+          }, { passive: true });
+
+          el.addEventListener('touchstart', function() {
+            // On touch devices, mark as user-scrolled; reset below if they reach bottom
+            userScrolled = true;
+          }, { passive: true });
+
+          // ── Track distance from bottom for showBottom button ──
+          el.addEventListener('scroll', function() {
+            var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+            showBottom.value = dist > 120;
+            // If user has scrolled all the way back to bottom, resume auto-scroll
+            if (dist < 40) { userScrolled = false; showBottom.value = false; }
+          }, { passive: true });
         }
       });
 
@@ -1972,11 +1992,6 @@ Vue.createApp({
       authLoading.value = false;
     }
 
-    function triggerGoogleLogin() {
-      if (window.google && window.google.accounts) window.google.accounts.id.prompt();
-      else authErr.value = 'Google login not ready. Please refresh.';
-    }
-
     async function handleGoogleLogin(response) {
       authErr.value = ''; authLoading.value = true;
       try {
@@ -2008,10 +2023,35 @@ Vue.createApp({
 
     function initGoogleBtn() {
       if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleLogin, auto_select: false });
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleLogin,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
       } else { setTimeout(initGoogleBtn, 300); }
     }
     setTimeout(initGoogleBtn, 500);
+
+    function triggerGoogleLogin() {
+      if (!window.google || !window.google.accounts) { authErr.value = 'Google login not ready. Please refresh.'; return; }
+      // Re-initialize every time to clear stale state
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      // Cancel any existing prompt then show fresh
+      window.google.accounts.id.cancel();
+      setTimeout(function() {
+        window.google.accounts.id.prompt(function(notification) {
+          if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
+            // One Tap was skipped/dismissed — nothing to do, user can try again
+          }
+        });
+      }, 100);
+    }
 
     function continueAsGuest() {
       isGuest.value = true; guestMsgCount.value = 0;
@@ -2023,9 +2063,27 @@ Vue.createApp({
       msgs.value = []; authStep.value = 'form'; authMode.value = 'signup';
     }
     function doLogout() {
+      // Properly sign out from Google to allow re-login without page refresh
+      if (window.google && window.google.accounts) {
+        try {
+          window.google.accounts.id.disableAutoSelect();
+          window.google.accounts.id.cancel();
+        } catch(e) {}
+      }
       responseStyle.value = ''; user.value = null;
       localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
+      // Re-initialize Google after a short delay so it's ready for next login
+      setTimeout(function() {
+        if (window.google && window.google.accounts) {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleLogin,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+        }
+      }, 300);
     }
 
     // ─── Admin functions ──────────────────────────────────────────────────────
@@ -2487,17 +2545,25 @@ Vue.createApp({
           done = true;
         };
         var typeLoop = async function() {
+          var lastScroll = 0;
           while ((!done || buf.length) && !stopped.value) {
-            if (document.hidden) {
-              if (buf.length) { stxt.value += buf; buf = ''; }
-              await new Promise(function(r) { setTimeout(r, 50); });
-            } else if (buf.length) {
-              var n = Math.floor(Math.random() * 3) + 1; stxt.value += buf.slice(0, n); buf = buf.slice(n);
-              await new Promise(function(r) { setTimeout(r, Math.random() * 14 + 8); });
+            if (buf.length) {
+              var n = document.hidden ? buf.length : Math.min(buf.length, 6);
+              stxt.value += buf.slice(0, n);
+              buf = buf.slice(n);
+              // Scroll every 200ms max — prevents layout thrash / fluctuation
+              var now = Date.now();
+              if (!userScrolled && now - lastScroll > 200) {
+                lastScroll = now;
+                doAutoScroll();
+              }
+              await new Promise(function(r) { setTimeout(r, 16); });
             } else {
               await new Promise(function(r) { setTimeout(r, 10); });
             }
           }
+          // Final scroll when response complete
+          if (!userScrolled) Vue.nextTick(forceScrollBottom);
         };
         await Promise.all([readLoop(), typeLoop()]);
 
@@ -2538,7 +2604,7 @@ Vue.createApp({
     }
 
     // Auto-scroll watcher
-    Vue.watch(stxt, function() { if (streaming.value) doAutoScroll(); });
+    Vue.watch(stxt, function() { /* scroll handled in typeLoop directly */ });
 
     // ─── Edit / Copy ──────────────────────────────────────────────────────────
     function startEdit(i, c) { editIdx.value = i; editTxt.value = c; Vue.nextTick(function() { if (editEl.value) editEl.value.focus(); }); }
