@@ -1973,10 +1973,8 @@ Vue.createApp({
     }
 
     function triggerGoogleLogin() {
-      if (!window.google || !window.google.accounts) { authErr.value = 'Google login not ready. Please refresh.'; return; }
-      window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleLogin, auto_select: false });
-      window.google.accounts.id.cancel();
-      setTimeout(function() { window.google.accounts.id.prompt(); }, 100);
+      if (window.google && window.google.accounts) window.google.accounts.id.prompt();
+      else authErr.value = 'Google login not ready. Please refresh.';
     }
 
     async function handleGoogleLogin(response) {
@@ -2025,18 +2023,9 @@ Vue.createApp({
       msgs.value = []; authStep.value = 'form'; authMode.value = 'signup';
     }
     function doLogout() {
-      if (window.google && window.google.accounts) {
-        try { window.google.accounts.id.disableAutoSelect(); } catch(e) {}
-        try { window.google.accounts.id.cancel(); } catch(e) {}
-      }
       responseStyle.value = ''; user.value = null;
       localStorage.removeItem('rex-user');
       umOpen.value = false; chats.value = []; msgs.value = []; mems.value = []; cid.value = null;
-      setTimeout(function() {
-        if (window.google && window.google.accounts) {
-          window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleLogin, auto_select: false });
-        }
-      }, 300);
     }
 
     // ─── Admin functions ──────────────────────────────────────────────────────
