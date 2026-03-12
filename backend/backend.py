@@ -358,87 +358,120 @@ async def search(q: str, request: Request):
     try:
         results = []
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (compatible; RexAI/1.0)",
+            "Accept": "application/json",
         }
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-            # Strategy 1: DuckDuckGo HTML (updated regex patterns)
-            try:
-                resp = await client.get("https://html.duckduckgo.com/html/", params={"q": q}, headers=headers)
-                if resp.status_code == 200:
-                    # Try multiple regex patterns for DDG's changing HTML
-                    patterns = [
-                        r'<a[^>]+class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
-                        r'<h2[^>]*class="[^"]*result__title[^"]*"[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
-                        r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</(?:a|span)>',
-                    ]
-                    for pat in patterns:
-                        blocks = re.findall(pat, resp.text, re.DOTALL)
-                        for url, title, snippet in blocks[:5]:
-                            title   = re.sub(r'<[^>]+>', '', title).strip()
-                            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
-                            for ent, ch in [('&amp;','&'),('&lt;','<'),('&gt;','>'),('&#x27;',"'"),('&quot;','"'),('&#39;',"'")]:
-                                title = title.replace(ent, ch)
-                                snippet = snippet.replace(ent, ch)
-                            # decode DDG redirect URLs
-                            if url.startswith("//duckduckgo.com/l/"):
-                                m = re.search(r'uddg=([^&]+)', url)
-                                if m:
-                                    from urllib.parse import unquote
-                                    url = unquote(m.group(1))
-                            if title and snippet and url:
-                                results.append({"title": title, "snippet": snippet, "url": url})
-                        if results:
-                            break
-            except Exception:
-                pass
+        async with httpx.AsyncClient(timeout=12, follow_redirects=True) as client:
 
-            # Strategy 2: DuckDuckGo Instant Answer JSON API
-            if not results:
-                try:
-                    ia = await client.get(
-                        "https://api.duckduckgo.com/",
-                        params={"q": q, "format": "json", "no_redirect": "1", "no_html": "1", "skip_disambig": "1"},
-                        headers=headers
-                    )
+            # ── Strategy 1: DuckDuckGo Instant Answer JSON ─────────────────────
+            try:
+                ia = await client.get(
+                    "https://api.duckduckgo.com/",
+                    params={"q": q, "format": "json", "no_redirect": "1",
+                            "no_html": "1", "skip_disambig": "1"},
+                    headers=headers
+                )
+                if ia.status_code == 200:
                     data = ia.json()
                     if data.get("AbstractText"):
                         results.append({
                             "title":   data.get("Heading", q),
-                            "snippet": data["AbstractText"][:300],
-                            "url":     data.get("AbstractURL", "https://duckduckgo.com/?q=" + q)
+                            "snippet": data["AbstractText"][:400],
+                            "url":     data.get("AbstractURL", "")
                         })
-                    for rt in data.get("RelatedTopics", [])[:4]:
+                    for rt in data.get("RelatedTopics", []):
                         if isinstance(rt, dict) and rt.get("Text") and rt.get("FirstURL"):
                             results.append({
-                                "title":   rt.get("Text", "")[:80],
-                                "snippet": rt.get("Text", "")[:200],
-                                "url":     rt.get("FirstURL", "")
+                                "title":   rt["Text"][:80],
+                                "snippet": rt["Text"][:250],
+                                "url":     rt["FirstURL"]
                             })
+                        elif isinstance(rt, dict) and rt.get("Topics"):
+                            for sub in rt["Topics"]:
+                                if isinstance(sub, dict) and sub.get("Text") and sub.get("FirstURL"):
+                                    results.append({
+                                        "title":   sub["Text"][:80],
+                                        "snippet": sub["Text"][:250],
+                                        "url":     sub["FirstURL"]
+                                    })
                         if len(results) >= 5:
                             break
+            except Exception:
+                pass
+
+            # ── Strategy 2: DuckDuckGo HTML scrape (updated selectors) ─────────
+            if len(results) < 3:
+                try:
+                    html_headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "Accept": "text/html,application/xhtml+xml",
+                    }
+                    resp = await client.post(
+                        "https://html.duckduckgo.com/html/",
+                        data={"q": q, "b": "", "kl": "us-en"},
+                        headers=html_headers
+                    )
+                    if resp.status_code == 200:
+                        html = resp.text
+                        # Extract result links and snippets
+                        titles   = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html, re.DOTALL)
+                        snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</(?:span|a)>', html, re.DOTALL)
+                        urls_raw = re.findall(r'class="result__url"[^>]*>(.*?)</a>', html, re.DOTALL)
+
+                        def clean(s):
+                            s = re.sub(r'<[^>]+>', '', s).strip()
+                            for ent, ch in [('&amp;','&'),('&lt;','<'),('&gt;','>'),('&#x27;',"'"),('&quot;','"'),('&#39;',"'"),('&nbsp;',' ')]:
+                                s = s.replace(ent, ch)
+                            return s
+
+                        for i in range(min(len(titles), len(snippets), 5)):
+                            t = clean(titles[i])
+                            s = clean(snippets[i])
+                            u = clean(urls_raw[i]) if i < len(urls_raw) else ""
+                            if not u.startswith("http"):
+                                u = "https://" + u
+                            if t and s and t not in [r["title"] for r in results]:
+                                results.append({"title": t, "snippet": s, "url": u})
                 except Exception:
                     pass
 
-            # Strategy 3: Brave Search HTML fallback
-            if not results:
+            # ── Strategy 3: Wikipedia API (always reliable) ────────────────────
+            if len(results) < 2:
                 try:
-                    brave_resp = await client.get(
-                        "https://search.brave.com/search",
-                        params={"q": q, "source": "web"},
+                    wiki = await client.get(
+                        "https://en.wikipedia.org/api/rest_v1/page/summary/" + q.replace(" ", "_"),
                         headers=headers
                     )
-                    if brave_resp.status_code == 200:
-                        snippets = re.findall(
-                            r'<a[^>]+href="(https?://[^"]+)"[^>]*class="[^"]*result-header[^"]*"[^>]*>(.*?)</a>.*?<p[^>]*class="[^"]*snippet[^"]*"[^>]*>(.*?)</p>',
-                            brave_resp.text, re.DOTALL
-                        )
-                        for url, title, snippet in snippets[:5]:
-                            title   = re.sub(r'<[^>]+>', '', title).strip()
-                            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
-                            if title and snippet:
-                                results.append({"title": title, "snippet": snippet, "url": url})
+                    if wiki.status_code == 200:
+                        wd = wiki.json()
+                        if wd.get("extract"):
+                            results.append({
+                                "title":   wd.get("title", q),
+                                "snippet": wd["extract"][:400],
+                                "url":     wd.get("content_urls", {}).get("desktop", {}).get("page", "")
+                            })
+                except Exception:
+                    pass
+
+            # ── Strategy 4: Wikipedia Search ───────────────────────────────────
+            if len(results) < 2:
+                try:
+                    ws = await client.get(
+                        "https://en.wikipedia.org/w/api.php",
+                        params={"action":"query","list":"search","srsearch":q,
+                                "srlimit":3,"format":"json","utf8":1},
+                        headers=headers
+                    )
+                    if ws.status_code == 200:
+                        for item in ws.json().get("query",{}).get("search",[]):
+                            snippet = re.sub(r'<[^>]+>', '', item.get("snippet","")).strip()
+                            if snippet:
+                                results.append({
+                                    "title":   item.get("title",""),
+                                    "snippet": snippet[:300],
+                                    "url":     f"https://en.wikipedia.org/wiki/{item['title'].replace(' ','_')}"
+                                })
                 except Exception:
                     pass
 
@@ -492,6 +525,101 @@ async def get_all_users(request: Request, admin_email: str = None):
         r = await client.get(f"{SUPABASE_URL}/rest/v1/users?select=*&order=last_seen.desc",
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"})
         return r.json()
+
+# ── API Keys Health Check ──────────────────────────────────
+@app.get("/admin/keys-health")
+async def keys_health(request: Request, admin_email: str = None):
+    if admin_email not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    all_keys = {
+        "groq": [k for k in [
+            os.getenv("GROQ_API_KEY"),
+            *[os.getenv(f"GROQ_API_KEY_{i}") for i in range(1, 10)],
+        ] if k],
+        "openrouter": [k for k in [
+            os.getenv("OPENROUTER_API_KEY"),
+            os.getenv("OPENROUTER_API_KEY_1"),
+        ] if k],
+        "gemini": [k for k in [
+            os.getenv("GEMINI_API_KEY"),
+            os.getenv("GEMINI_API_KEY_1"),
+        ] if k],
+    }
+
+    results = []
+    ok_count = 0
+    rl_count = 0
+    err_count = 0
+
+    async with httpx.AsyncClient(timeout=8) as client:
+        # Test Groq keys
+        for i, key in enumerate(all_keys["groq"]):
+            name = f"Groq #{i+1}"
+            masked = key[:8] + "..." + key[-4:]
+            try:
+                r = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}
+                )
+                if r.status_code == 200:
+                    status = "ok"; ok_count += 1
+                elif r.status_code == 429:
+                    status = "rate_limited"; rl_count += 1
+                else:
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "groq", "key": masked, "status": status})
+
+        # Test OpenRouter keys
+        for i, key in enumerate(all_keys["openrouter"]):
+            name = f"OpenRouter #{i+1}"
+            masked = key[:8] + "..." + key[-4:]
+            try:
+                r = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={"model": "meta-llama/llama-3.3-70b-instruct", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}
+                )
+                if r.status_code == 200:
+                    status = "ok"; ok_count += 1
+                elif r.status_code == 429:
+                    status = "rate_limited"; rl_count += 1
+                else:
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "openrouter", "key": masked, "status": status})
+
+        # Test Gemini keys
+        for i, key in enumerate(all_keys["gemini"]):
+            name = f"Gemini #{i+1}"
+            masked = key[:8] + "..." + key[-4:]
+            try:
+                r = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}",
+                    headers={"Content-Type": "application/json"},
+                    json={"contents": [{"parts": [{"text": "hi"}]}], "generationConfig": {"maxOutputTokens": 1}}
+                )
+                if r.status_code == 200:
+                    status = "ok"; ok_count += 1
+                elif r.status_code == 429:
+                    status = "rate_limited"; rl_count += 1
+                else:
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "gemini", "key": masked, "status": status})
+
+    return {
+        "ok": ok_count,
+        "rate_limited": rl_count,
+        "error": err_count,
+        "total": len(results),
+        "keys": results
+    }
 
 # ── Share ──────────────────────────────────────────────────
 @app.post("/share")
