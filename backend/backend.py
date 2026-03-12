@@ -3,32 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from groq import Groq
-import json, os, httpx, re, hashlib, hmac, time, secrets, random
+import json, os, httpx, re, hashlib, hmac, time, secrets
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone, timedelta
-
-BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "raheeldurwesh@gmail.com")
-BREVO_SENDER_NAME = "Rex AI"
-
-async def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: str):
-    if not BREVO_API_KEY:
-        raise Exception("Brevo API key not configured")
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-            json={
-                "sender": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
-                "to": [{"email": to_email, "name": to_name}],
-                "subject": subject,
-                "htmlContent": html_content
-            }
-        )
-        if r.status_code not in (200, 201):
-            raise Exception(f"Brevo error: {r.text}")
-        return r.json()
 
 async def supabase_keepalive():
     """Ping Supabase every 4 days to prevent inactivity pause"""
@@ -74,19 +51,6 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_9"),
 ] if k]
 
-OPENROUTER_KEYS = [k for k in [
-    os.getenv("OPENROUTER_API_KEY"),
-    os.getenv("OPENROUTER_API_KEY_1"),
-] if k]
-
-GEMINI_KEYS = [k for k in [
-    os.getenv("GEMINI_API_KEY"),
-    os.getenv("GEMINI_API_KEY_1"),
-] if k]
-
-CLOUDFLARE_TOKENS  = [k for k in [os.getenv("CLOUDFLARE_API_TOKEN")] if k]
-CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
-
 # Concurrency queue
 MAX_CONCURRENT = 20
 MAX_QUEUE      = 50
@@ -110,47 +74,12 @@ def get_keys_rotated():
     return GROQ_KEYS[start:] + GROQ_KEYS[:start]
 
 FALLBACK_MODELS = [
-    "llama-3.3-70b-versatile",           # confirmed working
-    "llama-3.1-8b-instant",              # confirmed working
-    "meta-llama/llama-4-scout-17b-16e-instruct",  # confirmed working
-    "openai/gpt-oss-120b",               # confirmed working
-    "moonshotai/kimi-k2-instruct-0905",  # confirmed working
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "openai/gpt-oss-120b",
+    "moonshotai/kimi-k2-instruct-0905",
 ]
-
-OPENROUTER_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct",        # confirmed working
-    "mistralai/mistral-small-3.1-24b-instruct", # confirmed on openrouter
-    "google/gemini-2.0-flash-exp:free",          # free gemini on openrouter
-    "meta-llama/llama-3.1-8b-instruct",         # confirmed working
-]
-
-GEMINI_MODELS = [
-    "gemini-2.0-flash",       # stable alias, confirmed valid
-    "gemini-2.5-flash-lite",  # newer model
-    "gemini-2.0-flash-lite",  # lighter version
-]
-
-CLOUDFLARE_MODELS = [
-    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "@cf/meta/llama-3.1-8b-instruct",
-]
-
-OR_INDEX = 0
-GEM_INDEX = 0
-
-def get_or_keys_rotated():
-    global OR_INDEX
-    if not OPENROUTER_KEYS: return []
-    i = OR_INDEX % len(OPENROUTER_KEYS)
-    OR_INDEX = (OR_INDEX + 1) % len(OPENROUTER_KEYS)
-    return OPENROUTER_KEYS[i:] + OPENROUTER_KEYS[:i]
-
-def get_gem_keys_rotated():
-    global GEM_INDEX
-    if not GEMINI_KEYS: return []
-    i = GEM_INDEX % len(GEMINI_KEYS)
-    GEM_INDEX = (GEM_INDEX + 1) % len(GEMINI_KEYS)
-    return GEMINI_KEYS[i:] + GEMINI_KEYS[:i]
 
 # ── Rate limiting (capped to prevent memory growth) ────────
 RATE_LIMIT: dict = {}
@@ -184,8 +113,10 @@ def verify_password(password: str, stored_hash: str) -> bool:
 # ── Config ─────────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER  = os.getenv("BREVO_SENDER_EMAIL", "support.rexai@gmail.com")
 ADMIN_EMAILS = ["raheeldurwesh@gmail.com", "durweshraheel@gmail.com"]
-ALLOWED_ORIGINS = ["https://rex-ai-raheel.vercel.app", "https://rex-ai-coral.vercel.app", "https://rex-ai", "http://localhost:3000"]
+ALLOWED_ORIGINS = ["https://rex-ai-raheel.vercel.app", "http://localhost:3000"]
 
 def check_origin(request: Request):
     origin = request.headers.get("origin", "")
@@ -201,8 +132,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
-    model: str    = "llama-3.3-70b-versatile"
-    provider: str = "groq"
+    model: str = "llama-3.3-70b-versatile"
 
 class HashRequest(BaseModel):
     password: str
@@ -210,6 +140,13 @@ class HashRequest(BaseModel):
 class VerifyRequest(BaseModel):
     password: str
     hash: str
+
+class OtpRequest(BaseModel):
+    email: str
+
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
 
 class UserData(BaseModel):
     id: str = None
@@ -230,19 +167,6 @@ class ShareData(BaseModel):
     title: str
     messages: list
     expires_hours: int = 72
-
-class SendEmailRequest(BaseModel):
-    to_email: str
-    to_name: str
-    subject: str
-    html_content: str
-
-class OtpRequest(BaseModel):
-    email: str
-
-class WelcomeRequest(BaseModel):
-    email: str
-    username: str
 
 # ── Endpoints ──────────────────────────────────────────────
 @app.get("/ping")
@@ -273,6 +197,112 @@ async def verify_pwd(req: VerifyRequest, request: Request):
         raise HTTPException(status_code=400, detail="Missing fields")
     return {"valid": verify_password(req.password, req.hash)}
 
+# ── Brevo email helper ─────────────────────────────────────
+async def send_brevo_email(to_email: str, to_name: str, subject: str, html_body: str):
+    if not BREVO_API_KEY:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender":   {"name": "Rex AI", "email": BREVO_SENDER},
+                "to":       [{"email": to_email, "name": to_name}],
+                "subject":  subject,
+                "htmlContent": html_body,
+            }
+        )
+        if r.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Brevo error: {r.text}")
+        return r.json()
+
+# ── OTP: send ─────────────────────────────────────────────
+@app.post("/email/otp")
+async def send_otp(req: OtpRequest, request: Request):
+    check_rate(request.client.host)
+    if not req.email:
+        raise HTTPException(status_code=400, detail="Email required")
+    import random
+    otp = str(random.randint(100000, 999999))
+    expires = int(time.time() * 1000) + 10 * 60 * 1000  # 10 min in ms
+    # Store in Supabase otps table
+    if SUPABASE_URL and SUPABASE_KEY:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"{SUPABASE_URL}/rest/v1/otps",
+                headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                         "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates"},
+                json={"email": req.email, "otp": otp, "expires": expires,
+                      "mode": "reset", "created_at": __import__('datetime').datetime.utcnow().isoformat()}
+            )
+    # Send via Brevo
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+      <h2 style="color:#c9a84c;font-family:Georgia,serif;">Rex AI</h2>
+      <p style="font-size:15px;color:#333;">Your password reset code is:</p>
+      <div style="font-size:38px;font-weight:bold;letter-spacing:12px;color:#c9a84c;
+                  background:#f9f6ee;border:1px solid #e8dfc4;border-radius:10px;
+                  padding:18px 24px;text-align:center;margin:20px 0;">{otp}</div>
+      <p style="font-size:13px;color:#888;">This code expires in <b>10 minutes</b>.<br>
+         If you did not request this, ignore this email.</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+      <p style="font-size:11px;color:#aaa;">Rex AI · Developed by Raheel Durwesh</p>
+    </div>"""
+    await send_brevo_email(req.email, req.email.split("@")[0], "Rex AI — Password Reset OTP", html)
+    return {"success": True, "message": "OTP sent"}
+
+# ── OTP: verify ───────────────────────────────────────────
+@app.post("/email/verify-otp")
+async def verify_otp(req: VerifyOtpRequest, request: Request):
+    check_rate(request.client.host)
+    if not req.email or not req.otp:
+        raise HTTPException(status_code=400, detail="Email and OTP required")
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="DB not configured")
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{req.email}&select=otp,expires&order=created_at.desc&limit=1",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+        rows = r.json()
+        if not rows:
+            raise HTTPException(status_code=400, detail="OTP not found. Please request a new one.")
+        row = rows[0]
+        if str(row["otp"]) != str(req.otp).strip():
+            raise HTTPException(status_code=400, detail="Wrong OTP. Please check and try again.")
+        if int(time.time() * 1000) > int(row["expires"]):
+            raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+        # Delete used OTP
+        await client.delete(
+            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{req.email}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+        )
+    return {"success": True, "message": "OTP verified"}
+
+# ── Welcome email ─────────────────────────────────────────
+@app.post("/email/welcome")
+async def welcome_email(request: Request):
+    check_rate(request.client.host)
+    data = await request.json()
+    email = data.get("email", "")
+    username = data.get("username", email.split("@")[0])
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+      <h2 style="color:#c9a84c;font-family:Georgia,serif;">Welcome to Rex AI, {username}! 🎉</h2>
+      <p style="font-size:15px;color:#333;">Your intelligent AI assistant is ready.</p>
+      <p style="font-size:13px;color:#555;">Rex AI features:<br>
+        ✨ Multiple AI models · 🌐 Web search · 🧠 Memory · 💾 Chat history · 📄 PDF export</p>
+      <a href="https://rex-ai-raheel.vercel.app" style="display:inline-block;background:#c9a84c;
+         color:#1a1a1a;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;
+         margin-top:16px;">Start Chatting →</a>
+      <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+      <p style="font-size:11px;color:#aaa;">Rex AI · Developed by Raheel Durwesh</p>
+    </div>"""
+    await send_brevo_email(email, username, "Welcome to Rex AI! 🎉", html)
+    return {"success": True}
+
 @app.post("/chat")
 async def chat(req: ChatRequest, request: Request):
     check_rate(request.client.host)
@@ -286,134 +316,36 @@ async def chat(req: ChatRequest, request: Request):
     if sem._value == 0 and len(getattr(sem, '_waiters', [])) >= MAX_QUEUE:
         raise HTTPException(status_code=503, detail="Rex is a bit busy right now. Please try again in a moment!")
 
-    msgs_list = [m.dict() for m in req.messages]
-    provider  = (req.provider or "groq").lower()
-    model_req = req.model or "llama-3.3-70b-versatile"
+    models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
-    # ── Helper: call each provider, return full text ────────
-    async def call_groq(model: str) -> str:
+    def generate():
         for key in get_keys_rotated():
-            try:
-                client = Groq(api_key=key)
-                s = client.chat.completions.create(
-                    model=model, messages=msgs_list, stream=True, max_tokens=4096)
-                text = ""
-                for chunk in s:
-                    d = chunk.choices[0].delta.content
-                    if d: text += d
-                if text: return text
-            except Exception as e:
-                if any(x in str(e) for x in ["rate_limit","429","503","model_not_found","404"]):
-                    continue
-                print(f"Groq {model} unexpected error: {e}")
-                continue
-        raise Exception("Groq: all keys/models failed")
-
-    async def call_openrouter(model: str) -> str:
-        for key in get_or_keys_rotated():
-            try:
-                async with httpx.AsyncClient(timeout=60) as hc:
-                    r = await hc.post(
-                        "https://openrouter.ai/api/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {key}",
-                                 "Content-Type": "application/json",
-                                 "HTTP-Referer": "https://rex-ai-raheel.vercel.app",
-                                 "X-Title": "Rex AI"},
-                        json={"model": model, "messages": msgs_list, "max_tokens": 4096},
-                    )
-                if r.status_code != 200:
-                    print(f"OR {model} status {r.status_code}: {r.text[:120]}")
-                    continue
-                text = r.json()["choices"][0]["message"].get("content","")
-                if text: return text
-            except Exception as e:
-                print(f"OR {model} error: {e}")
-                continue
-        raise Exception("OpenRouter: all keys/models failed")
-
-    async def call_gemini(model: str) -> str:
-        gem_msgs = []
-        for m in msgs_list:
-            if m["role"] == "system":
-                gem_msgs.append({"role":"user","parts":[{"text":m["content"]}]})
-                gem_msgs.append({"role":"model","parts":[{"text":"Understood."}]})
-            else:
-                role = "user" if m["role"]=="user" else "model"
-                gem_msgs.append({"role":role,"parts":[{"text":m["content"]}]})
-        for key in get_gem_keys_rotated():
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-                async with httpx.AsyncClient(timeout=60) as hc:
-                    r = await hc.post(url,
-                        headers={"Content-Type":"application/json"},
-                        json={"contents":gem_msgs,"generationConfig":{"maxOutputTokens":4096}})
-                if r.status_code == 429: continue
-                if r.status_code != 200: raise Exception(f"Gemini {r.status_code}: {r.text[:120]}")
-                parts = r.json()["candidates"][0]["content"]["parts"]
-                text = "".join(p.get("text","") for p in parts)
-                if text: return text
-            except Exception as e:
-                print(f"Gemini {model} error: {e}")
-                continue
-        raise Exception("Gemini: all keys/models failed")
-
-    async def call_cloudflare(model: str) -> str:
-        if not CLOUDFLARE_TOKENS or not CLOUDFLARE_ACCOUNT_ID:
-            raise Exception("Cloudflare not configured")
-        for token in CLOUDFLARE_TOKENS:
-            try:
-                url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{model}"
-                async with httpx.AsyncClient(timeout=60) as hc:
-                    r = await hc.post(url,
-                        headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"},
-                        json={"messages":msgs_list,"max_tokens":4096})
-                if r.status_code != 200: raise Exception(f"CF {r.status_code}: {r.text[:120]}")
-                text = r.json().get("result",{}).get("response","")
-                if text: return text
-            except Exception as e:
-                print(f"CF {model} error: {e}")
-                continue
-        raise Exception("Cloudflare: all failed")
-
-    PROVIDER_CFG = {
-        "groq":       (call_groq,       FALLBACK_MODELS),
-        "openrouter": (call_openrouter, OPENROUTER_MODELS),
-        "gemini":     (call_gemini,     GEMINI_MODELS),
-        "cloudflare": (call_cloudflare, CLOUDFLARE_MODELS),
-    }
-    ALL_PROVIDERS = ["groq", "openrouter", "gemini", "cloudflare"]
-
-    async def generate():
-        # Selected provider first, then fallback chain
-        order = [provider] + [p for p in ALL_PROVIDERS if p != provider] if provider in PROVIDER_CFG else ALL_PROVIDERS
-        for prov in order:
-            call_fn, prov_models = PROVIDER_CFG[prov]
-            # Use requested model for its own provider, fallback models for others
-            if prov == provider:
-                to_try = [model_req] + [m for m in prov_models if m != model_req]
-            else:
-                to_try = prov_models
-            for model in to_try:
+            for model in models:
                 try:
-                    text = await call_fn(model)
-                    if not text: continue
+                    client = Groq(api_key=key)
+                    stream = client.chat.completions.create(
+                        model=model,
+                        messages=[m.dict() for m in req.messages],
+                        stream=True,
+                        max_tokens=4096,
+                    )
                     yield f"data: {json.dumps({'model': model})}\n\n"
-                    # Yield in small chunks for streaming feel
-                    words = text.split(" ")
-                    for i in range(0, len(words), 4):
-                        piece = " ".join(words[i:i+4])
-                        if i + 4 < len(words): piece += " "
-                        yield f"data: {json.dumps({'text': piece})}\n\n"
+                    for chunk in stream:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            yield f"data: {json.dumps({'text': delta})}\n\n"
                     yield "data: [DONE]\n\n"
                     return
-                except Exception:
+                except Exception as e:
+                    if "rate_limit" in str(e) or "429" in str(e):
+                        continue
                     continue
-        yield f"data: {json.dumps({'text': 'All providers are busy. Please try again in a moment.'})}\n\n"
+        yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
     async def guarded_generate():
         async with get_semaphore():
-            async for chunk in generate():
+            for chunk in generate():
                 yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
@@ -425,206 +357,94 @@ async def search(q: str, request: Request):
         raise HTTPException(status_code=400, detail="Invalid query")
     try:
         results = []
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
-            resp = await client.get("https://html.duckduckgo.com/html/", params={"q": q}, headers=headers)
-            blocks = re.findall(
-                r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</span>',
-                resp.text, re.DOTALL
-            )
-            for url, title, snippet in blocks[:5]:
-                title = re.sub(r'<[^>]+>', '', title).strip()
-                snippet = re.sub(r'<[^>]+>', '', snippet).strip()
-                for ent, ch in [('&amp;','&'),('&lt;','<'),('&gt;','>'),('&#x27;',"'"),('&quot;','"')]:
-                    title = title.replace(ent, ch); snippet = snippet.replace(ent, ch)
-                if title and snippet:
-                    results.append({"title": title, "snippet": snippet, "url": url})
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            # Strategy 1: DuckDuckGo HTML (updated regex patterns)
+            try:
+                resp = await client.get("https://html.duckduckgo.com/html/", params={"q": q}, headers=headers)
+                if resp.status_code == 200:
+                    # Try multiple regex patterns for DDG's changing HTML
+                    patterns = [
+                        r'<a[^>]+class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+                        r'<h2[^>]*class="[^"]*result__title[^"]*"[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+                        r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</(?:a|span)>',
+                    ]
+                    for pat in patterns:
+                        blocks = re.findall(pat, resp.text, re.DOTALL)
+                        for url, title, snippet in blocks[:5]:
+                            title   = re.sub(r'<[^>]+>', '', title).strip()
+                            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
+                            for ent, ch in [('&amp;','&'),('&lt;','<'),('&gt;','>'),('&#x27;',"'"),('&quot;','"'),('&#39;',"'")]:
+                                title = title.replace(ent, ch)
+                                snippet = snippet.replace(ent, ch)
+                            # decode DDG redirect URLs
+                            if url.startswith("//duckduckgo.com/l/"):
+                                m = re.search(r'uddg=([^&]+)', url)
+                                if m:
+                                    from urllib.parse import unquote
+                                    url = unquote(m.group(1))
+                            if title and snippet and url:
+                                results.append({"title": title, "snippet": snippet, "url": url})
+                        if results:
+                            break
+            except Exception:
+                pass
+
+            # Strategy 2: DuckDuckGo Instant Answer JSON API
             if not results:
-                ia = await client.get("https://api.duckduckgo.com/", params={"q": q, "format": "json", "no_redirect": "1", "no_html": "1"})
-                data = ia.json()
-                if data.get("AbstractText"):
-                    results.append({"title": data.get("Heading", q), "snippet": data["AbstractText"], "url": data.get("AbstractURL", "")})
-                for rt in data.get("RelatedTopics", [])[:4]:
-                    if isinstance(rt, dict) and rt.get("Text"):
-                        results.append({"title": rt.get("Text","")[:60], "snippet": rt.get("Text",""), "url": rt.get("FirstURL","")})
+                try:
+                    ia = await client.get(
+                        "https://api.duckduckgo.com/",
+                        params={"q": q, "format": "json", "no_redirect": "1", "no_html": "1", "skip_disambig": "1"},
+                        headers=headers
+                    )
+                    data = ia.json()
+                    if data.get("AbstractText"):
+                        results.append({
+                            "title":   data.get("Heading", q),
+                            "snippet": data["AbstractText"][:300],
+                            "url":     data.get("AbstractURL", "https://duckduckgo.com/?q=" + q)
+                        })
+                    for rt in data.get("RelatedTopics", [])[:4]:
+                        if isinstance(rt, dict) and rt.get("Text") and rt.get("FirstURL"):
+                            results.append({
+                                "title":   rt.get("Text", "")[:80],
+                                "snippet": rt.get("Text", "")[:200],
+                                "url":     rt.get("FirstURL", "")
+                            })
+                        if len(results) >= 5:
+                            break
+                except Exception:
+                    pass
+
+            # Strategy 3: Brave Search HTML fallback
+            if not results:
+                try:
+                    brave_resp = await client.get(
+                        "https://search.brave.com/search",
+                        params={"q": q, "source": "web"},
+                        headers=headers
+                    )
+                    if brave_resp.status_code == 200:
+                        snippets = re.findall(
+                            r'<a[^>]+href="(https?://[^"]+)"[^>]*class="[^"]*result-header[^"]*"[^>]*>(.*?)</a>.*?<p[^>]*class="[^"]*snippet[^"]*"[^>]*>(.*?)</p>',
+                            brave_resp.text, re.DOTALL
+                        )
+                        for url, title, snippet in snippets[:5]:
+                            title   = re.sub(r'<[^>]+>', '', title).strip()
+                            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
+                            if title and snippet:
+                                results.append({"title": title, "snippet": snippet, "url": url})
+                except Exception:
+                    pass
+
         return {"results": results[:5], "query": q}
     except Exception as e:
         return {"results": [], "query": q, "error": str(e)}
-
-
-# ── Token tracking ─────────────────────────────────────────
-class TokenUpdateRequest(BaseModel):
-    user_id: str
-    model: str
-    prompt_tokens: int
-    completion_tokens: int
-
-@app.post("/tokens/update")
-async def update_tokens(req: TokenUpdateRequest, request: Request):
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise HTTPException(status_code=500, detail="DB not configured")
-    try:
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
-        }
-        # Get current user data
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(
-                f"{SUPABASE_URL}/rest/v1/users?id=eq.{req.user_id}&select=total_tokens,model_usage,token_limit",
-                headers=headers
-            )
-            users = r.json()
-            if not users:
-                raise HTTPException(status_code=404, detail="User not found")
-            user = users[0]
-            
-            total = req.prompt_tokens + req.completion_tokens
-            new_total = (user.get("total_tokens") or 0) + total
-            
-            model_usage = user.get("model_usage") or {}
-            if req.model not in model_usage:
-                model_usage[req.model] = {"prompt": 0, "completion": 0, "total": 0}
-            model_usage[req.model]["prompt"] += req.prompt_tokens
-            model_usage[req.model]["completion"] += req.completion_tokens
-            model_usage[req.model]["total"] += total
-            
-            # Update
-            await client.patch(
-                f"{SUPABASE_URL}/rest/v1/users?id=eq.{req.user_id}",
-                headers=headers,
-                json={"total_tokens": new_total, "model_usage": model_usage}
-            )
-        return {"ok": True, "total_tokens": new_total}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/tokens/limit")
-async def set_token_limit(user_id: str, limit: int, admin_email: str, request: Request):
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise HTTPException(status_code=500, detail="DB not configured")
-    ADMIN_EMAILS = ["raheeldurwesh@gmail.com", "durweshraheel@gmail.com"]
-    if admin_email not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json"
-    }
-    async with httpx.AsyncClient(timeout=10) as client:
-        await client.patch(
-            f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
-            headers=headers,
-            json={"token_limit": limit}
-        )
-    return {"ok": True}
-
-
-# ── API Keys Health Check ──────────────────────────────────
-@app.get("/admin/keys-health")
-async def keys_health(admin_email: str, request: Request):
-    if admin_email not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    results = []
-
-    # ── Groq ──────────────────────────────────────────────
-    for i, key in enumerate(GROQ_KEYS):
-        name   = "GROQ_API_KEY" if i == 0 else f"GROQ_API_KEY_{i}"
-        masked = key[:8] + "..." + key[-4:]
-        try:
-            client = Groq(api_key=key)
-            resp = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5, stream=False)
-            results.append({"name": name, "key": masked, "provider": "Groq",
-                            "status": "ok", "model": resp.model})
-        except Exception as e:
-            err = str(e)
-            st  = "rate_limited" if "429" in err or "rate_limit" in err else "error"
-            results.append({"name": name, "key": masked, "provider": "Groq",
-                            "status": st, "error": err[:120]})
-
-    # ── OpenRouter ────────────────────────────────────────
-    for i, key in enumerate(OPENROUTER_KEYS):
-        name   = "OPENROUTER_API_KEY" if i == 0 else f"OPENROUTER_API_KEY_{i}"
-        masked = key[:8] + "..." + key[-4:]
-        try:
-            async with httpx.AsyncClient(timeout=10) as hc:
-                r = await hc.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {key}",
-                             "Content-Type": "application/json",
-                             "HTTP-Referer": "https://rex-ai-raheel.vercel.app"},
-                    json={"model": "meta-llama/llama-3.3-70b-instruct",
-                          "messages": [{"role": "user", "content": "Hi"}],
-                          "max_tokens": 5})
-            if r.status_code == 429:
-                results.append({"name": name, "key": masked, "provider": "OpenRouter", "status": "rate_limited"})
-            elif r.status_code == 200:
-                results.append({"name": name, "key": masked, "provider": "OpenRouter",
-                                "status": "ok", "model": r.json().get("model", "")})
-            else:
-                results.append({"name": name, "key": masked, "provider": "OpenRouter",
-                                "status": "error", "error": r.text[:120]})
-        except Exception as e:
-            results.append({"name": name, "key": masked, "provider": "OpenRouter",
-                            "status": "error", "error": str(e)[:120]})
-
-    # ── Gemini ────────────────────────────────────────────
-    for i, key in enumerate(GEMINI_KEYS):
-        name   = "GEMINI_API_KEY" if i == 0 else f"GEMINI_API_KEY_{i}"
-        masked = key[:8] + "..." + key[-4:]
-        try:
-            async with httpx.AsyncClient(timeout=10) as hc:
-                r = await hc.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={key}",
-                    headers={"Content-Type": "application/json"},
-                    json={"contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
-                          "generationConfig": {"maxOutputTokens": 5}})
-            if r.status_code == 429:
-                results.append({"name": name, "key": masked, "provider": "Gemini", "status": "rate_limited"})
-            elif r.status_code == 200:
-                results.append({"name": name, "key": masked, "provider": "Gemini",
-                                "status": "ok", "model": "gemini-2.0-flash-001"})
-            else:
-                results.append({"name": name, "key": masked, "provider": "Gemini",
-                                "status": "error", "error": r.text[:120]})
-        except Exception as e:
-            results.append({"name": name, "key": masked, "provider": "Gemini",
-                            "status": "error", "error": str(e)[:120]})
-
-    # ── Cloudflare ────────────────────────────────────────
-    if CLOUDFLARE_TOKENS and CLOUDFLARE_ACCOUNT_ID:
-        for i, token in enumerate(CLOUDFLARE_TOKENS):
-            name   = "CLOUDFLARE_API_TOKEN" if i == 0 else f"CLOUDFLARE_API_TOKEN_{i}"
-            masked = token[:8] + "..." + token[-4:]
-            try:
-                async with httpx.AsyncClient(timeout=10) as hc:
-                    r = await hc.post(
-                        f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct",
-                        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                        json={"messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5})
-                if r.status_code == 200:
-                    results.append({"name": name, "key": masked, "provider": "Cloudflare",
-                                    "status": "ok", "model": "llama-3.1-8b-instruct"})
-                else:
-                    results.append({"name": name, "key": masked, "provider": "Cloudflare",
-                                    "status": "error", "error": r.text[:120]})
-            except Exception as e:
-                results.append({"name": name, "key": masked, "provider": "Cloudflare",
-                                "status": "error", "error": str(e)[:120]})
-    else:
-        results.append({"name": "CLOUDFLARE_API_TOKEN", "key": "not set",
-                        "provider": "Cloudflare", "status": "error",
-                        "error": "Not configured"})
-
-    ok = sum(1 for r in results if r["status"] == "ok")
-    rl = sum(1 for r in results if r["status"] == "rate_limited")
-    return {"total": len(results), "ok": ok, "rate_limited": rl,
-            "error": len(results) - ok - rl, "keys": results}
 
 # ── DB proxy ───────────────────────────────────────────────
 @app.get("/db/user")
@@ -673,94 +493,6 @@ async def get_all_users(request: Request, admin_email: str = None):
             headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"})
         return r.json()
 
-
-# ── Brevo Email Endpoints ─────────────────────────────────
-@app.post("/email/send")
-async def send_email(req: SendEmailRequest, request: Request):
-    check_rate(request.client.host)
-    if not req.to_email or "@" not in req.to_email:
-        raise HTTPException(status_code=400, detail="Invalid email")
-    await send_brevo_email(req.to_email, req.to_name, req.subject, req.html_content)
-    return {"ok": True}
-
-
-@app.post("/email/otp")
-async def send_otp_email(req: OtpRequest, request: Request):
-    check_rate(request.client.host)
-    if not req.email or "@" not in req.email:
-        raise HTTPException(status_code=400, detail="Invalid email")
-    import random
-    from datetime import datetime, timezone, timedelta
-    otp = str(random.randint(100000, 999999))
-    expires_ts = int((datetime.now(timezone.utc) + timedelta(minutes=10)).timestamp() * 1000)
-    async with httpx.AsyncClient(timeout=10) as client:
-        await client.delete(
-            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{req.email}",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        )
-        await client.post(
-            f"{SUPABASE_URL}/rest/v1/otps",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
-                     "Content-Type": "application/json", "Prefer": "return=minimal"},
-            json={"email": req.email, "otp": otp, "expires": expires_ts}
-        )
-    otp_html = (
-        "<div style='font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#111;padding:32px;border-radius:12px;'>"
-        "<div style='font-size:24px;font-weight:800;color:#c9a84c;margin-bottom:8px;'>Rex AI</div>"
-        "<p style='color:rgba(255,255,255,0.7);font-size:15px;margin:16px 0;'>Your password reset OTP is:</p>"
-        f"<div style='font-size:36px;font-weight:900;letter-spacing:8px;color:#c9a84c;text-align:center;padding:20px;background:#1a1a1a;border-radius:10px;margin:20px 0;'>{otp}</div>"
-        "<p style='color:rgba(255,255,255,0.4);font-size:12px;'>This OTP expires in 10 minutes.</p>"
-        "<p style='color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;'>— Raheel Durwesh, Rex AI</p>"
-        "</div>"
-    )
-    await send_brevo_email(req.email, req.email.split("@")[0], "Your Rex AI OTP Code", otp_html)
-    return {"ok": True}
-
-@app.post("/email/verify-otp")
-async def verify_otp_endpoint(email: str, otp: str, request: Request):
-    check_rate(request.client.host)
-    from datetime import datetime, timezone
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(
-            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}&select=otp,expires",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        )
-        rows = r.json()
-        if not isinstance(rows, list) or len(rows) == 0:
-            raise HTTPException(status_code=400, detail="OTP not found or expired")
-        row = rows[0]
-        import time
-        if int(time.time() * 1000) > row["expires"]:
-            raise HTTPException(status_code=400, detail="OTP expired")
-        if row["otp"] != otp:
-            raise HTTPException(status_code=400, detail="Wrong OTP")
-        await client.delete(
-            f"{SUPABASE_URL}/rest/v1/otps?email=eq.{email}",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        )
-    return {"ok": True}
-
-@app.post("/email/welcome")
-async def send_welcome_email(req: WelcomeRequest, request: Request):
-    check_rate(request.client.host)
-    if not req.email or "@" not in req.email:
-        raise HTTPException(status_code=400, detail="Invalid email")
-    welcome_html = (
-        "<div style='font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#111;padding:32px;border-radius:12px;'>"
-        "<div style='font-size:28px;font-weight:800;color:#c9a84c;margin-bottom:4px;'>Rex AI</div>"
-        f"<p style='color:rgba(255,255,255,0.8);font-size:16px;margin:20px 0 8px;'>Hey {req.username}! 👋</p>"
-        "<p style='color:rgba(255,255,255,0.6);font-size:14px;line-height:1.7;'>Welcome to Rex AI! I am Raheel, the developer behind Rex AI. I built this from scratch and I am thrilled to have you on board.</p>"
-        "<p style='color:rgba(255,255,255,0.6);font-size:14px;line-height:1.7;margin-top:12px;'>Rex AI is your personal AI assistant — ask anything, search the web, and customize your experience.</p>"
-        "<div style='text-align:center;margin:28px 0;'>"
-        "<a href='https://rex-ai-raheel.vercel.app' style='background:linear-gradient(135deg,#c9a84c,#f0d97a);color:#111;font-weight:800;padding:14px 32px;border-radius:10px;text-decoration:none;font-size:14px;'>Open Rex AI</a>"
-        "</div>"
-        "<p style='color:rgba(255,255,255,0.3);font-size:12px;'>Follow updates: <a href='https://instagram.com/raheeldurwesh' style='color:#c9a84c;'>@raheeldurwesh</a></p>"
-        "<p style='color:rgba(255,255,255,0.2);font-size:11px;margin-top:8px;'>— Raheel Durwesh, Rex AI</p>"
-        "</div>"
-    )
-    await send_brevo_email(req.email, req.username, "Welcome to Rex AI! 🚀", welcome_html)
-    return {"ok": True}
-
 # ── Share ──────────────────────────────────────────────────
 @app.post("/share")
 async def create_share(data: ShareData, request: Request):
@@ -805,55 +537,3 @@ async def get_share(token: str):
             )
             raise HTTPException(status_code=410, detail="Share link has expired")
         return share
-
-# ── DOC QUESTIONS ──────────────────────────────────────────────
-class DocQuestion(BaseModel):
-    user_id: str
-    doc_name: str
-    question: str
-    answer: str
-
-class DocQuestionsLoad(BaseModel):
-    user_id: str
-
-@app.post("/doc/question")
-async def save_doc_question(req: DocQuestion, request: Request):
-    check_rate(request.client.host)
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise HTTPException(status_code=500, detail="DB not configured")
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(
-            f"{SUPABASE_URL}/rest/v1/doc_questions",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
-                     "Content-Type": "application/json", "Prefer": "return=representation"},
-            json={"user_id": req.user_id, "doc_name": req.doc_name,
-                  "question": req.question, "answer": req.answer,
-                  "created_at": __import__('datetime').datetime.utcnow().isoformat()}
-        )
-        if r.status_code not in (200, 201):
-            raise HTTPException(status_code=500, detail="Failed to save question")
-    return {"ok": True}
-
-@app.get("/doc/questions")
-async def get_doc_questions(user_id: str, request: Request):
-    check_rate(request.client.host)
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise HTTPException(status_code=500, detail="DB not configured")
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(
-            f"{SUPABASE_URL}/rest/v1/doc_questions?user_id=eq.{user_id}&order=created_at.desc&limit=100",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        )
-        return r.json()
-
-@app.delete("/doc/questions")
-async def delete_doc_questions(user_id: str, doc_name: str, request: Request):
-    check_rate(request.client.host)
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise HTTPException(status_code=500, detail="DB not configured")
-    async with httpx.AsyncClient(timeout=10) as client:
-        await client.delete(
-            f"{SUPABASE_URL}/rest/v1/doc_questions?user_id=eq.{user_id}&doc_name=eq.{doc_name}",
-            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        )
-    return {"ok": True}
