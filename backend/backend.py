@@ -51,6 +51,19 @@ GROQ_KEYS = [k for k in [
     os.getenv("GROQ_API_KEY_9"),
 ] if k]
 
+OPENROUTER_KEYS = [k for k in [
+    os.getenv("OPENROUTER_API_KEY"),
+    os.getenv("OPENROUTER_API_KEY_1"),
+] if k]
+
+GEMINI_KEYS = [k for k in [
+    os.getenv("GEMINI_API_KEY"),
+    os.getenv("GEMINI_API_KEY_1"),
+] if k]
+
+CF_ACCOUNT_ID = os.getenv("CF_ACCOUNT_ID", "")
+CF_API_TOKEN  = os.getenv("CF_API_TOKEN", "")
+
 # Concurrency queue
 MAX_CONCURRENT = 20
 MAX_QUEUE      = 50
@@ -133,6 +146,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message]
     model: str = "llama-3.3-70b-versatile"
+    provider: str = "groq"
 
 class HashRequest(BaseModel):
     password: str
@@ -316,37 +330,188 @@ async def chat(req: ChatRequest, request: Request):
     if sem._value == 0 and len(getattr(sem, '_waiters', [])) >= MAX_QUEUE:
         raise HTTPException(status_code=503, detail="Rex is a bit busy right now. Please try again in a moment!")
 
-    models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
+    msgs = [m.dict() for m in req.messages]
+    provider = req.provider or "groq"
+    model = req.model
 
-    def generate():
+    # ── Groq (sync SDK, round-robin keys, fallback chain) ──
+    def generate_groq():
+        models = [model] + [m for m in FALLBACK_MODELS if m != model]
         for key in get_keys_rotated():
-            for model in models:
+            for mdl in models:
                 try:
                     client = Groq(api_key=key)
                     stream = client.chat.completions.create(
-                        model=model,
-                        messages=[m.dict() for m in req.messages],
-                        stream=True,
-                        max_tokens=4096,
+                        model=mdl, messages=msgs, stream=True, max_tokens=4096,
                     )
-                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    yield f"data: {json.dumps({'model': mdl})}\n\n"
                     for chunk in stream:
                         delta = chunk.choices[0].delta.content
                         if delta:
                             yield f"data: {json.dumps({'text': delta})}\n\n"
                     yield "data: [DONE]\n\n"
                     return
-                except Exception as e:
-                    if "rate_limit" in str(e) or "429" in str(e):
-                        continue
+                except Exception:
                     continue
         yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
+    # ── OpenRouter (OpenAI-compatible SSE) ─────────────────
+    async def generate_openrouter():
+        keys = OPENROUTER_KEYS
+        if not keys:
+            yield f"data: {json.dumps({'text': 'OpenRouter API key not configured.'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        for key in keys:
+            try:
+                async with httpx.AsyncClient(timeout=60) as client:
+                    async with client.stream(
+                        "POST",
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {key}",
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": "https://rex-ai-raheel.vercel.app",
+                            "X-Title": "Rex AI",
+                        },
+                        json={"model": model, "messages": msgs, "stream": True, "max_tokens": 4096},
+                    ) as resp:
+                        if resp.status_code == 429:
+                            continue
+                        if resp.status_code != 200:
+                            continue
+                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        async for line in resp.aiter_lines():
+                            if not line.startswith("data:"):
+                                continue
+                            raw = line[5:].strip()
+                            if raw == "[DONE]":
+                                break
+                            try:
+                                delta = json.loads(raw)["choices"][0]["delta"].get("content", "")
+                                if delta:
+                                    yield f"data: {json.dumps({'text': delta})}\n\n"
+                            except Exception:
+                                continue
+                        yield "data: [DONE]\n\n"
+                        return
+            except Exception:
+                continue
+        yield f"data: {json.dumps({'text': 'OpenRouter models are unavailable. Please try again.'})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    # ── Gemini (Google REST SSE) ───────────────────────────
+    async def generate_gemini():
+        keys = GEMINI_KEYS
+        if not keys:
+            yield f"data: {json.dumps({'text': 'Gemini API key not configured.'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        # Convert OpenAI-style messages to Gemini format
+        gemini_contents = []
+        system_parts = []
+        for m in msgs:
+            if m["role"] == "system":
+                system_parts.append({"text": m["content"]})
+            else:
+                role = "user" if m["role"] == "user" else "model"
+                gemini_contents.append({"role": role, "parts": [{"text": m["content"]}]})
+        body = {
+            "contents": gemini_contents,
+            "generationConfig": {"maxOutputTokens": 4096},
+        }
+        if system_parts:
+            body["systemInstruction"] = {"parts": system_parts}
+        for key in keys:
+            try:
+                async with httpx.AsyncClient(timeout=60) as client:
+                    async with client.stream(
+                        "POST",
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent",
+                        params={"key": key, "alt": "sse"},
+                        headers={"Content-Type": "application/json"},
+                        json=body,
+                    ) as resp:
+                        if resp.status_code == 429:
+                            continue
+                        if resp.status_code != 200:
+                            continue
+                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        async for line in resp.aiter_lines():
+                            if not line.startswith("data:"):
+                                continue
+                            raw = line[5:].strip()
+                            if not raw:
+                                continue
+                            try:
+                                chunk = json.loads(raw)
+                                text = chunk["candidates"][0]["content"]["parts"][0].get("text", "")
+                                if text:
+                                    yield f"data: {json.dumps({'text': text})}\n\n"
+                            except Exception:
+                                continue
+                        yield "data: [DONE]\n\n"
+                        return
+            except Exception:
+                continue
+        yield f"data: {json.dumps({'text': 'Gemini models are unavailable. Please try again.'})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    # ── Cloudflare Workers AI ──────────────────────────────
+    async def generate_cloudflare():
+        if not CF_ACCOUNT_ID or not CF_API_TOKEN:
+            yield f"data: {json.dumps({'text': 'Cloudflare AI not configured.'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                async with client.stream(
+                    "POST",
+                    f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run/{model}",
+                    headers={
+                        "Authorization": f"Bearer {CF_API_TOKEN}",
+                        "Content-Type": "application/json",
+                    },
+                    json={"messages": msgs, "stream": True, "max_tokens": 4096},
+                ) as resp:
+                    if resp.status_code != 200:
+                        yield f"data: {json.dumps({'text': 'Cloudflare model unavailable. Please try again.'})}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data:"):
+                            continue
+                        raw = line[5:].strip()
+                        if raw == "[DONE]":
+                            break
+                        try:
+                            delta = json.loads(raw).get("response", "")
+                            if delta:
+                                yield f"data: {json.dumps({'text': delta})}\n\n"
+                        except Exception:
+                            continue
+                    yield "data: [DONE]\n\n"
+        except Exception:
+            yield f"data: {json.dumps({'text': 'Cloudflare model unavailable. Please try again.'})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    # ── Dispatch ───────────────────────────────────────────
     async def guarded_generate():
         async with get_semaphore():
-            for chunk in generate():
-                yield chunk
+            if provider == "openrouter":
+                async for chunk in generate_openrouter():
+                    yield chunk
+            elif provider == "gemini":
+                async for chunk in generate_gemini():
+                    yield chunk
+            elif provider == "cloudflare":
+                async for chunk in generate_cloudflare():
+                    yield chunk
+            else:  # groq (default)
+                for chunk in generate_groq():
+                    yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
 
