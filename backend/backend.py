@@ -73,7 +73,8 @@ def get_keys_rotated():
     KEY_INDEX = (KEY_INDEX + 1) % len(GROQ_KEYS)
     return GROQ_KEYS[start:] + GROQ_KEYS[:start]
 
-FALLBACK_MODELS = [
+# Available Groq models (for admin panel display)
+AVAILABLE_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
@@ -321,41 +322,49 @@ async def chat(req: ChatRequest, request: Request):
     provider = req.provider or "groq"
     model = req.model
 
-    # ── Groq (sync SDK, round-robin keys, fallback chain) ──
+    # ── Groq (sync SDK, round-robin keys, NO MODEL FALLBACK) ──
     def generate_groq():
         if not GROQ_KEYS:
             yield f"data: {json.dumps({'text': 'No API keys configured. Please add Groq API keys.'})}\n\n"
             yield "data: [DONE]\n\n"
             return
         
-        models = [model] + [m for m in FALLBACK_MODELS if m != model]
+        # ONLY try the requested model - no fallback to other models
+        # This ensures user gets the model they selected
         rate_limited_count = 0
+        model_not_found_count = 0
+        other_errors = 0
         
         for key in get_keys_rotated():
-            for mdl in models:
-                try:
-                    client = Groq(api_key=key)
-                    stream = client.chat.completions.create(
-                        model=mdl, messages=msgs, stream=True, max_tokens=4096,
-                    )
-                    yield f"data: {json.dumps({'model': mdl, 'provider': 'groq'})}\n\n"
-                    for chunk in stream:
-                        delta = chunk.choices[0].delta.content
-                        if delta:
-                            yield f"data: {json.dumps({'text': delta})}\n\n"
-                    yield "data: [DONE]\n\n"
-                    return
-                except Exception as e:
-                    error_str = str(e).lower()
-                    if "rate_limit" in error_str or "429" in error_str:
-                        rate_limited_count += 1
-                    continue
+            try:
+                client = Groq(api_key=key)
+                stream = client.chat.completions.create(
+                    model=model, messages=msgs, stream=True, max_tokens=4096,
+                )
+                yield f"data: {json.dumps({'model': model, 'provider': 'groq'})}\n\n"
+                for chunk in stream:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        yield f"data: {json.dumps({'text': delta})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            except Exception as e:
+                error_str = str(e).lower()
+                if "rate_limit" in error_str or "429" in error_str:
+                    rate_limited_count += 1
+                elif "model" in error_str and ("not found" in error_str or "does not exist" in error_str):
+                    model_not_found_count += 1
+                else:
+                    other_errors += 1
+                continue
         
-        # All keys exhausted
-        if rate_limited_count > 0:
-            yield f"data: {json.dumps({'text': 'All Groq API keys are rate limited. Please wait 1 minute or add more keys.'})}\n\n"
+        # All keys exhausted - give specific error
+        if model_not_found_count > 0:
+            yield f"data: {json.dumps({'text': f'⚠️ Model "{model}" is not available on Groq. Please select a different model from the dropdown.'})}\n\n"
+        elif rate_limited_count > 0:
+            yield f"data: {json.dumps({'text': f'⏳ All API keys are rate limited for "{model}". Please wait 1 minute or add more keys.'})}\n\n"
         else:
-            yield f"data: {json.dumps({'text': 'Groq is currently unavailable. Please try again.'})}\n\n"
+            yield f"data: {json.dumps({'text': f'❌ Error using "{model}". Please try a different model or try again later.'})}\n\n"
         yield "data: [DONE]\n\n"
 
     # ── Dispatch ───────────────────────────────────────────
@@ -551,7 +560,7 @@ async def keys_health(request: Request, admin_email: str = None):
         "rate_limited": rl_count,
         "errors": err_count,
         "details": results,
-        "fallback_models": FALLBACK_MODELS
+        "available_models": AVAILABLE_MODELS
     }
 
 # ── Share ──────────────────────────────────────────────────
