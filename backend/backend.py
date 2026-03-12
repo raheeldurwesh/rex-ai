@@ -336,33 +336,52 @@ async def chat(req: ChatRequest, request: Request):
 
     # ── Groq (sync SDK, round-robin keys, fallback chain) ──
     def generate_groq():
+        if not GROQ_KEYS:
+            yield f"data: {json.dumps({'text': 'Groq not configured.'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        
         models = [model] + [m for m in FALLBACK_MODELS if m != model]
+        rate_limited_count = 0
+        total_attempts = 0
+        
         for key in get_keys_rotated():
             for mdl in models:
+                total_attempts += 1
                 try:
                     client = Groq(api_key=key)
                     stream = client.chat.completions.create(
                         model=mdl, messages=msgs, stream=True, max_tokens=4096,
                     )
-                    yield f"data: {json.dumps({'model': mdl})}\n\n"
+                    yield f"data: {json.dumps({'model': mdl, 'provider': 'groq'})}\n\n"
                     for chunk in stream:
                         delta = chunk.choices[0].delta.content
                         if delta:
                             yield f"data: {json.dumps({'text': delta})}\n\n"
                     yield "data: [DONE]\n\n"
                     return
-                except Exception:
+                except Exception as e:
+                    error_str = str(e).lower()
+                    if "rate_limit" in error_str or "429" in error_str:
+                        rate_limited_count += 1
                     continue
-        yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
+        
+        # All keys exhausted
+        if rate_limited_count > 0:
+            yield f"data: {json.dumps({'text': 'Groq rate limited. Trying alternate provider...'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'text': 'Groq unavailable. Trying alternate provider...'})}\n\n"
         yield "data: [DONE]\n\n"
 
     # ── OpenRouter (OpenAI-compatible SSE) ─────────────────
     async def generate_openrouter():
         keys = OPENROUTER_KEYS
         if not keys:
-            yield f"data: {json.dumps({'text': 'OpenRouter API key not configured.'})}\n\n"
+            yield f"data: {json.dumps({'text': 'OpenRouter not configured.'})}\n\n"
             yield "data: [DONE]\n\n"
             return
+        
+        rate_limited_count = 0
         for key in keys:
             try:
                 async with httpx.AsyncClient(timeout=60) as client:
@@ -378,10 +397,11 @@ async def chat(req: ChatRequest, request: Request):
                         json={"model": model, "messages": msgs, "stream": True, "max_tokens": 4096},
                     ) as resp:
                         if resp.status_code == 429:
+                            rate_limited_count += 1
                             continue
                         if resp.status_code != 200:
                             continue
-                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        yield f"data: {json.dumps({'model': model, 'provider': 'openrouter'})}\n\n"
                         async for line in resp.aiter_lines():
                             if not line.startswith("data:"):
                                 continue
@@ -398,14 +418,18 @@ async def chat(req: ChatRequest, request: Request):
                         return
             except Exception:
                 continue
-        yield f"data: {json.dumps({'text': 'OpenRouter models are unavailable. Please try again.'})}\n\n"
+        
+        if rate_limited_count > 0:
+            yield f"data: {json.dumps({'text': 'OpenRouter rate limited. Trying alternate provider...'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'text': 'OpenRouter unavailable. Trying alternate provider...'})}\n\n"
         yield "data: [DONE]\n\n"
 
     # ── Gemini (Google REST SSE) ───────────────────────────
     async def generate_gemini():
         keys = GEMINI_KEYS
         if not keys:
-            yield f"data: {json.dumps({'text': 'Gemini API key not configured.'})}\n\n"
+            yield f"data: {json.dumps({'text': 'Gemini not configured.'})}\n\n"
             yield "data: [DONE]\n\n"
             return
         # Convert OpenAI-style messages to Gemini format
@@ -423,6 +447,8 @@ async def chat(req: ChatRequest, request: Request):
         }
         if system_parts:
             body["systemInstruction"] = {"parts": system_parts}
+        
+        rate_limited_count = 0
         for key in keys:
             try:
                 async with httpx.AsyncClient(timeout=60) as client:
@@ -434,10 +460,11 @@ async def chat(req: ChatRequest, request: Request):
                         json=body,
                     ) as resp:
                         if resp.status_code == 429:
+                            rate_limited_count += 1
                             continue
                         if resp.status_code != 200:
                             continue
-                        yield f"data: {json.dumps({'model': model})}\n\n"
+                        yield f"data: {json.dumps({'model': model, 'provider': 'gemini'})}\n\n"
                         async for line in resp.aiter_lines():
                             if not line.startswith("data:"):
                                 continue
@@ -455,13 +482,17 @@ async def chat(req: ChatRequest, request: Request):
                         return
             except Exception:
                 continue
-        yield f"data: {json.dumps({'text': 'Gemini models are unavailable. Please try again.'})}\n\n"
+        
+        if rate_limited_count > 0:
+            yield f"data: {json.dumps({'text': 'Gemini rate limited. Trying alternate provider...'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'text': 'Gemini unavailable. Trying alternate provider...'})}\n\n"
         yield "data: [DONE]\n\n"
 
     # ── Cloudflare Workers AI ──────────────────────────────
     async def generate_cloudflare():
         if not CF_ACCOUNT_ID or not CF_API_TOKEN:
-            yield f"data: {json.dumps({'text': 'Cloudflare AI not configured.'})}\n\n"
+            yield f"data: {json.dumps({'text': 'Cloudflare not configured.'})}\n\n"
             yield "data: [DONE]\n\n"
             return
         try:
@@ -475,11 +506,15 @@ async def chat(req: ChatRequest, request: Request):
                     },
                     json={"messages": msgs, "stream": True, "max_tokens": 4096},
                 ) as resp:
-                    if resp.status_code != 200:
-                        yield f"data: {json.dumps({'text': 'Cloudflare model unavailable. Please try again.'})}\n\n"
+                    if resp.status_code == 429:
+                        yield f"data: {json.dumps({'text': 'Cloudflare rate limited.'})}\n\n"
                         yield "data: [DONE]\n\n"
                         return
-                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    if resp.status_code != 200:
+                        yield f"data: {json.dumps({'text': 'Cloudflare unavailable.'})}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+                    yield f"data: {json.dumps({'model': model, 'provider': 'cloudflare'})}\n\n"
                     async for line in resp.aiter_lines():
                         if not line.startswith("data:"):
                             continue
@@ -493,25 +528,74 @@ async def chat(req: ChatRequest, request: Request):
                         except Exception:
                             continue
                     yield "data: [DONE]\n\n"
-        except Exception:
-            yield f"data: {json.dumps({'text': 'Cloudflare model unavailable. Please try again.'})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'text': 'Cloudflare error.'})}\n\n"
             yield "data: [DONE]\n\n"
+
+    # ── Unified fallback chain ────────────────────────────
+    async def try_all_providers():
+        """Try providers in order: requested → Groq → OpenRouter → Gemini → Cloudflare"""
+        providers_to_try = []
+        
+        # Start with requested provider
+        if provider == "openrouter" and OPENROUTER_KEYS:
+            providers_to_try.append(("openrouter", generate_openrouter))
+        elif provider == "gemini" and GEMINI_KEYS:
+            providers_to_try.append(("gemini", generate_gemini))
+        elif provider == "cloudflare" and CF_ACCOUNT_ID and CF_API_TOKEN:
+            providers_to_try.append(("cloudflare", generate_cloudflare))
+        elif provider == "groq" and GROQ_KEYS:
+            providers_to_try.append(("groq", generate_groq))
+        
+        # Add fallback providers (in order of preference)
+        if GROQ_KEYS and ("groq", generate_groq) not in providers_to_try:
+            providers_to_try.append(("groq", generate_groq))
+        if OPENROUTER_KEYS and ("openrouter", generate_openrouter) not in providers_to_try:
+            providers_to_try.append(("openrouter", generate_openrouter))
+        if GEMINI_KEYS and ("gemini", generate_gemini) not in providers_to_try:
+            providers_to_try.append(("gemini", generate_gemini))
+        if CF_ACCOUNT_ID and CF_API_TOKEN and ("cloudflare", generate_cloudflare) not in providers_to_try:
+            providers_to_try.append(("cloudflare", generate_cloudflare))
+        
+        if not providers_to_try:
+            yield f"data: {json.dumps({'text': 'No AI providers configured. Please contact support.'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        
+        # Try each provider until one works
+        for idx, (prov_name, generator) in enumerate(providers_to_try):
+            try:
+                yielded_any = False
+                if prov_name == "groq":
+                    for chunk in generator():
+                        yielded_any = True
+                        yield chunk
+                        if "All models are busy" in chunk:
+                            # Groq failed, try next provider
+                            break
+                    if yielded_any and "[DONE]" in chunk:
+                        return  # Success
+                else:
+                    async for chunk in generator():
+                        yielded_any = True
+                        yield chunk
+                        if "unavailable" in chunk or "not configured" in chunk:
+                            # Provider failed, try next
+                            break
+                    if yielded_any and "[DONE]" in chunk:
+                        return  # Success
+            except Exception:
+                continue
+        
+        # All providers failed
+        yield f"data: {json.dumps({'text': 'All AI providers are currently busy. Please try again in a moment.'})}\n\n"
+        yield "data: [DONE]\n\n"
 
     # ── Dispatch ───────────────────────────────────────────
     async def guarded_generate():
         async with get_semaphore():
-            if provider == "openrouter":
-                async for chunk in generate_openrouter():
-                    yield chunk
-            elif provider == "gemini":
-                async for chunk in generate_gemini():
-                    yield chunk
-            elif provider == "cloudflare":
-                async for chunk in generate_cloudflare():
-                    yield chunk
-            else:  # groq (default)
-                for chunk in generate_groq():
-                    yield chunk
+            async for chunk in try_all_providers():
+                yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
 
