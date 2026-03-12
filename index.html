@@ -905,11 +905,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
             </div>
             <span class="key-status-badge">{{ k.status }}</span>
           </div>
-          <!-- Fallback Models Info -->
-          <div v-if="keysData.fallback_models" style="margin-top:16px;padding:12px;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:8px;">
-            <div style="font-size:.72rem;font-weight:700;color:var(--acc);margin-bottom:6px;">📊 Fallback Chain</div>
+          <!-- Available Models Info -->
+          <div v-if="keysData.available_models" style="margin-top:16px;padding:12px;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:8px;">
+            <div style="font-size:.72rem;font-weight:700;color:var(--acc);margin-bottom:6px;">📊 Available Models</div>
             <div style="font-size:.68rem;color:var(--mut);line-height:1.6;">
-              {{ keysData.fallback_models.join(' → ') }}
+              {{ keysData.available_models.join(' • ') }}
             </div>
           </div>
         </div>
