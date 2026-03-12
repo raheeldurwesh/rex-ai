@@ -10,11 +10,15 @@
   --bg:#141414;--sur:#1e1e1e;--sur2:#282828;--bdr:#333;
   --acc:#c9a84c;--acc2:#e8c97a;--txt:#f0ece4;--mut:#6a6050;
   --red:#c0392b;--grn:#27ae60;--user-bg:#2a2416;
+  --admin-bg:#0a0a0a;--admin-hdr-bg:linear-gradient(180deg,rgba(201,168,76,.07) 0%,#0a0a0a 100%);
+  --admin-card:#111111;--admin-card-hover:#161410;--admin-bdr:#222;--admin-deep:#080808;
 }
 body.light{
   --bg:#f5f0e8;--sur:#fff;--sur2:#ede8df;--bdr:#d5cfc4;
   --acc:#b8922e;--acc2:#c9a84c;--txt:#1a1612;--mut:#7a6e5a;
   --red:#c0392b;--grn:#27ae60;--user-bg:#fdf6e3;
+  --admin-bg:#eee8de;--admin-hdr-bg:linear-gradient(180deg,rgba(184,146,46,.08) 0%,#eee8de 100%);
+  --admin-card:#fff;--admin-card-hover:#fdf8f0;--admin-bdr:#d8d0c4;--admin-deep:#f5f0e8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{overflow-x:hidden;}
@@ -326,12 +330,18 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .ws-on-btn{background:var(--acc);border:none;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .ws-on-btn:hover{background:var(--acc2);}
 .sspin{width:12px;height:12px;border:1.5px solid rgba(201,168,76,.25);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0;}
-.search-box{background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:11px 13px;margin-bottom:5px;}
-.search-box-title{color:var(--acc);font-weight:600;font-size:.74rem;margin-bottom:7px;}
-.search-result{margin-bottom:7px;padding-bottom:7px;border-bottom:1px solid var(--bdr);}
+.search-box{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;margin-bottom:5px;}
+.search-box-hdr{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+.search-box-icon{font-size:.9rem;}
+.search-box-title{color:var(--acc);font-weight:700;font-size:.74rem;letter-spacing:.03em;text-transform:uppercase;}
+.search-result{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bdr);cursor:pointer;}
 .search-result:last-child{border:none;margin:0;padding:0;}
-.search-result a{color:var(--acc);font-size:.74rem;font-weight:500;text-decoration:none;}
-.search-result p{color:var(--mut);font-size:.7rem;margin-top:2px;line-height:1.4;}
+.search-result-domain{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.search-result-favicon{width:14px;height:14px;border-radius:3px;object-fit:cover;}
+.search-result-domain-txt{font-size:.64rem;color:var(--mut);}
+.search-result-title{color:var(--acc);font-size:.8rem;font-weight:600;text-decoration:none;line-height:1.35;display:block;margin-bottom:3px;}
+.search-result-title:hover{text-decoration:underline;}
+.search-result-snippet{color:var(--mut);font-size:.71rem;line-height:1.5;}
 .typing{display:flex;gap:4px;padding:4px 2px;}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:bounce 1.1s infinite;opacity:.5;}
 .dot:nth-child(2){animation-delay:.18s;}.dot:nth-child(3){animation-delay:.36s;}
@@ -385,21 +395,8 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .light .new-btn:hover{color:var(--acc);}
 .light .inp-hint,.light .inp-brand{color:#8a7e6a;}
 .light .brand-link{color:var(--acc);}
-/* Light mode: admin panel */
-.light .admin-body{background:#f5f0e8;}
-.light .admin-search-inp{background:#fff;border-color:#d8d0c4;color:#1a1612;}
-.light .admin-search-inp::placeholder{color:#9a8e7a;}
-.light .user-row{background:#fff;border-color:#d8d0c4;}
-.light .user-row:hover{background:#fdf8f0;}
-.light .stat-card{background:#fff;border-color:#d8d0c4;}
-.light .chart-box,.light .an-box{background:#fff;border-color:#d8d0c4;}
-.light .key-row{background:#faf6ee;border-color:#d8d0c4;}
-.light .keys-modal{background:#fff;border-color:#d8d0c4;}
-.light .token-detail{background:#faf6ee;border-color:#d8d0c4;}
-.light .token-limit-inp{background:#fff;border-color:#d8d0c4;}
-.light .model-chip{background:#f0ebe0;border-color:#d8d0c4;}
-.light .top-user-row{border-bottom-color:#e8e0d4;}
-.light .an-stat-row{border-bottom-color:#e8e0d4;}
+/* Admin light/dark handled via --admin-* CSS vars in :root and body.light */
+
 .go-btn{position:fixed;bottom:88px;right:18px;width:42px;height:42px;background:var(--acc);border:none;border-radius:50%;color:#1a1a1a;font-size:1.3rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(201,168,76,.55);transition:opacity .25s,transform .25s;z-index:600;}
 .go-btn:hover{background:var(--acc2);transform:scale(1.08);}
 .go-btn.hidden{opacity:0;pointer-events:none;transform:translateY(14px);}
@@ -457,61 +454,117 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .shared-footer{text-align:center;padding:14px 16px;border-top:1px solid var(--bdr);font-size:.73rem;color:var(--mut);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
 .shared-signup-btn{background:var(--acc);color:#1a1a1a;font-weight:700;font-size:.76rem;padding:7px 14px;border-radius:8px;text-decoration:none;}
 
-/* ADMIN */
-.admin-wrap{position:fixed;inset:0;background:#000;z-index:900;display:flex;flex-direction:column;}
-.admin-hdr{padding:16px 24px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(201,168,76,.08) 0%,transparent 100%),#000;}
+/* ═══════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — dark & light mode
+═══════════════════════════════════════════════════════════ */
+.admin-wrap{position:fixed;inset:0;z-index:900;display:flex;flex-direction:column;background:var(--admin-bg);}
+.admin-hdr{padding:16px 24px;border-bottom:1px solid var(--admin-bdr);display:flex;align-items:center;gap:12px;background:var(--admin-hdr-bg);}
 .admin-title{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;font-size:1.4rem;color:var(--acc);flex:1;letter-spacing:-.01em;}
-.admin-close{background:none;border:1px solid var(--bdr);color:var(--mut);padding:7px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:.78rem;font-weight:600;transition:all .2s;}
+.admin-close{background:none;border:1px solid var(--admin-bdr);color:var(--mut);padding:7px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:.78rem;font-weight:600;transition:all .2s;}
 .admin-close:hover{border-color:var(--acc);color:var(--acc);}
-.admin-body{flex:1;overflow-y:auto;padding:24px;max-width:1000px;margin:0 auto;width:100%;background:#000;}
+.admin-body{flex:1;overflow-y:auto;padding:24px;max-width:1000px;margin:0 auto;width:100%;background:var(--admin-bg);}
 .admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:28px;}
-.stat-card{background:#0d0d0d;border:1px solid #1f1f1f;border-top:2px solid var(--acc);border-radius:14px;padding:18px 14px;text-align:center;transition:all .2s;position:relative;overflow:hidden;}
-.stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,.04),transparent);pointer-events:none;}
-.stat-card:hover{border-color:rgba(201,168,76,.3);transform:translateY(-2px);}
+.stat-card{background:var(--admin-card);border:1px solid var(--admin-bdr);border-top:2px solid var(--acc);border-radius:14px;padding:18px 14px;text-align:center;transition:all .2s;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,.05),transparent);pointer-events:none;}
+.stat-card:hover{border-color:rgba(201,168,76,.35);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.15);}
 .stat-icon{font-size:1.4rem;margin-bottom:8px;}
 .stat-num{font-size:2rem;font-weight:700;color:var(--acc);font-family:'Cormorant Garamond',Georgia,serif;line-height:1;}
 .stat-lbl{font-size:.68rem;color:var(--mut);margin-top:5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
-.admin-sec{font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bdr);}
-.user-row{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
-.user-row:hover{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.03);border-left:3px solid var(--acc);}
+.admin-sec{font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--admin-bdr);}
+.user-row{background:var(--admin-card);border:1px solid var(--admin-bdr);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
+.user-row:hover{border-color:rgba(201,168,76,.4);background:var(--admin-card-hover);border-left:3px solid var(--acc);}
 .user-row-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
 .user-av2{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#1a1a1a;font-size:.78rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .user-name2{font-weight:600;font-size:.88rem;color:var(--txt);}
 .user-email2{font-size:.72rem;color:var(--mut);margin-top:1px;}
-.user-meta{font-size:.7rem;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;padding-top:6px;border-top:1px solid var(--bdr);}
+.user-meta{font-size:.7rem;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;padding-top:6px;border-top:1px solid var(--admin-bdr);}
 .user-meta span{display:flex;align-items:center;gap:3px;}
-.search-list{margin-top:10px;padding:10px;background:#050505;border-radius:8px;border:1px solid #1a1a1a;}
-.search-item{padding:6px 10px;font-size:.76rem;color:#aaa;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;border-bottom:1px solid #1a1a1a;}
+.search-list{margin-top:10px;padding:10px;background:var(--admin-deep);border-radius:8px;border:1px solid var(--admin-bdr);}
+.search-item{padding:6px 10px;font-size:.76rem;color:var(--mut);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;border-bottom:1px solid var(--admin-bdr);}
 .search-item:last-child{border-bottom:none;margin-bottom:0;}
 .search-time{color:var(--mut);font-size:.64rem;white-space:nowrap;flex-shrink:0;margin-top:2px;}
 .no-users{text-align:center;color:var(--mut);padding:60px 40px;font-size:.85rem;line-height:1.8;}
-.admin-tabs{display:flex;gap:4px;margin-bottom:24px;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:4px;}
+.admin-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--admin-card);border:1px solid var(--admin-bdr);border-radius:12px;padding:4px;}
 .admin-tab{flex:1;padding:9px;background:none;border:none;border-radius:9px;color:var(--mut);font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center;}
-.admin-tab.on{background:rgba(201,168,76,.12);color:var(--acc);border:1px solid rgba(201,168,76,.25);}
+.admin-tab.on{background:rgba(201,168,76,.15);color:var(--acc);border:1px solid rgba(201,168,76,.3);}
+.admin-tab:hover:not(.on){color:var(--txt);background:var(--admin-card-hover);}
 .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
-.chart-box{background:#0d0d0d;border:1px solid #1f1f1f;border-top:2px solid rgba(201,168,76,.5);border-radius:14px;padding:18px;}
+.chart-box{background:var(--admin-card);border:1px solid var(--admin-bdr);border-top:2px solid rgba(201,168,76,.5);border-radius:14px;padding:18px;}
 .chart-title{font-size:.75rem;font-weight:700;color:var(--mut);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px;}
 @media(max-width:640px){.chart-row{grid-template-columns:1fr;}}
 .analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
 @media(max-width:640px){.analytics-grid{grid-template-columns:1fr;}}
-.an-box{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:16px;}
+.an-box{background:var(--admin-card);border:1px solid var(--admin-bdr);border-radius:14px;padding:16px;}
 .an-box-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:14px;}
 .model-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .model-bar-name{font-size:.72rem;color:var(--txt);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.model-bar-bg{flex:1;height:7px;background:#1a1a1a;border-radius:4px;overflow:hidden;}
+.model-bar-bg{flex:1;height:7px;background:var(--admin-deep);border-radius:4px;overflow:hidden;}
 .model-bar-fill{height:100%;border-radius:4px;background:var(--acc);transition:width .4s;}
 .model-bar-val{font-size:.68rem;color:var(--mut);width:44px;text-align:right;flex-shrink:0;}
-.top-user-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #111;}
+.top-user-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--admin-bdr);}
 .top-user-row:last-child{border-bottom:none;}
 .top-user-av{width:28px;height:28px;border-radius:50%;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.25);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--acc);flex-shrink:0;}
 .top-user-info{flex:1;min-width:0;}
 .top-user-name{font-size:.75rem;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .top-user-stat{font-size:.65rem;color:var(--mut);}
 .top-user-badge{font-size:.65rem;font-weight:700;color:var(--acc);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);padding:2px 7px;border-radius:8px;flex-shrink:0;}
-.an-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #111;font-size:.78rem;}
+.an-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--admin-bdr);font-size:.78rem;}
 .an-stat-row:last-child{border-bottom:none;}
 .an-stat-lbl{color:var(--mut);}
 .an-stat-val{color:var(--txt);font-weight:600;}
+
+/* Admin search */
+.admin-search-wrap{position:relative;margin-bottom:14px;}
+.admin-search-inp{width:100%;background:var(--admin-deep);border:1px solid var(--admin-bdr);border-radius:10px;color:var(--txt);font-family:inherit;font-size:.82rem;padding:10px 36px 10px 14px;outline:none;box-sizing:border-box;transition:border-color .2s;}
+.admin-search-inp:focus{border-color:rgba(201,168,76,.45);}
+.admin-search-inp::placeholder{color:var(--mut);}
+.admin-search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mut);cursor:pointer;font-size:.8rem;padding:4px;}
+
+/* Keys health button */
+.keys-health-btn{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--acc);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:.78rem;font-weight:700;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.keys-health-btn:hover{background:rgba(201,168,76,.2);border-color:var(--acc);}
+
+/* Keys modal */
+.keys-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.keys-modal{background:var(--admin-card);border:1px solid var(--admin-bdr);border-top:3px solid var(--acc);border-radius:18px;width:100%;max-width:520px;padding:0;max-height:82vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.4);}
+.keys-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--admin-bdr);}
+.keys-modal-title{font-weight:700;font-size:1rem;color:var(--txt);}
+.keys-modal-close{background:none;border:none;color:var(--mut);font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:color .15s;}
+.keys-modal-close:hover{color:var(--txt);}
+.keys-modal-body{overflow-y:auto;padding:18px 22px;}
+.keys-loading{text-align:center;color:var(--mut);padding:40px;font-size:.88rem;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.keys-spinner{width:28px;height:28px;border:3px solid var(--admin-bdr);border-top-color:var(--acc);border-radius:50%;animation:kspin .7s linear infinite;}
+@keyframes kspin{to{transform:rotate(360deg);}}
+.keys-summary{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.keys-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
+.keys-badge.ok{background:rgba(129,199,132,.12);color:#81c784;border:1px solid rgba(129,199,132,.3);}
+.keys-badge.rl{background:rgba(255,183,77,.12);color:#ffb74d;border:1px solid rgba(255,183,77,.3);}
+.keys-badge.err{background:rgba(229,115,115,.12);color:#e57373;border:1px solid rgba(229,115,115,.3);}
+.keys-provider-hdr{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--admin-bdr);}
+.key-row{background:var(--admin-deep);border:1px solid var(--admin-bdr);border-radius:10px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;}
+.key-row.ok{border-left-color:#81c784;}
+.key-row.rate_limited{border-left-color:#ffb74d;}
+.key-row.error{border-left-color:#e57373;}
+.key-icon{font-size:1rem;flex-shrink:0;}
+.key-info{flex:1;min-width:0;}
+.key-name{font-size:.8rem;font-weight:700;color:var(--txt);}
+.key-masked{font-size:.68rem;color:var(--mut);font-family:monospace;margin-top:2px;}
+.key-status-badge{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:12px;flex-shrink:0;}
+.key-status-badge.ok{background:rgba(129,199,132,.12);color:#81c784;}
+.key-status-badge.rate_limited{background:rgba(255,183,77,.12);color:#ffb74d;}
+.key-status-badge.error{background:rgba(229,115,115,.12);color:#e57373;}
+.keys-empty{text-align:center;padding:30px;color:var(--mut);font-size:.82rem;}
+
+/* Token detail */
+.token-detail{margin-top:10px;padding:12px;background:var(--admin-deep);border-radius:10px;border:1px solid var(--admin-bdr);}
+.model-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.model-chip{background:var(--admin-card);border:1px solid var(--admin-bdr);border-radius:6px;padding:4px 8px;display:flex;gap:6px;align-items:center;}
+.model-chip-name{font-size:.68rem;color:var(--mut);}
+.model-chip-tokens{font-size:.7rem;color:var(--acc);font-weight:700;}
+.token-limit-row{display:flex;gap:6px;align-items:center;}
+.token-limit-inp{flex:1;background:var(--admin-deep);border:1px solid var(--admin-bdr);border-radius:7px;color:var(--txt);padding:6px 10px;font-size:.76rem;outline:none;font-family:'DM Sans',sans-serif;}
+.token-limit-inp:focus{border-color:var(--acc);}
+.token-limit-btn{background:var(--acc);border:none;color:#1a1a1a;padding:6px 12px;border-radius:7px;font-size:.74rem;font-weight:700;cursor:pointer;}
 
 @media(max-width:640px){
   .sb{position:absolute;}
@@ -817,24 +870,60 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
   <div class="keys-modal-overlay" v-if="keysModalOpen" v-on:click.self="keysModalOpen=false">
     <div class="keys-modal">
       <div class="keys-modal-hdr">
-        <span>🔑 API Keys Health</span>
+        <span class="keys-modal-title">🔑 API Keys Health</span>
         <button class="keys-modal-close" v-on:click="keysModalOpen=false">✕</button>
       </div>
-      <div v-if="keysLoading" class="keys-loading">Checking all keys...</div>
-      <div v-else>
-        <div class="keys-summary">
-          <span class="keys-ok">✅ {{ keysData.ok }} OK</span>
-          <span class="keys-rl">⚡ {{ keysData.rate_limited }} Rate Limited</span>
-          <span class="keys-err">❌ {{ keysData.error }} Error</span>
+      <div class="keys-modal-body">
+        <div v-if="keysLoading" class="keys-loading">
+          <div class="keys-spinner"></div>
+          <span>Testing all keys, please wait...</span>
         </div>
-        <div v-for="k in keysData.keys" :key="k.name" class="key-row" :class="k.status">
-          <div class="key-row-top">
-            <span class="key-name">{{ k.name }}</span>
-            <span class="key-masked">{{ k.key }}</span>
-            <span class="key-badge" :class="k.status">{{ k.status === 'ok' ? '✅ Active' : k.status === 'rate_limited' ? '⚡ Rate Limited' : '❌ Error' }}</span>
+        <div v-else-if="keysData.keys && keysData.keys.length">
+          <!-- Summary badges -->
+          <div class="keys-summary">
+            <span class="keys-badge ok">✅ {{ keysData.ok }} Active</span>
+            <span class="keys-badge rl">⚡ {{ keysData.rate_limited }} Rate Limited</span>
+            <span class="keys-badge err">❌ {{ keysData.error }} Error</span>
+            <span style="margin-left:auto;font-size:.7rem;color:var(--mut);">Total: {{ keysData.total }}</span>
           </div>
-          <div v-if="k.error" class="key-error">{{ k.error }}</div>
+          <!-- Groq Keys -->
+          <template v-if="keysData.keys.filter(k=>k.provider==='groq').length">
+            <div class="keys-provider-hdr">🟢 Groq</div>
+            <div v-for="k in keysData.keys.filter(k=>k.provider==='groq')" :key="k.name" class="key-row" :class="k.status">
+              <span class="key-icon">{{ k.status==='ok' ? '✅' : k.status==='rate_limited' ? '⚡' : '❌' }}</span>
+              <div class="key-info">
+                <div class="key-name">{{ k.name }}</div>
+                <div class="key-masked">{{ k.key }}</div>
+              </div>
+              <span class="key-status-badge" :class="k.status">{{ k.status==='ok' ? 'Active' : k.status==='rate_limited' ? 'Rate Limited' : 'Error' }}</span>
+            </div>
+          </template>
+          <!-- OpenRouter Keys -->
+          <template v-if="keysData.keys.filter(k=>k.provider==='openrouter').length">
+            <div class="keys-provider-hdr">🔵 OpenRouter</div>
+            <div v-for="k in keysData.keys.filter(k=>k.provider==='openrouter')" :key="k.name" class="key-row" :class="k.status">
+              <span class="key-icon">{{ k.status==='ok' ? '✅' : k.status==='rate_limited' ? '⚡' : '❌' }}</span>
+              <div class="key-info">
+                <div class="key-name">{{ k.name }}</div>
+                <div class="key-masked">{{ k.key }}</div>
+              </div>
+              <span class="key-status-badge" :class="k.status">{{ k.status==='ok' ? 'Active' : k.status==='rate_limited' ? 'Rate Limited' : 'Error' }}</span>
+            </div>
+          </template>
+          <!-- Gemini Keys -->
+          <template v-if="keysData.keys.filter(k=>k.provider==='gemini').length">
+            <div class="keys-provider-hdr">🔴 Gemini</div>
+            <div v-for="k in keysData.keys.filter(k=>k.provider==='gemini')" :key="k.name" class="key-row" :class="k.status">
+              <span class="key-icon">{{ k.status==='ok' ? '✅' : k.status==='rate_limited' ? '⚡' : '❌' }}</span>
+              <div class="key-info">
+                <div class="key-name">{{ k.name }}</div>
+                <div class="key-masked">{{ k.key }}</div>
+              </div>
+              <span class="key-status-badge" :class="k.status">{{ k.status==='ok' ? 'Active' : k.status==='rate_limited' ? 'Rate Limited' : 'Error' }}</span>
+            </div>
+          </template>
         </div>
+        <div v-else class="keys-empty">No API keys configured on the server.</div>
       </div>
     </div>
   </div>
@@ -1035,10 +1124,17 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
             <div v-else class="mw asst">
               <div v-if="msg.isSearch">
                 <div class="search-box">
-                  <div class="search-box-title">Web Search Results</div>
-                  <div v-for="r in parseSearch(msg.content)" :key="r.url" class="search-result">
-                    <a :href="r.url" target="_blank">{{ r.title }}</a>
-                    <p>{{ r.snippet }}</p>
+                  <div class="search-box-hdr">
+                    <span class="search-box-icon">🌐</span>
+                    <span class="search-box-title">Web Results</span>
+                  </div>
+                  <div v-for="r in parseSearch(msg.content)" :key="r.url" class="search-result" v-on:click="r.url && window.open(r.url,'_blank')">
+                    <div class="search-result-domain">
+                      <img v-if="r.url" class="search-result-favicon" :src="'https://www.google.com/s2/favicons?domain='+r.url+'&sz=16'" loading="lazy" onerror="this.style.display='none'" />
+                      <span class="search-result-domain-txt">{{ r.url ? r.url.replace(/https?:\/\/(www\.)?/,'').split('/')[0] : '' }}</span>
+                    </div>
+                    <a :href="r.url" target="_blank" class="search-result-title" v-on:click.stop>{{ r.title }}</a>
+                    <div class="search-result-snippet">{{ r.snippet }}</div>
                   </div>
                 </div>
               </div>
@@ -1209,7 +1305,9 @@ async function sbPatch(table, q, data) {
     headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return r.json();
+  // Supabase PATCH returns 204 No Content — safe parse
+  var text = await r.text();
+  try { return text ? JSON.parse(text) : {}; } catch(e) { return {}; }
 }
 async function dbGetAllUsers(adminEmail) {
   var r = await fetch(BACKEND + '/db/users?admin_email=' + encodeURIComponent(adminEmail));
@@ -2063,14 +2161,12 @@ Vue.createApp({
       } else {
         var idx = chats.value.findIndex(function(c) { return c.id === cid.value; });
         if (idx !== -1) {
-          chats.value[idx].messages = m;
-          // Bubble to top (unpinned chats only)
-          if (!chats.value[idx].pinned && idx > 0) {
-            var chat = chats.value.splice(idx, 1)[0];
-            // Insert after all pinned chats
-            var firstUnpinned = chats.value.findIndex(function(c) { return !c.pinned; });
-            if (firstUnpinned === -1) chats.value.push(chat);
-            else chats.value.splice(firstUnpinned, 0, chat);
+          var chat = chats.value[idx];
+          chat.messages = m;
+          // Bubble unpinned chat to top of unpinned section
+          if (!chat.pinned && idx !== 0) {
+            chats.value.splice(idx, 1);
+            chats.value.unshift(chat);
           }
         }
       }
@@ -2281,21 +2377,41 @@ Vue.createApp({
       if (webSearch.value) {
         searching.value = true; searchQuery.value = text.slice(0, 60);
         try {
-          var res  = await fetch(BACKEND + '/search?q=' + encodeURIComponent(text), { signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined });
-          if (res.ok) {
-            var data = await res.json();
-            if (data.results && data.results.length > 0) {
-              searchCtx = '\n\n[Web search results for: "' + text + '"]\n' + data.results.map(function(r, i) {
-                return (i+1) + '. ' + r.title + '\n   ' + r.snippet + (r.url ? '\n   URL: ' + r.url : '');
-              }).join('\n');
-              msgs.value.push({ role: 'assistant', content: '__SEARCH__' + JSON.stringify(data.results), isSearch: true });
-              searchCtx += '\n\nUse the above web results to answer accurately. Cite sources where relevant.';
-            } else {
-              searchCtx = '\n\n[Web search returned no results for: "' + text + '". Answer from your knowledge.]';
+          var results = [];
+
+          // ── Primary: Backend search (Serper = real Google results) ──────────
+          try {
+            var beRes = await fetch(BACKEND + '/search?q=' + encodeURIComponent(text));
+            if (beRes.ok) {
+              var beData = await beRes.json();
+              if (beData.results && beData.results.length > 0) results = beData.results;
             }
+          } catch(e) {}
+
+          // ── Fallback: Wikipedia directly from browser (if backend cold/down) ─
+          if (results.length === 0) {
+            try {
+              var wRes = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(text) + '&srlimit=3&format=json&origin=*', { signal: AbortSignal.timeout(6000) });
+              if (wRes.ok) {
+                var wData = await wRes.json();
+                (wData.query && wData.query.search || []).forEach(function(item) {
+                  var snippet = item.snippet.replace(/<[^>]+>/g, '').replace(/&quot;/g,'"').replace(/&#039;/g,"'").replace(/&amp;/g,'&');
+                  results.push({ title: item.title, snippet: snippet.slice(0, 280), url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(item.title.replace(/ /g,'_')) });
+                });
+              }
+            } catch(e) {}
+          }
+
+          if (results.length > 0) {
+            searchCtx = '\n\n[Web search results for: "' + text + '"]\n' + results.slice(0,6).map(function(r, i) {
+              return (i+1) + '. ' + r.title + '\n   ' + r.snippet + (r.url ? '\n   Source: ' + r.url : '');
+            }).join('\n') + '\n\nUse the above web results to answer accurately. Mention sources where relevant.';
+            msgs.value.push({ role: 'assistant', content: '__SEARCH__' + JSON.stringify(results.slice(0,6)), isSearch: true });
+          } else {
+            searchCtx = '\n\n[Web search attempted but returned no results for: "' + text + '". Answer from your training knowledge.]';
           }
         } catch(e) {
-          searchCtx = '\n\n[Web search unavailable. Answer from your knowledge.]';
+          searchCtx = '\n\n[Web search unavailable. Answer from your training knowledge.]';
         } finally { searching.value = false; searchQuery.value = ''; }
       }
       await callAPI(msgs.value, text, searchCtx);
@@ -2347,12 +2463,15 @@ Vue.createApp({
           body: JSON.stringify({ model: rId, provider: (MODELS.find(function(m){return m.id===rId;})||{}).provider||'groq', messages: [{role:'system',content:sys}].concat(chatMsgs) })
         });
         allBusy.value = false;
-        if (res.status === 503) {
+        if (res.status === 503 || res.status === 429) {
           var ed = {}; try { ed = await res.json(); } catch(e){}
-          msgs.value.push({ role: 'assistant', content: ed.detail || 'Rex is a bit busy right now. Please try again in a moment!' });
-          streaming.value = false; return;
+          msgs.value.push({ role: 'assistant', content: ed.detail || (res.status === 429 ? 'Too many requests. Please slow down a bit!' : 'Rex is a bit busy right now. Please try again in a moment!') });
+          streaming.value = false; stxt.value = ''; return;
         }
-        if (!res.ok) { streaming.value = false; return; }
+        if (!res.ok) {
+          msgs.value.push({ role: 'assistant', content: 'Something went wrong (' + res.status + '). Please try again.' });
+          streaming.value = false; stxt.value = ''; return;
+        }
 
         var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', done = false;
         var readLoop = async function() {
