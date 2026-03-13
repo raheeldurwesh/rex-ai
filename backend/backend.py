@@ -3,9 +3,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from groq import Groq
-import json, os, httpx, re, hashlib, hmac, time, secrets
+import json, os, httpx, re, hashlib, hmac, time, secrets, datetime as _dt
 import asyncio
 from contextlib import asynccontextmanager
+
+# ── Today token log (in-memory, resets daily, lost on restart) ────
+_today_log: dict = {"date": "", "tokens": 0, "requests": 0, "by_model": {}}
+
+def _increment_today(model: str, tokens: int):
+    today = _dt.date.today().isoformat()
+    if _today_log["date"] != today:
+        _today_log["date"]     = today
+        _today_log["tokens"]   = 0
+        _today_log["requests"] = 0
+        _today_log["by_model"] = {}
+    _today_log["tokens"]   += tokens
+    _today_log["requests"] += 1
+    _today_log["by_model"][model] = _today_log["by_model"].get(model, 0) + tokens
 
 async def supabase_keepalive():
     """Ping Supabase every 4 days to prevent inactivity pause"""
@@ -73,13 +87,12 @@ def get_keys_rotated():
     KEY_INDEX = (KEY_INDEX + 1) % len(GROQ_KEYS)
     return GROQ_KEYS[start:] + GROQ_KEYS[:start]
 
-# Available Groq models (for admin panel display)
-AVAILABLE_MODELS = [
+FALLBACK_MODELS = [
     "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "openai/gpt-oss-120b",
+    "moonshotai/kimi-k2-instruct-0905",
 ]
 
 # ── Rate limiting (capped to prevent memory growth) ────────
@@ -134,7 +147,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message]
     model: str = "llama-3.3-70b-versatile"
-    provider: str = "groq"
+    provider: str = "groq"  # only groq is supported
 
 class HashRequest(BaseModel):
     password: str
@@ -318,62 +331,67 @@ async def chat(req: ChatRequest, request: Request):
     if sem._value == 0 and len(getattr(sem, '_waiters', [])) >= MAX_QUEUE:
         raise HTTPException(status_code=503, detail="Rex is a bit busy right now. Please try again in a moment!")
 
-    msgs = [m.dict() for m in req.messages]
-    provider = req.provider or "groq"
-    model = req.model
+    models = [req.model] + [m for m in FALLBACK_MODELS if m != req.model]
 
-    # ── Groq (sync SDK, round-robin keys, NO MODEL FALLBACK) ──
-    def generate_groq():
-        if not GROQ_KEYS:
-            yield f"data: {json.dumps({'text': 'No API keys configured. Please add Groq API keys.'})}\n\n"
-            yield "data: [DONE]\n\n"
-            return
-        
-        # ONLY try the requested model - no fallback to other models
-        # This ensures user gets the model they selected
-        rate_limited_count = 0
-        model_not_found_count = 0
-        other_errors = 0
-        
+    def generate():
         for key in get_keys_rotated():
-            try:
-                client = Groq(api_key=key)
-                stream = client.chat.completions.create(
-                    model=model, messages=msgs, stream=True, max_tokens=4096,
-                )
-                yield f"data: {json.dumps({'model': model, 'provider': 'groq'})}\n\n"
-                for chunk in stream:
-                    delta = chunk.choices[0].delta.content
-                    if delta:
-                        yield f"data: {json.dumps({'text': delta})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            except Exception as e:
-                error_str = str(e).lower()
-                if "rate_limit" in error_str or "429" in error_str:
-                    rate_limited_count += 1
-                elif "model" in error_str and ("not found" in error_str or "does not exist" in error_str):
-                    model_not_found_count += 1
-                else:
-                    other_errors += 1
-                continue
-        
-        # All keys exhausted - give specific error
-        if model_not_found_count > 0:
-            yield f"data: {json.dumps({'text': f'⚠️ Model "{model}" is not available on Groq. Please select a different model from the dropdown.'})}\n\n"
-        elif rate_limited_count > 0:
-            yield f"data: {json.dumps({'text': f'⏳ All API keys are rate limited for "{model}". Please wait 1 minute or add more keys.'})}\n\n"
-        else:
-            yield f"data: {json.dumps({'text': f'❌ Error using "{model}". Please try a different model or try again later.'})}\n\n"
+            for model in models:
+                try:
+                    client = Groq(api_key=key)
+                    stream = client.chat.completions.create(
+                        model=model,
+                        messages=[m.dict() for m in req.messages],
+                        stream=True,
+                        max_tokens=4096,
+                    )
+                    yield f"data: {json.dumps({'model': model})}\n\n"
+                    for chunk in stream:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            yield f"data: {json.dumps({'text': delta})}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+                except Exception as e:
+                    if "rate_limit" in str(e) or "429" in str(e):
+                        continue
+                    continue
+        yield f"data: {json.dumps({'text': 'All models are busy. Please try again.'})}\n\n"
         yield "data: [DONE]\n\n"
 
-    # ── Dispatch ───────────────────────────────────────────
     async def guarded_generate():
         async with get_semaphore():
-            for chunk in generate_groq():
+            for chunk in generate():
                 yield chunk
 
     return StreamingResponse(guarded_generate(), media_type="text/event-stream")
+
+@app.post("/log-tokens")
+async def log_tokens_endpoint(request: Request):
+    """Called by frontend after each response to track daily token usage."""
+    try:
+        data = await request.json()
+        model  = str(data.get("model", "unknown"))
+        tokens = int(data.get("tokens", 0))
+        if tokens > 0:
+            _increment_today(model, tokens)
+    except Exception:
+        pass
+    return {"ok": True}
+
+@app.get("/admin/today-stats")
+async def today_stats(request: Request, admin_email: str = None):
+    if admin_email not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Admin only")
+    daily_budget = int(os.getenv("DAILY_TOKEN_BUDGET", "1000000"))
+    return {
+        "date":         _today_log["date"] or _dt.date.today().isoformat(),
+        "tokens":       _today_log["tokens"],
+        "requests":     _today_log["requests"],
+        "by_model":     _today_log["by_model"],
+        "daily_budget": daily_budget,
+        "remaining":    max(0, daily_budget - _today_log["tokens"]),
+        "pct":          min(100, round(_today_log["tokens"] / daily_budget * 100, 1)) if daily_budget else 0,
+    }
 
 @app.get("/search")
 async def search(q: str, request: Request):
@@ -528,6 +546,21 @@ async def keys_health(request: Request, admin_email: str = None):
     if admin_email not in ADMIN_EMAILS:
         raise HTTPException(status_code=403, detail="Admin only")
 
+    all_keys = {
+        "groq": [k for k in [
+            os.getenv("GROQ_API_KEY"),
+            *[os.getenv(f"GROQ_API_KEY_{i}") for i in range(1, 10)],
+        ] if k],
+        "openrouter": [k for k in [
+            os.getenv("OPENROUTER_API_KEY"),
+            os.getenv("OPENROUTER_API_KEY_1"),
+        ] if k],
+        "gemini": [k for k in [
+            os.getenv("GEMINI_API_KEY"),
+            os.getenv("GEMINI_API_KEY_1"),
+        ] if k],
+    }
+
     results = []
     ok_count = 0
     rl_count = 0
@@ -535,7 +568,7 @@ async def keys_health(request: Request, admin_email: str = None):
 
     async with httpx.AsyncClient(timeout=8) as client:
         # Test Groq keys
-        for i, key in enumerate(GROQ_KEYS):
+        for i, key in enumerate(all_keys["groq"]):
             name = f"Groq #{i+1}"
             masked = key[:8] + "..." + key[-4:]
             try:
@@ -545,22 +578,61 @@ async def keys_health(request: Request, admin_email: str = None):
                     json={"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}
                 )
                 if r.status_code == 200:
-                    status = "✅ Working"; ok_count += 1
+                    status = "ok"; ok_count += 1
                 elif r.status_code == 429:
-                    status = "⏳ Rate Limited"; rl_count += 1
+                    status = "rate_limited"; rl_count += 1
                 else:
-                    status = f"❌ Error ({r.status_code})"; err_count += 1
-            except Exception as e:
-                status = f"❌ Error ({str(e)[:30]})"; err_count += 1
-            results.append({"name": name, "key": masked, "status": status})
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "groq", "key": masked, "status": status})
+
+        # Test OpenRouter keys
+        for i, key in enumerate(all_keys["openrouter"]):
+            name = f"OpenRouter #{i+1}"
+            masked = key[:8] + "..." + key[-4:]
+            try:
+                r = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={"model": "meta-llama/llama-3.3-70b-instruct", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}
+                )
+                if r.status_code == 200:
+                    status = "ok"; ok_count += 1
+                elif r.status_code == 429:
+                    status = "rate_limited"; rl_count += 1
+                else:
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "openrouter", "key": masked, "status": status})
+
+        # Test Gemini keys
+        for i, key in enumerate(all_keys["gemini"]):
+            name = f"Gemini #{i+1}"
+            masked = key[:8] + "..." + key[-4:]
+            try:
+                r = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}",
+                    headers={"Content-Type": "application/json"},
+                    json={"contents": [{"parts": [{"text": "hi"}]}], "generationConfig": {"maxOutputTokens": 1}}
+                )
+                if r.status_code == 200:
+                    status = "ok"; ok_count += 1
+                elif r.status_code == 429:
+                    status = "rate_limited"; rl_count += 1
+                else:
+                    status = "error"; err_count += 1
+            except Exception:
+                status = "error"; err_count += 1
+            results.append({"name": name, "provider": "gemini", "key": masked, "status": status})
 
     return {
-        "total_keys": len(GROQ_KEYS),
-        "working": ok_count,
+        "ok": ok_count,
         "rate_limited": rl_count,
-        "errors": err_count,
-        "details": results,
-        "available_models": AVAILABLE_MODELS
+        "error": err_count,
+        "total": len(results),
+        "keys": results
     }
 
 # ── Share ──────────────────────────────────────────────────
