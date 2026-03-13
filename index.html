@@ -584,11 +584,11 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
   .h-right{gap:3px;}
 }
 
-.today-hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
-@media(max-width:640px){.today-hero{grid-template-columns:1fr;}}
+.today-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+@media(max-width:640px){.today-grid{grid-template-columns:1fr;}}
 .today-card{background:var(--admin-card);border:1px solid var(--admin-bdr);border-top:2px solid var(--acc);border-radius:14px;padding:20px 18px;display:flex;flex-direction:column;gap:6px;}
 .today-card.wide{grid-column:1/-1;}
-.today-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:var(--acc);line-height:1;}
+.today-num{font-family:'Cormorant Garamond',serif;font-size:2.6rem;font-weight:700;color:var(--acc);line-height:1;}
 .today-num.green{color:#81c784;}
 .today-num.red{color:#e57373;}
 .today-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);}
@@ -597,7 +597,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
 .today-bar-fill{height:100%;border-radius:99px;transition:width .5s ease;background:linear-gradient(90deg,var(--acc),#e8a820);}
 .today-bar-fill.warn{background:linear-gradient(90deg,#ffb74d,#e57373);}
 .today-model-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-.today-model-name{font-size:.73rem;color:var(--txt);width:84px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.today-model-name{font-size:.73rem;color:var(--txt);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .today-model-bg{flex:1;height:6px;background:var(--admin-deep);border-radius:4px;overflow:hidden;}
 .today-model-fill{height:100%;border-radius:4px;background:var(--acc);}
 .today-model-val{font-size:.68rem;color:var(--mut);width:44px;text-align:right;flex-shrink:0;}
@@ -805,7 +805,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
               </div>
               <div v-if="u.model_usage && Object.keys(u.model_usage).length" class="model-chips">
                 <div v-for="(v, model) in u.model_usage" :key="model" class="model-chip">
-                  <span class="model-chip-name">{{ model.split('-').slice(0,3).join('-') }}</span>
+                  <span class="model-chip-name">{{ model.split('-').slice(0,4).join('-') }}</span>
                   <span class="model-chip-tokens">{{ fmtTokens(v.total || 0) }}</span>
                 </div>
               </div>
@@ -852,7 +852,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
             <div class="an-box-title">🤖 Model Usage (All Time)</div>
             <div v-if="modelUsageAll.length===0" style="font-size:.75rem;color:var(--mut);">No data yet</div>
             <div v-for="m in modelUsageAll" :key="m.name" class="model-bar-row">
-              <span class="model-bar-name" :title="m.name">{{ m.name.split('/').pop().split('-').slice(0,3).join('-') }}</span>
+              <span class="model-bar-name" :title="m.name">{{ m.name.split('/').pop().split('-').slice(0,4).join('-') }}</span>
               <div class="model-bar-bg"><div class="model-bar-fill" :style="{width: m.pct+'%'}"></div></div>
               <span class="model-bar-val">{{ fmtTokens(m.tokens) }}</span>
             </div>
@@ -892,8 +892,6 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           </div>
         </div>
       </template>
-    </div>
-  </div>
 
       <!-- TODAY TAB -->
       <template v-if="adminTab==='today'">
@@ -905,7 +903,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <button class="today-refresh" v-on:click="loadTodayStats">↺ Refresh</button>
         </div>
 
-        <div class="today-hero">
+        <div class="today-grid">
           <!-- Tokens used today -->
           <div class="today-card">
             <div class="today-lbl">🪙 Tokens Used Today</div>
@@ -920,8 +918,8 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <div class="today-card">
             <div class="today-lbl">✅ Remaining Today</div>
             <div class="today-num green">{{ fmtTokens(todayStats.remaining || 0) }}</div>
-            <div class="today-sub" style="margin-top:6px;">Budget: {{ fmtTokens(todayStats.daily_budget || 1000000) }} / day</div>
-            <div class="today-sub">Requests today: <b style="color:var(--txt);">{{ todayStats.requests || 0 }}</b></div>
+            <div class="today-sub" style="margin-top:auto;padding-top:10px;">Budget: <b style="color:var(--txt);">{{ fmtTokens(todayStats.daily_budget || 1000000) }}</b> / day</div>
+            <div class="today-sub">Requests: <b style="color:var(--txt);">{{ todayStats.requests || 0 }}</b></div>
           </div>
 
           <!-- By model -->
@@ -929,7 +927,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
             <div class="today-lbl" style="margin-bottom:12px;">🤖 Tokens by Model (Today)</div>
             <div v-if="!todayModelRows.length" style="font-size:.78rem;color:var(--mut);">No requests yet today.</div>
             <div v-for="m in todayModelRows" :key="m.name" class="today-model-row">
-              <span class="today-model-name" :title="m.name">{{ m.name.split('/').pop().split('-').slice(0,3).join('-') }}</span>
+              <span class="today-model-name" :title="m.name">{{ m.name.split('/').pop().split('-').slice(0,4).join('-') }}</span>
               <div class="today-model-bg"><div class="today-model-fill" :style="{width: m.pct+'%'}"></div></div>
               <span class="today-model-val">{{ fmtTokens(m.tokens) }}</span>
             </div>
@@ -937,9 +935,12 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
         </div>
 
         <div class="today-note">
-          ⚠️ Today's stats are tracked in-memory on the backend server — they reset if the server restarts (Render free tier). The daily budget can be set via the <code>DAILY_TOKEN_BUDGET</code> env var (default: 1,000,000).
+          ⚠️ Stats are tracked in-memory — reset on server restart (Render free tier). Set daily budget via <code>DAILY_TOKEN_BUDGET</code> env var (default: 1,000,000).
         </div>
       </template>
+
+    </div>
+  </div>
 
       <!-- KEYS HEALTH MODAL -->
   <div class="keys-modal-overlay" v-if="keysModalOpen" v-on:click.self="keysModalOpen=false">
