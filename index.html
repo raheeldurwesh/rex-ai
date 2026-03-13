@@ -584,7 +584,26 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
   .h-right{gap:3px;}
 }
 
-[v-cloak]{display:none!important;}
+.today-hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+@media(max-width:640px){.today-hero{grid-template-columns:1fr;}}
+.today-card{background:var(--admin-card);border:1px solid var(--admin-bdr);border-top:2px solid var(--acc);border-radius:14px;padding:20px 18px;display:flex;flex-direction:column;gap:6px;}
+.today-card.wide{grid-column:1/-1;}
+.today-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:var(--acc);line-height:1;}
+.today-num.green{color:#81c784;}
+.today-num.red{color:#e57373;}
+.today-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);}
+.today-sub{font-size:.72rem;color:var(--mut);}
+.today-bar-wrap{margin:10px 0 4px;height:8px;background:var(--admin-deep);border-radius:99px;overflow:hidden;}
+.today-bar-fill{height:100%;border-radius:99px;transition:width .5s ease;background:linear-gradient(90deg,var(--acc),#e8a820);}
+.today-bar-fill.warn{background:linear-gradient(90deg,#ffb74d,#e57373);}
+.today-model-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.today-model-name{font-size:.73rem;color:var(--txt);width:84px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.today-model-bg{flex:1;height:6px;background:var(--admin-deep);border-radius:4px;overflow:hidden;}
+.today-model-fill{height:100%;border-radius:4px;background:var(--acc);}
+.today-model-val{font-size:.68rem;color:var(--mut);width:44px;text-align:right;flex-shrink:0;}
+.today-refresh{background:none;border:1px solid var(--admin-bdr);color:var(--mut);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.74rem;font-family:inherit;transition:all .2s;}
+.today-refresh:hover{border-color:var(--acc);color:var(--acc);}
+.today-note{font-size:.66rem;color:var(--mut);background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.12);border-radius:8px;padding:8px 12px;line-height:1.6;}
 </style>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 </head>
@@ -740,6 +759,7 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
       <div class="admin-tabs">
         <button class="admin-tab" :class="{on: adminTab==='users'}" v-on:click="adminTab='users'">👥 Users</button>
         <button class="admin-tab" :class="{on: adminTab==='analytics'}" v-on:click="switchAnalyticsTab()">📊 Analytics</button>
+        <button class="admin-tab" :class="{on: adminTab==='today'}" v-on:click="switchTodayTab()">📅 Today</button>
       </div>
 
       <!-- USERS TAB -->
@@ -875,7 +895,53 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
     </div>
   </div>
 
-  <!-- KEYS HEALTH MODAL -->
+      <!-- TODAY TAB -->
+      <template v-if="adminTab==='today'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:.72rem;color:var(--mut);">
+            📅 <b style="color:var(--txt);">{{ todayStats.date || 'Loading...' }}</b>
+            &nbsp;·&nbsp; resets at midnight
+          </div>
+          <button class="today-refresh" v-on:click="loadTodayStats">↺ Refresh</button>
+        </div>
+
+        <div class="today-hero">
+          <!-- Tokens used today -->
+          <div class="today-card">
+            <div class="today-lbl">🪙 Tokens Used Today</div>
+            <div class="today-num" :class="todayStats.pct >= 80 ? 'red' : ''">{{ fmtTokens(todayStats.tokens || 0) }}</div>
+            <div class="today-bar-wrap">
+              <div class="today-bar-fill" :class="{warn: todayStats.pct >= 80}" :style="{width: (todayStats.pct||0)+'%'}"></div>
+            </div>
+            <div class="today-sub">{{ todayStats.pct || 0 }}% of daily budget</div>
+          </div>
+
+          <!-- Remaining -->
+          <div class="today-card">
+            <div class="today-lbl">✅ Remaining Today</div>
+            <div class="today-num green">{{ fmtTokens(todayStats.remaining || 0) }}</div>
+            <div class="today-sub" style="margin-top:6px;">Budget: {{ fmtTokens(todayStats.daily_budget || 1000000) }} / day</div>
+            <div class="today-sub">Requests today: <b style="color:var(--txt);">{{ todayStats.requests || 0 }}</b></div>
+          </div>
+
+          <!-- By model -->
+          <div class="today-card wide">
+            <div class="today-lbl" style="margin-bottom:12px;">🤖 Tokens by Model (Today)</div>
+            <div v-if="!todayModelRows.length" style="font-size:.78rem;color:var(--mut);">No requests yet today.</div>
+            <div v-for="m in todayModelRows" :key="m.name" class="today-model-row">
+              <span class="today-model-name" :title="m.name">{{ m.name.split('/').pop().split('-').slice(0,3).join('-') }}</span>
+              <div class="today-model-bg"><div class="today-model-fill" :style="{width: m.pct+'%'}"></div></div>
+              <span class="today-model-val">{{ fmtTokens(m.tokens) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="today-note">
+          ⚠️ Today's stats are tracked in-memory on the backend server — they reset if the server restarts (Render free tier). The daily budget can be set via the <code>DAILY_TOKEN_BUDGET</code> env var (default: 1,000,000).
+        </div>
+      </template>
+
+      <!-- KEYS HEALTH MODAL -->
   <div class="keys-modal-overlay" v-if="keysModalOpen" v-on:click.self="keysModalOpen=false">
     <div class="keys-modal">
       <div class="keys-modal-hdr">
@@ -887,31 +953,26 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1
           <div class="keys-spinner"></div>
           <span>Testing all keys, please wait...</span>
         </div>
-        <div v-else-if="keysData.details && keysData.details.length">
+        <div v-else-if="keysData.keys && keysData.keys.length">
           <!-- Summary badges -->
           <div class="keys-summary">
-            <span class="keys-badge ok">✅ {{ keysData.working }} Working</span>
-            <span class="keys-badge rl">⏳ {{ keysData.rate_limited }} Rate Limited</span>
-            <span class="keys-badge err">❌ {{ keysData.errors }} Errors</span>
-            <span style="margin-left:auto;font-size:.7rem;color:var(--mut);">Total: {{ keysData.total_keys }}</span>
+            <span class="keys-badge ok">✅ {{ keysData.ok }} Active</span>
+            <span class="keys-badge rl">⚡ {{ keysData.rate_limited }} Rate Limited</span>
+            <span class="keys-badge err">❌ {{ keysData.error }} Error</span>
+            <span style="margin-left:auto;font-size:.7rem;color:var(--mut);">Total: {{ keysData.total }}</span>
           </div>
-          <!-- Groq Keys -->
-          <div class="keys-provider-hdr">🟢 Groq (All Models)</div>
-          <div v-for="k in keysData.details" :key="k.name" class="key-row">
-            <span class="key-icon">{{ k.status.includes('✅') ? '✅' : k.status.includes('⏳') ? '⏳' : '❌' }}</span>
-            <div class="key-info">
-              <div class="key-name">{{ k.name }}</div>
-              <div class="key-masked">{{ k.key }}</div>
+          <!-- Groq Keys only -->
+          <template v-if="keysData.keys && keysData.keys.length">
+            <div class="keys-provider-hdr">🟢 Groq</div>
+            <div v-for="k in keysData.keys" :key="k.name" class="key-row" :class="k.status">
+              <span class="key-icon">{{ k.status==='ok' ? '✅' : k.status==='rate_limited' ? '⚡' : '❌' }}</span>
+              <div class="key-info">
+                <div class="key-name">{{ k.name }}</div>
+                <div class="key-masked">{{ k.key }}</div>
+              </div>
+              <span class="key-status-badge" :class="k.status">{{ k.status==='ok' ? 'Active' : k.status==='rate_limited' ? 'Rate Limited' : 'Error' }}</span>
             </div>
-            <span class="key-status-badge">{{ k.status }}</span>
-          </div>
-          <!-- Available Models Info -->
-          <div v-if="keysData.available_models" style="margin-top:16px;padding:12px;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:8px;">
-            <div style="font-size:.72rem;font-weight:700;color:var(--acc);margin-bottom:6px;">📊 Available Models</div>
-            <div style="font-size:.68rem;color:var(--mut);line-height:1.6;">
-              {{ keysData.available_models.join(' • ') }}
-            </div>
-          </div>
+          </template>
         </div>
         <div v-else class="keys-empty">No API keys configured on the server.</div>
       </div>
@@ -1318,20 +1379,19 @@ async function hashPwd(pw) {
 
 // ─── Models ───────────────────────────────────────────────────────────────────
 var MODELS = [
-  { id: 'auto',                     provider: 'groq', name: 'Auto',           desc: 'Picks best model automatically' },
-  { id: 'llama-3.3-70b-versatile',  provider: 'groq', name: 'Llama 3.3 70B',  desc: 'Best for general use' },
-  { id: 'llama-3.1-70b-versatile',  provider: 'groq', name: 'Llama 3.1 70B',  desc: 'Great for reasoning' },
-  { id: 'llama-3.1-8b-instant',     provider: 'groq', name: 'Llama 3.1 8B',   desc: 'Fastest responses' },
-  { id: 'mixtral-8x7b-32768',       provider: 'groq', name: 'Mixtral 8x7B',   desc: 'Long context (32k)' },
-  { id: 'gemma2-9b-it',             provider: 'groq', name: 'Gemma 2 9B',     desc: 'Creative tasks' },
+  { id: 'auto',                                         provider: 'groq', name: 'Auto',      desc: 'Picks best model automatically' },
+  { id: 'llama-3.3-70b-versatile',                      provider: 'groq', name: 'Llama 3.3', desc: 'Best for general use' },
+  { id: 'llama-3.1-8b-instant',                         provider: 'groq', name: 'Llama 3.1', desc: 'Fastest responses' },
+  { id: 'openai/gpt-oss-120b',                          provider: 'groq', name: 'GPT-OSS',   desc: 'Best for reasoning' },
+  { id: 'meta-llama/llama-4-scout-17b-16e-instruct',    provider: 'groq', name: 'Llama 4',   desc: 'Best for long context' },
+  { id: 'moonshotai/kimi-k2-instruct-0905',             provider: 'groq', name: 'Kimi K2',   desc: 'Best for coding' },
 ];
 
 function autoModel(t) {
   var tl = t.toLowerCase();
-  if (/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json)\b/.test(tl)) return { id: 'llama-3.1-70b-versatile', label: 'Llama 70B' };
-  if (/\b(math|reason|analyze|compare|strategy|proof)\b/.test(tl)) return { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3' };
-  if (/\b(creative|story|poem|imaginative|fiction|character)\b/.test(tl)) return { id: 'gemma2-9b-it', label: 'Gemma 2' };
-  if (/\b(long|document|essay|report|summarize|translate)\b/.test(tl)) return { id: 'mixtral-8x7b-32768', label: 'Mixtral' };
+  if (/\b(code|debug|bug|script|python|javascript|html|css|sql|function|class|api|json)\b/.test(tl)) return { id: 'moonshotai/kimi-k2-instruct-0905', label: 'Kimi K2' };
+  if (/\b(math|reason|analyze|compare|strategy|proof)\b/.test(tl)) return { id: 'openai/gpt-oss-120b', label: 'GPT-OSS' };
+  if (/\b(summarize|document|long|translate|essay|report)\b/.test(tl)) return { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4' };
   if (t.length < 60 && /\b(what is|who is|when|where|define|quick)\b/.test(tl)) return { id: 'llama-3.1-8b-instant', label: 'Llama 8B' };
   return { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3' };
 }
@@ -1481,6 +1541,16 @@ Vue.createApp({
     var keysModalOpen = Vue.ref(false);
     var keysLoading   = Vue.ref(false);
     var keysData      = Vue.ref({ ok: 0, rate_limited: 0, error: 0, keys: [] });
+
+    // ── Today stats ───────────────────────────────────────────────────────────
+    var todayStats    = Vue.ref({ date:'', tokens:0, requests:0, by_model:{}, daily_budget:1000000, remaining:1000000, pct:0 });
+    var todayModelRows = Vue.computed(function() {
+      var bm = todayStats.value.by_model || {};
+      var total = Object.values(bm).reduce(function(a,b){ return a+b; }, 0) || 1;
+      return Object.keys(bm).map(function(name) {
+        return { name: name, tokens: bm[name], pct: Math.round(bm[name]/total*100) };
+      }).sort(function(a,b){ return b.tokens-a.tokens; });
+    });
 
     // ── Web search ────────────────────────────────────────────────────────────
     var webSearch     = Vue.ref(false);
@@ -2067,6 +2137,16 @@ Vue.createApp({
       adminTab.value = 'analytics';
       Vue.nextTick(function() { drawCharts(); });
     }
+    function switchTodayTab() {
+      adminTab.value = 'today';
+      loadTodayStats();
+    }
+    async function loadTodayStats() {
+      try {
+        var r = await fetch(BACKEND + '/admin/today-stats?admin_email=' + encodeURIComponent(user.value.email));
+        if (r.ok) todayStats.value = await r.json();
+      } catch(e) {}
+    }
     async function openAdmin() {
       umOpen.value = false; adminOpen.value = true;
       var data = await dbGetAllUsers(user.value.email);
@@ -2561,6 +2641,8 @@ Vue.createApp({
           var cTok = Math.ceil(stxt.value.length / 4);
           var total = pTok + cTok;
           var modelUsed = activeModel.value || selModelId.value || 'llama-3.3-70b-versatile';
+          // Log today tokens to backend
+          fetch(BACKEND + '/log-tokens', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ model: modelUsed, tokens: total }) }).catch(function(){});
           sbGet('users', 'id=eq.' + user.value.uid + '&select=total_tokens,model_usage,token_limit').then(function(ud) {
             if (!ud || !ud[0]) return;
             var newTotal = (ud[0].total_tokens || 0) + total;
@@ -2680,7 +2762,7 @@ Vue.createApp({
       continueAsGuest, guestSignup, isGuest, guestMsgCount, guestPrompt,
       // Admin
       adminOpen, adminUsers, adminTab, umOpen,
-      openAdmin, switchAnalyticsTab,
+      openAdmin, switchAnalyticsTab, switchTodayTab,
       growthCanvas, msgCanvas,
       totalSearches, totalMessages, todaySignups, totalTokensAll,
       activeToday, activeThisWeek, signupsThisWeek,
@@ -2688,6 +2770,7 @@ Vue.createApp({
       topUsersByMsg, topUsersByTokens, modelUsageAll,
       fmtTokens, fmtDate, setTokenLimit, resetTokens,
       keysModalOpen, keysLoading, keysData, checkKeysHealth,
+      todayStats, todayModelRows, loadTodayStats, switchTodayTab,
       // Chat
       chats, cid, msgs, inp, streaming, stxt, activeModel,
       msgsEl, taEl, editEl, sbOpen, isMobile,
